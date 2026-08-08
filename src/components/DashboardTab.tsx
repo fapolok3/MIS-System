@@ -6,6 +6,8 @@ import {
   TrendingUp,
   AlertTriangle,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -103,6 +105,17 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
 }) => {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+
+  // Pagination state for High Priority & Recent Tickets
+  const [ticketPage, setTicketPage] = useState<number>(1);
+  const TICKETS_PER_PAGE = 10;
+
+  const totalTicketPages = Math.ceil(tickets.length / TICKETS_PER_PAGE) || 1;
+
+  const paginatedTickets = useMemo(() => {
+    const start = (ticketPage - 1) * TICKETS_PER_PAGE;
+    return tickets.slice(start, start + TICKETS_PER_PAGE);
+  }, [tickets, ticketPage]);
 
   // Collect available years from tickets and current year
   const availableYears = useMemo(() => {
@@ -475,7 +488,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                   </td>
                 </tr>
               ) : (
-                tickets.map((t) => (
+                paginatedTickets.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-800/40">
                     <td className="p-2.5 text-indigo-400 font-bold">{t.id}</td>
                     <td className="p-2.5 font-sans">{t.locType}</td>
@@ -508,6 +521,36 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Table Pagination Controls */}
+        {tickets.length > 0 && (
+          <div className="p-3 bg-slate-900/80 border-t border-slate-800 flex flex-wrap justify-between items-center text-xs text-slate-400 gap-2">
+            <div>
+              Showing <span className="font-bold text-slate-200">{(ticketPage - 1) * TICKETS_PER_PAGE + 1}</span> to{' '}
+              <span className="font-bold text-slate-200">{Math.min(ticketPage * TICKETS_PER_PAGE, tickets.length)}</span> of{' '}
+              <span className="font-bold text-slate-200">{tickets.length}</span> tickets
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={ticketPage <= 1}
+                onClick={() => setTicketPage((p) => Math.max(1, p - 1))}
+                className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 font-medium text-slate-200 cursor-pointer"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" /> Previous
+              </button>
+              <span className="font-bold text-slate-300 px-1">
+                Page {ticketPage} of {totalTicketPages}
+              </span>
+              <button
+                disabled={ticketPage >= totalTicketPages}
+                onClick={() => setTicketPage((p) => Math.min(totalTicketPages, p + 1))}
+                className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 font-medium text-slate-200 cursor-pointer"
+              >
+                Next <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
