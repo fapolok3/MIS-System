@@ -34,6 +34,7 @@ import { DevicesTab } from './components/DevicesTab';
 import { POTab } from './components/POTab';
 import { ServiceTab } from './components/ServiceTab';
 import { SIMTab } from './components/SIMTab';
+import { BranchReportTab } from './components/BranchReportTab';
 import { BackupTab } from './components/BackupTab';
 import { SettingsTab } from './components/SettingsTab';
 import { LoginModal } from './components/LoginModal';
@@ -487,6 +488,7 @@ export default function App() {
               activeCategory={activeCategory}
               devices={devices}
               searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
               onOpenAddDeviceModal={() => setIsAddDeviceOpen(true)}
               onOpenEditDeviceModal={(d) => setEditingDevice(d)}
               onDeleteDevice={handleDeleteDevice}
@@ -498,6 +500,7 @@ export default function App() {
             <POTab
               pos={pos}
               searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
               onOpenAddPOModal={() => setIsAddPOOpen(true)}
               onDeletePO={handleDeletePO}
             />
@@ -507,6 +510,7 @@ export default function App() {
             <ServiceTab
               tickets={tickets}
               searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
               onOpenNewTicketModal={() => setIsNewTicketOpen(true)}
               onOpenEditTicketModal={(t) => setEditingTicket(t)}
               onDeleteTicket={handleDeleteTicket}
@@ -517,9 +521,22 @@ export default function App() {
             <SIMTab
               sims={sims}
               searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
               onOpenAddSIMModal={() => setIsAddSIMOpen(true)}
               onOpenEditSIMModal={(sim) => setEditingSIM(sim)}
               onDeleteSIM={handleDeleteSIM}
+            />
+          )}
+
+          {activeTab === 'branch_report' && (
+            <BranchReportTab
+              devices={devices}
+              categoryGroups={categoryGroups}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onOpenAddDeviceModal={() => setIsAddDeviceOpen(true)}
+              onOpenEditDeviceModal={(d) => setEditingDevice(d)}
+              onDeleteDevice={handleDeleteDevice}
             />
           )}
 

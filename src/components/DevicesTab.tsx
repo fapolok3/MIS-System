@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cpu, Plus, FileSpreadsheet, Download, Upload, Edit, Trash2 } from 'lucide-react';
+import { Cpu, Plus, FileSpreadsheet, Download, Upload, Edit, Trash2, Search, X } from 'lucide-react';
 import { Device } from '../types';
 import { Pagination } from './Pagination';
 import { downloadStyledExcel } from '../utils/excelExport';
@@ -8,6 +8,7 @@ interface DevicesTabProps {
   activeCategory: string;
   devices: Device[];
   searchQuery: string;
+  onSearchChange?: (query: string) => void;
   onOpenAddDeviceModal: () => void;
   onOpenEditDeviceModal: (device: Device) => void;
   onDeleteDevice: (sl: number) => void;
@@ -18,6 +19,7 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
   activeCategory,
   devices,
   searchQuery,
+  onSearchChange,
   onOpenAddDeviceModal,
   onOpenEditDeviceModal,
   onDeleteDevice,
@@ -25,27 +27,40 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [localSearch, setLocalSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'LIVE' | 'OFFLINE' | 'MAINTENANCE'>('ALL');
 
-  // Reset page when category or search changes
+  // Reset page when category, status filter or search query changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, localSearch, statusFilter]);
 
-  // Filter devices by category and search query
+  const effectiveSearch = localSearch.trim() || searchQuery.trim();
+
+  // Filter devices by category, status, and search query
   const filteredDevices = devices.filter((d) => {
     const matchesCategory =
       (d.category || '').trim().toLowerCase() === (activeCategory || '').trim().toLowerCase();
     if (!matchesCategory) return false;
 
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
+    if (statusFilter !== 'ALL' && (d.status || '').toUpperCase() !== statusFilter) {
+      return false;
+    }
+
+    if (!effectiveSearch.trim()) return true;
+    const q = effectiveSearch.toLowerCase().trim();
     return (
       (d.id || (d as any).deviceId || '').toLowerCase().includes(q) ||
       (d.sol || '').toLowerCase().includes(q) ||
       (d.location || '').toLowerCase().includes(q) ||
       (d.sim || '').toLowerCase().includes(q) ||
       (d.district || '').toLowerCase().includes(q) ||
-      (d.operator || '').toLowerCase().includes(q)
+      (d.operator || '').toLowerCase().includes(q) ||
+      (d.status || '').toLowerCase().includes(q) ||
+      (d.floor || '').toLowerCase().includes(q) ||
+      (d.placement || '').toLowerCase().includes(q) ||
+      (d.accessType || '').toLowerCase().includes(q) ||
+      (d.bm || '').toLowerCase().includes(q)
     );
   });
 
@@ -166,7 +181,40 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
             Registered Devices
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 text-xs font-bold">
+        <div className="flex flex-wrap gap-2 text-xs font-bold items-center">
+          {/* Status Filter Dropdown */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="bg-slate-900 border border-slate-700 focus:border-indigo-500 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 outline-none cursor-pointer shadow-inner font-semibold"
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="LIVE">🟢 Live</option>
+            <option value="OFFLINE">🔴 Offline</option>
+            <option value="MAINTENANCE">🟡 Maintenance</option>
+          </select>
+
+          {/* Realtime Search Input Box before Add Device */}
+          <div className="relative flex items-center">
+            <Search className="w-3.5 h-3.5 text-indigo-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder={`Search ${activeCategory}...`}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              className="bg-slate-900/90 border border-slate-700/80 focus:border-indigo-500 text-slate-100 placeholder-slate-500 text-xs rounded-lg pl-8 pr-7 py-1.5 outline-none transition-all w-44 sm:w-56 focus:w-64 shadow-inner"
+            />
+            {localSearch && (
+              <button
+                onClick={() => setLocalSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition p-0.5 rounded-full cursor-pointer"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
           <button
             onClick={onOpenAddDeviceModal}
             className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded transition shadow flex items-center gap-1 cursor-pointer"

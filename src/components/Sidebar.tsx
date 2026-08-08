@@ -4,6 +4,7 @@ import {
   FileText,
   Headphones,
   Smartphone,
+  GitBranch,
   Database,
   Plus,
   Building2,
@@ -138,6 +139,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Smartphone className="w-5 h-5" />
           </button>
           <button
+            onClick={() => setActiveTab('branch_report')}
+            title="All Branch Report"
+            className={`p-2.5 rounded-lg flex items-center justify-center transition cursor-pointer ${
+              activeTab === 'branch_report'
+                ? 'bg-indigo-600/30 text-indigo-400 border border-indigo-500/40'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <GitBranch className="w-5 h-5" />
+          </button>
+          <button
             onClick={() => setActiveTab('backup')}
             title="Backup & Restore"
             className={`p-2.5 rounded-lg flex items-center justify-center transition cursor-pointer ${
@@ -259,6 +271,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Smartphone className="w-4 h-4" /> SIM Management
             </button>
             <button
+              onClick={() => setActiveTab('branch_report')}
+              className={`w-full text-left px-3 py-2 rounded flex items-center gap-2 transition cursor-pointer ${
+                activeTab === 'branch_report'
+                  ? 'bg-slate-900 text-indigo-400 font-bold border-l-2 border-indigo-500'
+                  : 'text-slate-300 hover:bg-slate-800'
+              }`}
+            >
+              <GitBranch className="w-4 h-4" /> All Branch Report
+            </button>
+            <button
               onClick={() => setActiveTab('backup')}
               className={`w-full text-left px-3 py-2 rounded flex items-center gap-2 transition cursor-pointer ${
                 activeTab === 'backup'
@@ -299,45 +321,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <ul className="space-y-3 text-xs">
             {categoryGroups.map((group) => {
               const isOpen = openGroups[group.id] ?? true;
+
               return (
-                <li key={group.id}>
+                <li key={group.id} className="bg-slate-900/40 p-1.5 rounded-lg border border-slate-800/60">
                   <div>
                     <button
                       onClick={() => toggleGroup(group.id)}
-                      className="w-full flex justify-between items-center py-1 cursor-pointer hover:text-white font-bold text-slate-200"
+                      className="w-full flex justify-between items-center py-1 px-1 cursor-pointer hover:text-white font-bold text-slate-200 group transition"
                     >
-                      <span className="flex items-center">
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-slate-200 group-hover:text-white">
                         {renderIcon(group.icon)}
-                        {group.title}
+                        <span>{group.title}</span>
+                        <span className="text-[10px] font-mono font-normal text-slate-500 bg-slate-800/80 px-1.5 py-0.2 rounded-full">
+                          {group.items.length}
+                        </span>
                       </span>
                       {isOpen ? (
-                        <ChevronUp className="w-3 h-3 text-slate-500" />
+                        <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
                       ) : (
-                        <ChevronDown className="w-3 h-3 text-slate-500" />
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                       )}
                     </button>
                     {isOpen && (
-                      <ul className="pl-6 mt-1 space-y-1.5 border-l border-slate-800 text-slate-400">
-                        {group.items.map((catItem) => (
-                          <li key={catItem}>
-                            <button
-                              onClick={() => {
-                                setActiveCategory(catItem);
-                                setActiveTab('devices');
-                              }}
-                              className={`w-full text-left transition block ${getHoverColor(
-                                group.icon
-                              )} ${
-                                activeCategory === catItem &&
-                                activeTab === 'devices'
-                                  ? 'text-indigo-400 font-bold'
-                                  : ''
-                              }`}
-                            >
-                              {catItem}
-                            </button>
-                          </li>
-                        ))}
+                      <ul className="ml-3.5 pl-3 mt-1.5 space-y-1 border-l-2 border-slate-800/90 text-slate-400">
+                        {group.items.map((catItem) => {
+                          const isActive = activeCategory === catItem && activeTab === 'devices';
+                          return (
+                            <li key={catItem}>
+                              <button
+                                onClick={() => {
+                                  setActiveCategory(catItem);
+                                  setActiveTab('devices');
+                                }}
+                                className={`w-full text-left transition flex items-center gap-2 py-1 px-2 rounded-r text-[11.5px] cursor-pointer ${
+                                  isActive
+                                    ? 'bg-indigo-600/20 text-indigo-400 font-bold border-l-2 border-indigo-500 -ml-[14px] pl-3'
+                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                                }`}
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                    isActive ? 'bg-indigo-400' : 'bg-slate-600'
+                                  }`}
+                                />
+                                <span className="truncate">{catItem}</span>
+                              </button>
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </div>

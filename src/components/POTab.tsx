@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FileText, Plus, Trash2, FileSpreadsheet } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileText, Plus, Trash2, FileSpreadsheet, Search, X } from 'lucide-react';
 import { PurchaseOrder } from '../types';
 import { Pagination } from './Pagination';
 import { downloadStyledExcel } from '../utils/excelExport';
@@ -7,6 +7,7 @@ import { downloadStyledExcel } from '../utils/excelExport';
 interface POTabProps {
   pos: PurchaseOrder[];
   searchQuery?: string;
+  onSearchChange?: (query: string) => void;
   onOpenAddPOModal: () => void;
   onDeletePO: (id: string) => void;
 }
@@ -14,19 +15,24 @@ interface POTabProps {
 export const POTab: React.FC<POTabProps> = ({
   pos,
   searchQuery = '',
+  onSearchChange,
   onOpenAddPOModal,
   onDeletePO,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [localSearch, setLocalSearch] = useState('');
+
+  const effectiveSearch = localSearch.trim() || searchQuery.trim();
 
   const filteredPOs = pos.filter((p) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
+    if (!effectiveSearch.trim()) return true;
+    const q = effectiveSearch.toLowerCase();
     return (
       (p.poNumber || p.id || '').toLowerCase().includes(q) ||
       (p.vendor || '').toLowerCase().includes(q) ||
-      (p.category || '').toLowerCase().includes(q)
+      (p.category || '').toLowerCase().includes(q) ||
+      (p.status || '').toLowerCase().includes(q)
     );
   });
 
@@ -85,6 +91,27 @@ export const POTab: React.FC<POTabProps> = ({
         </h2>
 
         <div className="flex items-center space-x-2">
+          {/* Realtime Search Input Box */}
+          <div className="relative flex items-center">
+            <Search className="w-3.5 h-3.5 text-indigo-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search POs..."
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              className="bg-slate-900/90 border border-slate-700/80 focus:border-indigo-500 text-slate-100 placeholder-slate-500 text-xs rounded-lg pl-8 pr-7 py-1.5 outline-none transition-all w-40 sm:w-52 focus:w-60 shadow-inner"
+            />
+            {localSearch && (
+              <button
+                onClick={() => setLocalSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition p-0.5 rounded-full cursor-pointer"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
           <button
             onClick={handleExportExcel}
             className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1 cursor-pointer"

@@ -1,4 +1,4 @@
-export type TabType = 'dashboard' | 'devices' | 'po' | 'service' | 'sim' | 'backup' | 'settings';
+export type TabType = 'dashboard' | 'devices' | 'po' | 'service' | 'sim' | 'branch_report' | 'backup' | 'settings';
 
 export interface SystemOptions {
   deviceStatuses: string[];
