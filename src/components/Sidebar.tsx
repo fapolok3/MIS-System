@@ -349,8 +349,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
     </div>
 
-      <div className="p-3 bg-slate-900 border-t border-slate-800 text-[10px] text-slate-500 text-center font-mono">
-        System Build: v0.1
+      <div className="p-3 bg-slate-900 border-t border-slate-800 text-[10px] text-slate-400 text-center font-mono font-medium">
+        System Build: v0.4
       </div>
     </aside>
   );

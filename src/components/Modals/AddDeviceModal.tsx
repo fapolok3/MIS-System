@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
-import { Device, SystemOptions } from '../../types';
+import { Device, SystemOptions, CategoryGroup } from '../../types';
 
 interface AddDeviceModalProps {
   isOpen: boolean;
   activeCategory: string;
+  categoryGroups?: CategoryGroup[];
   systemOptions: SystemOptions;
   onClose: () => void;
   onSaveDevice: (device: Omit<Device, 'sl'>) => void;
@@ -13,10 +14,12 @@ interface AddDeviceModalProps {
 export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   isOpen,
   activeCategory,
+  categoryGroups = [],
   systemOptions,
   onClose,
   onSaveDevice,
 }) => {
+  const [category, setCategory] = useState(activeCategory);
   const [status, setStatus] = useState<string>(systemOptions.deviceStatuses[0] || 'LIVE');
   const [sol, setSol] = useState('');
   const [location, setLocation] = useState('');
@@ -33,12 +36,38 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
     new Date().toISOString().split('T')[0]
   );
 
+  // Sync category and reset fields when modal opens or activeCategory changes
+  useEffect(() => {
+    if (isOpen) {
+      setCategory(activeCategory);
+      setSol('');
+      setLocation('');
+      setDeviceId('');
+      setSim('');
+      setFloor('');
+      setPlacement('');
+      setBm('-');
+      setDistrict('');
+      setPrice('৳ 65,000');
+      setInstallDate(new Date().toISOString().split('T')[0]);
+      setStatus(systemOptions.deviceStatuses[0] || 'LIVE');
+      setOperator(systemOptions.simOperators[0] || 'GP');
+      setAccessType(systemOptions.accessTypes[0] || 'ENTRY/EXIT');
+    }
+  }, [isOpen, activeCategory, systemOptions]);
+
   if (!isOpen) return null;
+
+  // Flatten all category items from categoryGroups for selection option
+  const allCategoryItems = categoryGroups.flatMap((g) => g.items);
+  if (activeCategory && !allCategoryItems.includes(activeCategory)) {
+    allCategoryItems.unshift(activeCategory);
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSaveDevice({
-      category: activeCategory,
+      category: category || activeCategory,
       status: status as any,
       sol,
       location,
@@ -61,9 +90,34 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
       <div className="bg-slate-900 border border-slate-700 rounded-lg max-w-lg w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
         <h3 className="text-sm font-bold text-white uppercase border-b border-slate-800 pb-2 flex items-center">
           <Plus className="w-4 h-4 text-emerald-400 mr-2" />
-          Add New Device ({activeCategory})
+          Add New Device ({category || activeCategory})
         </h3>
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <label className="block text-slate-400 mb-1">Category Group / Branch</label>
+            {allCategoryItems.length > 0 ? (
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                required
+                className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+              >
+                {allCategoryItems.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                required
+                className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+              />
+            )}
+          </div>
           <div>
             <label className="block text-slate-400 mb-1">Status</label>
             <select

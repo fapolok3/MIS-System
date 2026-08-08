@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Edit } from 'lucide-react';
-import { Device, SystemOptions } from '../../types';
+import { Device, SystemOptions, CategoryGroup } from '../../types';
 
 interface EditDeviceModalProps {
   device: Device | null;
   isOpen: boolean;
+  categoryGroups?: CategoryGroup[];
   systemOptions: SystemOptions;
   onClose: () => void;
   onSaveDevice: (device: Device) => void;
@@ -13,6 +14,7 @@ interface EditDeviceModalProps {
 export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
   device,
   isOpen,
+  categoryGroups = [],
   systemOptions,
   onClose,
   onSaveDevice,
@@ -24,6 +26,12 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
   }, [device]);
 
   if (!isOpen || !formData) return null;
+
+  // Flatten all category items from categoryGroups for selection option
+  const allCategoryItems = categoryGroups.flatMap((g) => g.items);
+  if (formData.category && !allCategoryItems.includes(formData.category)) {
+    allCategoryItems.unshift(formData.category);
+  }
 
   const handleChange = (
     field: keyof Device,
@@ -48,6 +56,31 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
           Edit Device Details
         </h3>
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <label className="block text-slate-400 mb-1">Category Group / Branch</label>
+            {allCategoryItems.length > 0 ? (
+              <select
+                value={formData.category}
+                onChange={(e) => handleChange('category', e.target.value)}
+                required
+                className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+              >
+                {allCategoryItems.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={formData.category}
+                onChange={(e) => handleChange('category', e.target.value)}
+                required
+                className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+              />
+            )}
+          </div>
           <div>
             <label className="block text-slate-400 mb-1">Status</label>
             <select

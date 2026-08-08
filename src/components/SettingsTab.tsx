@@ -5,7 +5,6 @@ import {
   Plus,
   Trash2,
   Sliders,
-  RotateCcw,
   CheckCircle2,
   ListPlus,
   Layers,
@@ -18,6 +17,8 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 import { CategoryGroup, SystemOptions } from '../types';
+import { ConfirmModal } from './Modals/ConfirmModal';
+import { saveSupabaseCategoryGroups } from '../lib/supabase';
 
 interface SettingsTabProps {
   categoryGroups: CategoryGroup[];
@@ -61,9 +62,31 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
+  // Confirm Modal state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  const askConfirmation = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmConfig({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+    });
   };
 
   // Add Category Group
@@ -78,7 +101,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       items: [],
     };
 
-    setCategoryGroups((prev) => [...prev, newGroup]);
+    setCategoryGroups((prev) => {
+      const updated = [...prev, newGroup];
+      saveSupabaseCategoryGroups(updated);
+      return updated;
+    });
     setSelectedGroupId(newGroup.id);
     setNewGroupTitle('');
     showToast(`Category Group "${newGroup.title}" added successfully!`);
@@ -89,8 +116,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     e.preventDefault();
     if (!newCategoryName.trim() || !selectedGroupId) return;
 
-    setCategoryGroups((prev) =>
-      prev.map((group) => {
+    setCategoryGroups((prev) => {
+      const updated = prev.map((group) => {
         if (group.id === selectedGroupId) {
           if (group.items.includes(newCategoryName.trim())) {
             showToast(`Category "${newCategoryName.trim()}" already exists!`);
@@ -102,8 +129,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           };
         }
         return group;
-      })
-    );
+      });
+      saveSupabaseCategoryGroups(updated);
+      return updated;
+    });
 
     showToast(`Added "${newCategoryName.trim()}" to category tree!`);
     setNewCategoryName('');
@@ -111,24 +140,42 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
   // Delete Category Item from group
   const handleDeleteCategoryItem = (groupId: string, itemToDelete: string) => {
-    setCategoryGroups((prev) =>
-      prev.map((group) => {
-        if (group.id === groupId) {
-          return {
-            ...group,
-            items: group.items.filter((item) => item !== itemToDelete),
-          };
-        }
-        return group;
-      })
+    askConfirmation(
+      'Confirm Category Deletion',
+      `Are you sure you want to remove category "${itemToDelete}" from the category tree?`,
+      () => {
+        setCategoryGroups((prev) => {
+          const updated = prev.map((group) => {
+            if (group.id === groupId) {
+              return {
+                ...group,
+                items: group.items.filter((item) => item !== itemToDelete),
+              };
+            }
+            return group;
+          });
+          saveSupabaseCategoryGroups(updated);
+          return updated;
+        });
+        showToast(`Removed "${itemToDelete}" from category tree.`);
+      }
     );
-    showToast(`Removed "${itemToDelete}" from category tree.`);
   };
 
   // Delete whole Category Group
   const handleDeleteGroup = (groupId: string, groupTitle: string) => {
-    setCategoryGroups((prev) => prev.filter((g) => g.id !== groupId));
-    showToast(`Category Group "${groupTitle}" deleted.`);
+    askConfirmation(
+      'Confirm Group Deletion',
+      `Are you sure you want to delete category group "${groupTitle}" and all its subcategories?`,
+      () => {
+        setCategoryGroups((prev) => {
+          const updated = prev.filter((g) => g.id !== groupId);
+          saveSupabaseCategoryGroups(updated);
+          return updated;
+        });
+        showToast(`Category Group "${groupTitle}" deleted.`);
+      }
+    );
   };
 
   // Add item to a system dropdown list
@@ -152,11 +199,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
   // Remove item from a system dropdown list
   const handleRemoveOption = (key: keyof SystemOptions, valueToRemove: string) => {
-    setSystemOptions((prev) => ({
-      ...prev,
-      [key]: prev[key].filter((item) => item !== valueToRemove),
-    }));
-    showToast(`Removed "${valueToRemove}" from options.`);
+    askConfirmation(
+      'Confirm Option Removal',
+      `Are you sure you want to remove option "${valueToRemove}"?`,
+      () => {
+        setSystemOptions((prev) => ({
+          ...prev,
+          [key]: prev[key].filter((item) => item !== valueToRemove),
+        }));
+        showToast(`Removed "${valueToRemove}" from options.`);
+      }
+    );
   };
 
   const optionSections: {
@@ -270,15 +323,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </p>
           </div>
         </div>
-
-        <button
-          onClick={onResetOptions}
-          className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 rounded-lg text-xs font-semibold flex items-center space-x-2 transition cursor-pointer self-start md:self-auto"
-          title="Reset options to default"
-        >
-          <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-          <span>Reset Defaults</span>
-        </button>
       </div>
 
       {/* SECTION 1: MIS TREE & CATEGORIES MANAGER (+ Category) */}
@@ -573,6 +617,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           })}
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={confirmConfig.onConfirm}
+        onClose={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

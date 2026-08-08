@@ -1,18 +1,69 @@
-import React from 'react';
-import { Smartphone, Plus, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Smartphone, Plus, Trash2, Edit, FileSpreadsheet } from 'lucide-react';
 import { SIMItem } from '../types';
+import { Pagination } from './Pagination';
+import { downloadStyledExcel } from '../utils/excelExport';
 
 interface SIMTabProps {
   sims: SIMItem[];
+  searchQuery?: string;
   onOpenAddSIMModal: () => void;
+  onOpenEditSIMModal?: (sim: SIMItem) => void;
   onDeleteSIM: (id: string) => void;
 }
 
 export const SIMTab: React.FC<SIMTabProps> = ({
   sims,
+  searchQuery = '',
   onOpenAddSIMModal,
+  onOpenEditSIMModal,
   onDeleteSIM,
 }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+
+  const filteredSIMs = sims.filter((s) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (s.simNumber || '').toLowerCase().includes(q) ||
+      (s.operator || '').toLowerCase().includes(q) ||
+      (s.assignedDevice || '').toLowerCase().includes(q) ||
+      (s.location || '').toLowerCase().includes(q) ||
+      ((s as any).ipAddress || '').toLowerCase().includes(q)
+    );
+  });
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedSIMs = filteredSIMs.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleExportExcel = () => {
+    const headers = ['SL', 'SIM Number', 'Operator', 'Assigned Device', 'Location', 'Status'];
+    const rows = filteredSIMs.map((s, index) => [
+      index + 1,
+      s.simNumber,
+      s.operator,
+      s.assignedDevice || 'Unassigned',
+      s.location || '-',
+      s.status || 'ACTIVE',
+    ]);
+
+    const activeCount = filteredSIMs.filter((s) => s.status === 'ACTIVE').length;
+
+    downloadStyledExcel({
+      title: 'Cellular SIM Inventory & Assignment Report',
+      subtitle: 'MIS Cellular Connectivity Audit Report',
+      filename: 'SIM_Inventory_Report.xls',
+      headers,
+      data: rows,
+      summaryCards: [
+        { label: 'Total SIM Cards', value: filteredSIMs.length },
+        { label: 'Active SIMs', value: activeCount },
+        { label: 'Inactive SIMs', value: filteredSIMs.length - activeCount },
+      ],
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-lg flex justify-between items-center">
@@ -20,66 +71,99 @@ export const SIMTab: React.FC<SIMTabProps> = ({
           <Smartphone className="w-4 h-4 text-indigo-400 mr-2" />
           Cellular SIM Inventory & Assignment
         </h2>
-        <button
-          onClick={onOpenAddSIMModal}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded shadow flex items-center gap-1 cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" /> Add SIM
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleExportExcel}
+            className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1 cursor-pointer"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" /> Export Excel
+          </button>
+          <button
+            onClick={onOpenAddSIMModal}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded shadow flex items-center gap-1 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add SIM
+          </button>
+        </div>
       </div>
 
-      <div className="bg-slate-800/50 border border-slate-800 rounded-lg overflow-hidden">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-950 text-slate-300 uppercase font-bold border-b border-slate-800">
-            <tr>
-              <th className="p-3">SIM Number</th>
-              <th className="p-3">Operator</th>
-              <th className="p-3">Assigned Device</th>
-              <th className="p-3">Location</th>
-              <th className="p-3">Status</th>
-              <th className="p-3 text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800 font-mono text-slate-300">
-            {sims.length === 0 ? (
+      <div className="bg-slate-800/50 border border-slate-800 rounded-lg overflow-hidden p-4 space-y-3">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-950 text-slate-300 uppercase font-bold border-b border-slate-800">
               <tr>
-                <td colSpan={6} className="p-4 text-center text-slate-500 font-sans">
-                  No SIM cards registered.
-                </td>
+                <th className="p-3">SIM Number</th>
+                <th className="p-3">Operator</th>
+                <th className="p-3">Assigned Device</th>
+                <th className="p-3">Location</th>
+                <th className="p-3">Status</th>
+                <th className="p-3 text-center">Action</th>
               </tr>
-            ) : (
-              sims.map((sim) => (
-                <tr key={sim.id} className="hover:bg-slate-800/40">
-                  <td className="p-3 font-bold">{sim.simNumber}</td>
-                  <td className="p-3 font-sans font-bold text-blue-400">
-                    {sim.operator}
-                  </td>
-                  <td className="p-3 text-indigo-400">{sim.assignedDevice}</td>
-                  <td className="p-3 font-sans">{sim.location}</td>
-                  <td className="p-3">
-                    {sim.status === 'ACTIVE' ? (
-                      <span className="bg-emerald-900/50 text-emerald-300 px-2 py-0.5 rounded text-[10px] border border-emerald-700/50">
-                        ACTIVE
-                      </span>
-                    ) : (
-                      <span className="bg-rose-900/50 text-rose-300 px-2 py-0.5 rounded text-[10px] border border-rose-700/50">
-                        INACTIVE
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => onDeleteSIM(sim.id)}
-                      className="bg-rose-900/50 hover:bg-rose-800 text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1 mx-auto"
-                    >
-                      <Trash2 className="w-3 h-3" /> DELETE
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-slate-800 font-mono text-slate-300">
+              {sims.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-4 text-center text-slate-500 font-sans">
+                    No SIM cards registered.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                paginatedSIMs.map((sim) => (
+                  <tr key={sim.id} className="hover:bg-slate-800/40">
+                    <td className="p-3 font-bold">{sim.simNumber}</td>
+                    <td className="p-3 font-sans font-bold text-blue-400">
+                      {sim.operator}
+                    </td>
+                    <td className="p-3 text-indigo-400">{sim.assignedDevice}</td>
+                    <td className="p-3 font-sans">{sim.location}</td>
+                    <td className="p-3">
+                      {sim.status === 'ACTIVE' ? (
+                        <span className="bg-emerald-900/50 text-emerald-300 px-2 py-0.5 rounded text-[10px] border border-emerald-700/50">
+                          ACTIVE
+                        </span>
+                      ) : (
+                        <span className="bg-rose-900/50 text-rose-300 px-2 py-0.5 rounded text-[10px] border border-rose-700/50">
+                          INACTIVE
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        {onOpenEditSIMModal && (
+                          <button
+                            onClick={() => onOpenEditSIMModal(sim)}
+                            className="bg-indigo-900/50 hover:bg-indigo-800 text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1"
+                          >
+                            <Edit className="w-3 h-3" /> EDIT
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onDeleteSIM(sim.id)}
+                          className="bg-rose-900/50 hover:bg-rose-800 text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" /> DELETE
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination Bar */}
+        {filteredSIMs.length > 0 && (
+          <div className="pt-2 border-t border-slate-800">
+            <Pagination
+              totalItems={filteredSIMs.length}
+              itemsPerPage={itemsPerPage}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

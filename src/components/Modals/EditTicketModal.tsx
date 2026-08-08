@@ -44,12 +44,19 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
         </h3>
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3 text-xs">
           <div>
+            <label className="block text-slate-400 mb-1">Issue Number (ID)</label>
+            <input
+              type="text"
+              value={formData.id}
+              onChange={(e) => handleChange('id', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
+          </div>
+          <div>
             <label className="block text-slate-400 mb-1">Current Status</label>
             <select
               value={formData.status}
-              onChange={(e) =>
-                handleChange('status', e.target.value)
-              }
+              onChange={(e) => handleChange('status', e.target.value)}
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
             >
               {systemOptions.ticketStatuses.map((st) => (
@@ -58,6 +65,60 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">Email Subject</label>
+            <input
+              type="text"
+              value={formData.subject}
+              onChange={(e) => handleChange('subject', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">Email From</label>
+            <input
+              type="email"
+              value={formData.from}
+              onChange={(e) => handleChange('from', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">Service Request Date</label>
+            <input
+              type="text"
+              value={formData.reqDate}
+              onChange={(e) => handleChange('reqDate', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">Request Time</label>
+            <input
+              type="text"
+              value={formData.reqTime}
+              onChange={(e) => handleChange('reqTime', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">Planned Provide Date</label>
+            <input
+              type="text"
+              value={formData.planDate}
+              onChange={(e) => handleChange('planDate', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">Date to Count</label>
+            <input
+              type="text"
+              value={formData.countDate}
+              onChange={(e) => handleChange('countDate', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
           </div>
           <div>
             <label className="block text-slate-400 mb-1">Service Provide Date</label>
@@ -70,9 +131,53 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
             />
           </div>
           <div>
-            <label className="block text-slate-400 mb-1">
-              Challan Received By
-            </label>
+            <label className="block text-slate-400 mb-1">Device Location</label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => handleChange('location', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">Device ID</label>
+            <input
+              type="text"
+              value={formData.deviceId}
+              onChange={(e) => handleChange('deviceId', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">Location Type / Category</label>
+            <select
+              value={formData.locType}
+              onChange={(e) => handleChange('locType', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            >
+              {systemOptions.locationTypes.map((lt) => (
+                <option key={lt} value={lt}>
+                  {lt}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">Issue Type</label>
+            <select
+              value={formData.issueType}
+              onChange={(e) => handleChange('issueType', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            >
+              {systemOptions.issueTypes.map((it) => (
+                <option key={it} value={it}>
+                  {it}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">Challan Received By</label>
             <input
               type="text"
               value={formData.receivedBy}
@@ -84,9 +189,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
             <label className="block text-slate-400 mb-1">Issue Priority</label>
             <select
               value={formData.priority}
-              onChange={(e) =>
-                handleChange('priority', e.target.value)
-              }
+              onChange={(e) => handleChange('priority', e.target.value)}
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
             >
               {systemOptions.ticketPriorities.map((tp) => (
@@ -109,6 +212,26 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">Resolution Time (Days)</label>
+            <input
+              type="number"
+              value={formData.resTime}
+              onChange={(e) => handleChange('resTime', Number(e.target.value))}
+              min={0}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-slate-400 mb-1">SLA Threshold (Days)</label>
+            <input
+              type="number"
+              value={formData.slaThreshold}
+              onChange={(e) => handleChange('slaThreshold', Number(e.target.value))}
+              min={1}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
           </div>
           <div>
             <label className="block text-slate-400 mb-1">SLA Status</label>

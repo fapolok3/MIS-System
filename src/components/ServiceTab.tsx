@@ -1,9 +1,12 @@
-import React from 'react';
-import { Headphones, Plus, Edit, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Headphones, Plus, Edit, Trash2, FileSpreadsheet } from 'lucide-react';
 import { Ticket } from '../types';
+import { Pagination } from './Pagination';
+import { downloadStyledExcel } from '../utils/excelExport';
 
 interface ServiceTabProps {
   tickets: Ticket[];
+  searchQuery?: string;
   onOpenNewTicketModal: () => void;
   onOpenEditTicketModal: (ticket: Ticket) => void;
   onDeleteTicket: (ticketId: string) => void;
@@ -11,10 +14,99 @@ interface ServiceTabProps {
 
 export const ServiceTab: React.FC<ServiceTabProps> = ({
   tickets,
+  searchQuery = '',
   onOpenNewTicketModal,
   onOpenEditTicketModal,
   onDeleteTicket,
 }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+
+  const filteredTickets = tickets.filter((t) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (t.id || (t as any).ticketNo || '').toLowerCase().includes(q) ||
+      (t.deviceId || '').toLowerCase().includes(q) ||
+      ((t as any).sol || '').toLowerCase().includes(q) ||
+      ((t as any).category || '').toLowerCase().includes(q) ||
+      (t.subject || (t as any).issue || '').toLowerCase().includes(q) ||
+      (t.issueType || '').toLowerCase().includes(q) ||
+      ((t as any).reportedBy || '').toLowerCase().includes(q)
+    );
+  });
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedTickets = filteredTickets.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleExportExcel = () => {
+    const headers = [
+      'SL',
+      'Issue Number',
+      'Email Subject',
+      'Email From',
+      'Service Request Date',
+      'Request Time',
+      'Planned Provide Date',
+      'Date to count',
+      'Service Provide Date',
+      'Device Location',
+      'Device ID',
+      'Location Type',
+      'Issue Type',
+      'Challan Received By',
+      'Issue Priority',
+      'Current Status',
+      'Resolution Time (Days)',
+      'SLA Threshold (Days)',
+      'SLA Status',
+      'Technician Details',
+      'Remarks',
+      'Visit Email Details',
+    ];
+
+    const rows = filteredTickets.map((t, index) => [
+      index + 1,
+      t.id || (t as any).ticketNo || '-',
+      t.subject || (t as any).issue || '-',
+      t.from || (t as any).reportedBy || '-',
+      t.reqDate || '-',
+      t.reqTime || '-',
+      t.planDate || '-',
+      t.countDate || '-',
+      t.provDate || '-',
+      t.location || '-',
+      t.deviceId || '-',
+      t.locType || '-',
+      t.issueType || (t as any).category || '-',
+      t.receivedBy || '-',
+      t.priority || 'MEDIUM',
+      t.status || 'OPEN',
+      t.resTime ?? '-',
+      t.slaThreshold ?? '-',
+      t.slaStatus || '-',
+      t.tech || 'Unassigned',
+      t.remarks || '-',
+      t.emailDetails || '-',
+    ]);
+
+    const openCount = filteredTickets.filter((t) => t.status === 'OPEN').length;
+    const resolvedCount = filteredTickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+
+    downloadStyledExcel({
+      title: 'Service Tickets & SLA Report',
+      subtitle: 'MIS Helpdesk Support & Maintenance Audit Log',
+      filename: 'Service_Tickets_Report.xls',
+      headers,
+      data: rows,
+      summaryCards: [
+        { label: 'Total Service Tickets', value: filteredTickets.length },
+        { label: 'Open Tickets', value: openCount },
+        { label: 'Resolved Tickets', value: resolvedCount },
+      ],
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-lg flex justify-between items-center">
@@ -27,12 +119,20 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
             Auto Generated Format: INV-BBL-YYYYMMDD001
           </p>
         </div>
-        <button
-          onClick={onOpenNewTicketModal}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3 py-1.5 rounded shadow flex items-center gap-1 cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" /> New Ticket
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleExportExcel}
+            className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1 cursor-pointer"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" /> Export Excel
+          </button>
+          <button
+            onClick={onOpenNewTicketModal}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3 py-1.5 rounded shadow flex items-center gap-1 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" /> New Ticket
+          </button>
+        </div>
       </div>
 
       <div className="bg-slate-800/50 border border-slate-800 rounded-lg p-4 space-y-4">
@@ -40,9 +140,6 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
           <table className="w-full text-left text-xs border-collapse whitespace-nowrap">
             <thead className="bg-slate-950 text-slate-300 uppercase font-bold border-b border-slate-800 text-[10px]">
               <tr>
-                <th className="p-2.5 border-r border-slate-800 sticky left-0 bg-slate-950 z-10 text-center">
-                  Action
-                </th>
                 <th className="p-2.5 border-r border-slate-800">Issue Number</th>
                 <th className="p-2.5 border-r border-slate-800">Email Subject</th>
                 <th className="p-2.5 border-r border-slate-800">Email From</th>
@@ -80,21 +177,23 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
                 <th className="p-2.5 border-r border-slate-800">
                   Visit Email Details
                 </th>
-                <th className="p-2.5 text-center">Delete</th>
+                <th className="p-2.5 text-center">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 text-slate-300 font-mono">
               {tickets.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={23}
+                    colSpan={22}
                     className="text-center p-4 text-slate-500 font-sans"
                   >
                     No service tickets found
                   </td>
                 </tr>
               ) : (
-                tickets.map((t) => {
+                paginatedTickets.map((t) => {
                   const priorityBadge =
                     t.priority === 'CRITICAL' ? (
                       <span className="bg-rose-900/80 text-rose-200 border border-rose-600 px-2 py-0.5 rounded text-[10px] font-bold">
@@ -108,14 +207,6 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
 
                   return (
                     <tr key={t.id} className="hover:bg-slate-800/40">
-                      <td className="p-2.5 border-r border-slate-800 sticky left-0 bg-slate-900 z-10 text-center">
-                        <button
-                          onClick={() => onOpenEditTicketModal(t)}
-                          className="text-indigo-400 font-bold hover:underline font-sans flex items-center justify-center gap-1 cursor-pointer mx-auto"
-                        >
-                          <Edit className="w-3 h-3" /> Edit
-                        </button>
-                      </td>
                       <td className="p-2.5 border-r border-slate-800 text-indigo-400 font-bold">
                         {t.id}
                       </td>
@@ -184,12 +275,20 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
                         {t.emailDetails}
                       </td>
                       <td className="p-2.5 text-center">
-                        <button
-                          onClick={() => onDeleteTicket(t.id)}
-                          className="bg-rose-900/50 hover:bg-rose-800 text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1 mx-auto"
-                        >
-                          <Trash2 className="w-3 h-3" /> DELETE
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => onOpenEditTicketModal(t)}
+                            className="bg-indigo-900/50 hover:bg-indigo-800 text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1"
+                          >
+                            <Edit className="w-3 h-3" /> EDIT
+                          </button>
+                          <button
+                            onClick={() => onDeleteTicket(t.id)}
+                            className="bg-rose-900/50 hover:bg-rose-800 text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3 h-3" /> DELETE
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -198,6 +297,19 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        {filteredTickets.length > 0 && (
+          <div className="pt-2 border-t border-slate-800">
+            <Pagination
+              totalItems={filteredTickets.length}
+              itemsPerPage={itemsPerPage}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

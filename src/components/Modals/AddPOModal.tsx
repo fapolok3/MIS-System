@@ -16,6 +16,7 @@ export const AddPOModal: React.FC<AddPOModalProps> = ({
   onSavePO,
   poCount,
 }) => {
+  const [poNumber, setPoNumber] = useState(`PO-2026-${9901 + poCount}`);
   const [vendor, setVendor] = useState(systemOptions.vendors[0] || 'BracNet Ltd');
   const [category, setCategory] = useState('Main Branch');
   const [qty, setQty] = useState(10);
@@ -31,10 +32,9 @@ export const AddPOModal: React.FC<AddPOModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const poNum = `PO-2026-${9901 + poCount}`;
     const newPO: PurchaseOrder = {
       id: `po-${Date.now()}`,
-      poNumber: poNum,
+      poNumber: poNumber || `PO-2026-${9901 + poCount}`,
       vendor: vendor || 'INOVACE Tech',
       category,
       qty,
@@ -53,6 +53,17 @@ export const AddPOModal: React.FC<AddPOModalProps> = ({
           Create New Purchase Order (PO)
         </h3>
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
+          <div>
+            <label className="block text-slate-400 mb-1">PO Number</label>
+            <input
+              type="text"
+              value={poNumber}
+              onChange={(e) => setPoNumber(e.target.value)}
+              placeholder="e.g. PO-2026-9901"
+              required
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            />
+          </div>
           <div>
             <label className="block text-slate-400 mb-1">Vendor Name</label>
             <select

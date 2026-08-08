@@ -1,6 +1,8 @@
-import React from 'react';
-import { Cpu, Plus, FileSpreadsheet, Download, Upload } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Cpu, Plus, FileSpreadsheet, Download, Upload, Edit, Trash2 } from 'lucide-react';
 import { Device } from '../types';
+import { Pagination } from './Pagination';
+import { downloadStyledExcel } from '../utils/excelExport';
 
 interface DevicesTabProps {
   activeCategory: string;
@@ -21,27 +23,40 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
   onDeleteDevice,
   onOpenExcelUploadModal,
 }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+
+  // Reset page when category or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, searchQuery]);
+
   // Filter devices by category and search query
   const filteredDevices = devices.filter((d) => {
-    const matchesCategory = d.category === activeCategory;
+    const matchesCategory =
+      (d.category || '').trim().toLowerCase() === (activeCategory || '').trim().toLowerCase();
     if (!matchesCategory) return false;
 
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
-      d.id.toLowerCase().includes(q) ||
-      d.sol.toLowerCase().includes(q) ||
-      d.location.toLowerCase().includes(q) ||
-      d.sim.toLowerCase().includes(q) ||
-      d.district.toLowerCase().includes(q) ||
-      d.operator.toLowerCase().includes(q)
+      (d.id || (d as any).deviceId || '').toLowerCase().includes(q) ||
+      (d.sol || '').toLowerCase().includes(q) ||
+      (d.location || '').toLowerCase().includes(q) ||
+      (d.sim || '').toLowerCase().includes(q) ||
+      (d.district || '').toLowerCase().includes(q) ||
+      (d.operator || '').toLowerCase().includes(q)
     );
   });
 
+  // Calculate paginated slice
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedDevices = filteredDevices.slice(startIndex, startIndex + itemsPerPage);
+
   const handleExportExcel = () => {
-    // Generate CSV string and trigger download
     const headers = [
       'SL',
+      'Category',
       'Status',
       'SOL NO',
       'Location',
@@ -59,32 +74,37 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
 
     const rows = filteredDevices.map((d, index) => [
       index + 1,
+      d.category || activeCategory,
       d.status,
       d.sol,
-      `"${d.location}"`,
+      d.location,
       d.id,
       d.sim,
       d.operator,
-      `"${d.floor}"`,
-      `"${d.placement}"`,
-      `"${d.accessType}"`,
+      d.floor,
+      d.placement,
+      d.accessType,
       d.bm,
-      `"${d.price}"`,
-      `"${d.district}"`,
+      d.price,
+      d.district,
       d.installDate,
     ]);
 
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const liveCount = filteredDevices.filter((d) => d.status === 'LIVE').length;
+    const offlineCount = filteredDevices.filter((d) => d.status === 'OFFLINE').length;
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `${activeCategory}_Devices.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadStyledExcel({
+      title: `${activeCategory} Devices Inventory`,
+      subtitle: `MIS Device Registry for ${activeCategory} Category`,
+      filename: `${activeCategory.replace(/\s+/g, '_')}_Devices_Report.xls`,
+      headers,
+      data: rows,
+      summaryCards: [
+        { label: 'Total Registered Devices', value: filteredDevices.length },
+        { label: 'Live Devices', value: liveCount },
+        { label: 'Offline / Maintenance', value: offlineCount },
+      ],
+    });
   };
 
   const handleDownloadSample = () => {
@@ -119,17 +139,13 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
       '2026-02-10',
     ];
 
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [sampleHeaders.join(','), sampleRow.join(',')].join('\n');
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', 'Device_Import_Sample_Template.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadStyledExcel({
+      title: `Sample Device Upload Template`,
+      subtitle: `Template format for Excel Batch Upload in MIS System`,
+      filename: `Device_Upload_Sample_Template.xls`,
+      headers: sampleHeaders,
+      data: [sampleRow],
+    });
   };
 
   return (
@@ -187,7 +203,6 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
             <thead className="bg-slate-950 text-slate-300 uppercase font-bold border-b border-slate-800 text-[10px]">
               <tr>
                 <th className="p-2.5 border-r border-slate-800">SL</th>
-                <th className="p-2.5 border-r border-slate-800">Action</th>
                 <th className="p-2.5 border-r border-slate-800">Status</th>
                 <th className="p-2.5 border-r border-slate-800 bg-indigo-950/50 text-indigo-300">
                   SOL NO
@@ -203,21 +218,22 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
                 <th className="p-2.5 border-r border-slate-800">Price</th>
                 <th className="p-2.5 border-r border-slate-800">District</th>
                 <th className="p-2.5 border-r border-slate-800">Install Date</th>
-                <th className="p-2.5 text-center">Delete</th>
+                <th className="p-2.5 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 text-slate-300 font-mono">
               {filteredDevices.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={16}
+                    colSpan={15}
                     className="text-center p-4 text-slate-500 font-sans"
                   >
                     No devices found in {activeCategory}
                   </td>
                 </tr>
               ) : (
-                filteredDevices.map((item, idx) => {
+                paginatedDevices.map((item, idx) => {
+                  const globalIdx = startIndex + idx;
                   const statusBadge =
                     item.status === 'LIVE' ? (
                       <span className="bg-emerald-900/50 text-emerald-300 border border-emerald-700/50 px-2 py-0.5 rounded text-[10px]">
@@ -245,15 +261,7 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
                   return (
                     <tr key={item.sl} className="hover:bg-slate-800/40">
                       <td className="p-2.5 border-r border-slate-800 font-bold">
-                        {idx + 1}
-                      </td>
-                      <td className="p-2.5 border-r border-slate-800">
-                        <button
-                          onClick={() => onOpenEditDeviceModal(item)}
-                          className="text-indigo-400 font-bold hover:underline font-sans cursor-pointer"
-                        >
-                          Edit
-                        </button>
+                        {globalIdx + 1}
                       </td>
                       <td className="p-2.5 border-r border-slate-800 font-sans">
                         {statusBadge}
@@ -297,12 +305,20 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
                         {item.installDate || '-'}
                       </td>
                       <td className="p-2.5 text-center">
-                        <button
-                          onClick={() => onDeleteDevice(item.sl)}
-                          className="bg-rose-900/50 hover:bg-rose-800 text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer"
-                        >
-                          DELETE
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => onOpenEditDeviceModal(item)}
+                            className="bg-indigo-900/50 hover:bg-indigo-800 text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1"
+                          >
+                            <Edit className="w-3 h-3" /> EDIT
+                          </button>
+                          <button
+                            onClick={() => onDeleteDevice(item.sl)}
+                            className="bg-rose-900/50 hover:bg-rose-800 text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3 h-3" /> DELETE
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -311,6 +327,19 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        {filteredDevices.length > 0 && (
+          <div className="px-4 pb-3 bg-slate-900/60 border-t border-slate-800">
+            <Pagination
+              totalItems={filteredDevices.length}
+              itemsPerPage={itemsPerPage}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
