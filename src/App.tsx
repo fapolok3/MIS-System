@@ -90,15 +90,21 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState<string>('Main Branch');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Sync activeTab with browser URL path
+  // Sync activeTab & isLoggedIn with browser URL path
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const targetPath = tabToPath(activeTab);
-      if (window.location.pathname !== targetPath) {
-        window.history.pushState({ tab: activeTab }, '', targetPath);
+      if (!isLoggedIn) {
+        if (window.location.pathname !== '/') {
+          window.history.replaceState({ loggedIn: false }, '', '/');
+        }
+      } else {
+        const targetPath = tabToPath(activeTab);
+        if (window.location.pathname !== targetPath) {
+          window.history.pushState({ tab: activeTab }, '', targetPath);
+        }
       }
     }
-  }, [activeTab]);
+  }, [activeTab, isLoggedIn]);
 
   // Handle browser Back / Forward buttons
   useEffect(() => {
