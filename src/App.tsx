@@ -371,9 +371,7 @@ export default function App() {
       `Are you sure you want to delete ${label}? This operation cannot be undone.`,
       () => {
         setTickets((prev) => prev.filter((t) => t.id !== ticketId));
-        if (target) {
-          deleteSupabaseTicket(target.sl);
-        }
+        deleteSupabaseTicket(ticketId);
         showToast('Service ticket deleted successfully!');
       }
     );
