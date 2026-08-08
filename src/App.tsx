@@ -51,12 +51,66 @@ import { ExcelUploadModal } from './components/Modals/ExcelUploadModal';
 import { ConfirmModal } from './components/Modals/ConfirmModal';
 import { Toast, ToastData } from './components/Toast';
 
+const pathToTab = (path: string): TabType => {
+  const cleanPath = path.toLowerCase().replace(/\/$/, '') || '/';
+  if (cleanPath === '/devices') return 'devices';
+  if (cleanPath === '/po' || cleanPath === '/purchase-orders') return 'po';
+  if (cleanPath === '/service' || cleanPath === '/service-tickets') return 'service';
+  if (cleanPath === '/sim' || cleanPath === '/sim-management') return 'sim';
+  if (cleanPath === '/branch-report' || cleanPath === '/all-branch-report') return 'branch_report';
+  if (cleanPath === '/backup') return 'backup';
+  if (cleanPath === '/settings') return 'settings';
+  return 'dashboard';
+};
+
+const tabToPath = (tab: TabType): string => {
+  switch (tab) {
+    case 'devices': return '/devices';
+    case 'po': return '/po';
+    case 'service': return '/service';
+    case 'sim': return '/sim';
+    case 'branch_report': return '/branch-report';
+    case 'backup': return '/backup';
+    case 'settings': return '/settings';
+    case 'dashboard':
+    default:
+      return '/dashboard';
+  }
+};
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    if (typeof window !== 'undefined') {
+      return pathToTab(window.location.pathname);
+    }
+    return 'dashboard';
+  });
   const [activeCategory, setActiveCategory] = useState<string>('Main Branch');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Sync activeTab with browser URL path
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const targetPath = tabToPath(activeTab);
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ tab: activeTab }, '', targetPath);
+      }
+    }
+  }, [activeTab]);
+
+  // Handle browser Back / Forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window !== 'undefined') {
+        const tab = pathToTab(window.location.pathname);
+        setActiveTab(tab);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Collections State
   const [devices, setDevices] = useState<Device[]>(initialDevices);
