@@ -25,6 +25,8 @@ import {
   deleteSupabaseSIM,
   fetchSupabaseCategoryGroups,
   saveSupabaseCategoryGroups,
+  fetchSupabaseSystemOptions,
+  saveSupabaseSystemOptions,
 } from './lib/supabase';
 
 import { Header } from './components/Header';
@@ -125,8 +127,17 @@ export default function App() {
   const [sims, setSims] = useState<SIMItem[]>(initialSIMs);
   const [categoryGroups, setCategoryGroups] =
     useState<CategoryGroup[]>(initialCategoryGroups);
-  const [systemOptions, setSystemOptions] =
-    useState<SystemOptions>(initialSystemOptions);
+  const [systemOptions, setSystemOptions] = useState<SystemOptions>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('systemOptions');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.warn('localStorage parse error', e);
+      }
+    }
+    return initialSystemOptions;
+  });
 
   // Modals Visibility State
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
@@ -173,12 +184,13 @@ export default function App() {
   // Load live data from Supabase on mount
   useEffect(() => {
     async function loadSupabaseData() {
-      const [dbDevices, dbTickets, dbPOs, dbSIMs, dbCategoryGroups] = await Promise.all([
+      const [dbDevices, dbTickets, dbPOs, dbSIMs, dbCategoryGroups, dbSystemOptions] = await Promise.all([
         fetchSupabaseDevices(),
         fetchSupabaseTickets(),
         fetchSupabasePOs(),
         fetchSupabaseSIMs(),
         fetchSupabaseCategoryGroups(),
+        fetchSupabaseSystemOptions(),
       ]);
 
       if (dbDevices && dbDevices.length > 0) {
@@ -195,6 +207,14 @@ export default function App() {
       }
       if (dbCategoryGroups && dbCategoryGroups.length > 0) {
         setCategoryGroups(dbCategoryGroups);
+      }
+      if (dbSystemOptions) {
+        setSystemOptions(dbSystemOptions);
+        try {
+          localStorage.setItem('systemOptions', JSON.stringify(dbSystemOptions));
+        } catch (e) {
+          console.warn('localStorage save error', e);
+        }
       }
     }
     loadSupabaseData();
@@ -461,7 +481,15 @@ export default function App() {
           setCategoryGroups(restored.categoryGroups);
           saveSupabaseCategoryGroups(restored.categoryGroups);
         }
-        if (restored.systemOptions) setSystemOptions(restored.systemOptions);
+        if (restored.systemOptions) {
+          setSystemOptions(restored.systemOptions);
+          saveSupabaseSystemOptions(restored.systemOptions);
+          try {
+            localStorage.setItem('systemOptions', JSON.stringify(restored.systemOptions));
+          } catch (e) {
+            console.warn('localStorage save error', e);
+          }
+        }
 
         showToast('Backup data restored successfully!');
       }

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup } from '../types';
+import { Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup, SystemOptions } from '../types';
+import { initialSystemOptions } from '../data/initialData';
 
 const env = (import.meta as any).env || {};
 
@@ -414,6 +415,77 @@ export async function saveSupabaseCategoryGroups(groups: CategoryGroup[]): Promi
     return true;
   } catch (err) {
     console.warn('Supabase saveCategoryGroups catch error:', err);
+    return false;
+  }
+}
+
+// -------------------------------------------------------------
+// SYSTEM OPTIONS
+// -------------------------------------------------------------
+export async function fetchSupabaseSystemOptions(): Promise<SystemOptions | null> {
+  try {
+    const { data, error } = await supabase
+      .from('system_options')
+      .select('*')
+      .eq('id', 'default')
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Supabase fetchSystemOptions warning:', error.message);
+      return null;
+    }
+
+    if (!data) return null;
+
+    if (data.options && typeof data.options === 'object') {
+      return { ...initialSystemOptions, ...data.options };
+    }
+
+    return {
+      deviceStatuses: Array.isArray(data.device_statuses) ? data.device_statuses : initialSystemOptions.deviceStatuses,
+      simOperators: Array.isArray(data.sim_operators) ? data.sim_operators : initialSystemOptions.simOperators,
+      accessTypes: Array.isArray(data.access_types) ? data.access_types : initialSystemOptions.accessTypes,
+      locationTypes: Array.isArray(data.location_types) ? data.location_types : initialSystemOptions.locationTypes,
+      issueTypes: Array.isArray(data.issue_types) ? data.issue_types : initialSystemOptions.issueTypes,
+      ticketPriorities: Array.isArray(data.ticket_priorities) ? data.ticket_priorities : initialSystemOptions.ticketPriorities,
+      ticketStatuses: Array.isArray(data.ticket_statuses) ? data.ticket_statuses : initialSystemOptions.ticketStatuses,
+      vendors: Array.isArray(data.vendors) ? data.vendors : initialSystemOptions.vendors,
+      poStatuses: Array.isArray(data.po_statuses) ? data.po_statuses : initialSystemOptions.poStatuses,
+      simStatuses: Array.isArray(data.sim_statuses) ? data.sim_statuses : initialSystemOptions.simStatuses,
+      technicians: Array.isArray(data.technicians) ? data.technicians : initialSystemOptions.technicians,
+    };
+  } catch (err) {
+    console.warn('Supabase fetchSystemOptions catch error:', err);
+    return null;
+  }
+}
+
+export async function saveSupabaseSystemOptions(options: SystemOptions): Promise<boolean> {
+  try {
+    const row = {
+      id: 'default',
+      device_statuses: options.deviceStatuses,
+      sim_operators: options.simOperators,
+      access_types: options.accessTypes,
+      location_types: options.locationTypes,
+      issue_types: options.issueTypes,
+      ticket_priorities: options.ticketPriorities,
+      ticket_statuses: options.ticketStatuses,
+      vendors: options.vendors,
+      po_statuses: options.poStatuses,
+      sim_statuses: options.simStatuses,
+      technicians: options.technicians,
+      options: options,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('system_options').upsert([row]);
+    if (error) {
+      console.warn('Supabase saveSystemOptions error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase saveSystemOptions catch error:', err);
     return false;
   }
 }

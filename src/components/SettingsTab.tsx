@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { CategoryGroup, SystemOptions } from '../types';
 import { ConfirmModal } from './Modals/ConfirmModal';
-import { saveSupabaseCategoryGroups } from '../lib/supabase';
+import { saveSupabaseCategoryGroups, saveSupabaseSystemOptions } from '../lib/supabase';
 
 interface SettingsTabProps {
   categoryGroups: CategoryGroup[];
@@ -188,10 +188,19 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       return;
     }
 
-    setSystemOptions((prev) => ({
-      ...prev,
-      [key]: [...prev[key], value],
-    }));
+    setSystemOptions((prev) => {
+      const updated = {
+        ...prev,
+        [key]: [...prev[key], value],
+      };
+      saveSupabaseSystemOptions(updated);
+      try {
+        localStorage.setItem('systemOptions', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save error', e);
+      }
+      return updated;
+    });
 
     setInputs((prev) => ({ ...prev, [key]: '' }));
     showToast(`Added "${value}" to system dropdown options!`);
@@ -203,10 +212,19 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       'Confirm Option Removal',
       `Are you sure you want to remove option "${valueToRemove}"?`,
       () => {
-        setSystemOptions((prev) => ({
-          ...prev,
-          [key]: prev[key].filter((item) => item !== valueToRemove),
-        }));
+        setSystemOptions((prev) => {
+          const updated = {
+            ...prev,
+            [key]: prev[key].filter((item) => item !== valueToRemove),
+          };
+          saveSupabaseSystemOptions(updated);
+          try {
+            localStorage.setItem('systemOptions', JSON.stringify(updated));
+          } catch (e) {
+            console.warn('localStorage save error', e);
+          }
+          return updated;
+        });
         showToast(`Removed "${valueToRemove}" from options.`);
       }
     );
