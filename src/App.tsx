@@ -47,6 +47,7 @@ import { EditDeviceModal } from './components/Modals/EditDeviceModal';
 import { NewTicketModal } from './components/Modals/NewTicketModal';
 import { EditTicketModal } from './components/Modals/EditTicketModal';
 import { AddPOModal } from './components/Modals/AddPOModal';
+import { EditPOModal } from './components/Modals/EditPOModal';
 import { AddSIMModal } from './components/Modals/AddSIMModal';
 import { EditSIMModal } from './components/Modals/EditSIMModal';
 import { ExcelUploadModal } from './components/Modals/ExcelUploadModal';
@@ -146,6 +147,7 @@ export default function App() {
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
   const [isAddPOOpen, setIsAddPOOpen] = useState(false);
+  const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
   const [isAddSIMOpen, setIsAddSIMOpen] = useState(false);
   const [editingSIM, setEditingSIM] = useState<SIMItem | null>(null);
   const [isExcelUploadOpen, setIsExcelUploadOpen] = useState(false);
@@ -404,6 +406,14 @@ export default function App() {
     showToast(`Purchase Order "${newPO.poNumber}" added successfully!`);
   };
 
+  const handleSaveEditedPO = (updatedPO: PurchaseOrder) => {
+    setPos((prev) =>
+      prev.map((p) => (p.id === updatedPO.id ? updatedPO : p))
+    );
+    insertSupabasePO(updatedPO);
+    showToast(`Purchase Order "${updatedPO.poNumber}" updated successfully!`);
+  };
+
   const handleDeletePO = (targetIdOrSl: any) => {
     const target = pos.find((p) => (p as any).id === targetIdOrSl || (p as any).sl === targetIdOrSl);
     const label = target ? `Purchase Order "${target.poNumber}"` : 'this purchase order';
@@ -588,6 +598,7 @@ export default function App() {
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               onOpenAddPOModal={() => setIsAddPOOpen(true)}
+              onOpenEditPOModal={(po) => setEditingPO(po)}
               onDeletePO={handleDeletePO}
             />
           )}
@@ -698,6 +709,14 @@ export default function App() {
         onClose={() => setIsAddPOOpen(false)}
         onSavePO={handleSaveNewPO}
         poCount={pos.length}
+      />
+
+      <EditPOModal
+        isOpen={Boolean(editingPO)}
+        po={editingPO}
+        systemOptions={systemOptions}
+        onClose={() => setEditingPO(null)}
+        onSavePO={handleSaveEditedPO}
       />
 
       <AddSIMModal

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cpu, Plus, FileSpreadsheet, Download, Upload, Edit, Trash2, Search, X } from 'lucide-react';
+import { Cpu, Plus, FileSpreadsheet, Upload, Edit, Trash2, Search, X } from 'lucide-react';
 import { Device } from '../types';
 import { Pagination } from './Pagination';
 import { downloadStyledExcel } from '../utils/excelExport';
@@ -122,47 +122,6 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
     });
   };
 
-  const handleDownloadSample = () => {
-    const sampleHeaders = [
-      'Status',
-      'SOL NO',
-      'Location',
-      'Device ID',
-      'SIM No',
-      'Operator',
-      'Floor',
-      'Placement',
-      'Access Type',
-      'BM',
-      'Price',
-      'District',
-      'Install Date',
-    ];
-    const sampleRow = [
-      'LIVE',
-      '9941',
-      'Gouripur Branch',
-      '300101',
-      '01708123884',
-      'GP',
-      '1st Floor',
-      'Main Vault Gate',
-      'ENTRY/EXIT',
-      '-',
-      '৳ 65,000',
-      'Mymensingh',
-      '2026-02-10',
-    ];
-
-    downloadStyledExcel({
-      title: `Sample Device Upload Template`,
-      subtitle: `Template format for Excel Batch Upload in MIS System`,
-      filename: `Device_Upload_Sample_Template.xls`,
-      headers: sampleHeaders,
-      data: [sampleRow],
-    });
-  };
-
   return (
     <div className="space-y-4">
       {/* Header bar */}
@@ -234,12 +193,6 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
             className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded transition shadow flex items-center gap-1 cursor-pointer"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" /> Export Excel
-          </button>
-          <button
-            onClick={handleDownloadSample}
-            className="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded transition cursor-pointer flex items-center gap-1"
-          >
-            <Download className="w-3.5 h-3.5" /> Sample Excel
           </button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Plus, Trash2, FileSpreadsheet, Search, X } from 'lucide-react';
+import { FileText, Plus, Trash2, Edit, FileSpreadsheet, Search, X } from 'lucide-react';
 import { PurchaseOrder } from '../types';
 import { Pagination } from './Pagination';
 import { downloadStyledExcel } from '../utils/excelExport';
@@ -9,6 +9,7 @@ interface POTabProps {
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
   onOpenAddPOModal: () => void;
+  onOpenEditPOModal?: (po: PurchaseOrder) => void;
   onDeletePO: (id: string) => void;
 }
 
@@ -17,6 +18,7 @@ export const POTab: React.FC<POTabProps> = ({
   searchQuery = '',
   onSearchChange,
   onOpenAddPOModal,
+  onOpenEditPOModal,
   onDeletePO,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -194,13 +196,24 @@ export const POTab: React.FC<POTabProps> = ({
                       )}
                     </td>
                     <td className="p-3 text-center">
-                      <button
-                        onClick={() => onDeletePO(po.id)}
-                        className="bg-rose-900/50 hover:bg-rose-800 text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer inline-flex items-center gap-1"
-                        title="Delete Purchase Order"
-                      >
-                        <Trash2 className="w-3 h-3" /> DELETE
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        {onOpenEditPOModal && (
+                          <button
+                            onClick={() => onOpenEditPOModal(po)}
+                            className="bg-indigo-900/50 hover:bg-indigo-800 text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1"
+                            title="Edit Purchase Order"
+                          >
+                            <Edit className="w-3 h-3" /> EDIT
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onDeletePO(po.id)}
+                          className="bg-rose-900/50 hover:bg-rose-800 text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1"
+                          title="Delete Purchase Order"
+                        >
+                          <Trash2 className="w-3 h-3" /> DELETE
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
