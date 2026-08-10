@@ -12,6 +12,7 @@ interface DevicesTabProps {
   onOpenAddDeviceModal: () => void;
   onOpenEditDeviceModal: (device: Device) => void;
   onDeleteDevice: (sl: number) => void;
+  onBulkDeleteDevices?: (sls: number[]) => void;
   onOpenExcelUploadModal?: () => void;
 }
 
@@ -23,16 +24,19 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
   onOpenAddDeviceModal,
   onOpenEditDeviceModal,
   onDeleteDevice,
+  onBulkDeleteDevices,
   onOpenExcelUploadModal,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [localSearch, setLocalSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'LIVE' | 'OFFLINE' | 'MAINTENANCE'>('ALL');
+  const [selectedSls, setSelectedSls] = useState<number[]>([]);
 
-  // Reset page when category, status filter or search query changes
+  // Reset page and selections when category, status filter or search query changes
   useEffect(() => {
     setCurrentPage(1);
+    setSelectedSls([]);
   }, [activeCategory, searchQuery, localSearch, statusFilter]);
 
   const effectiveSearch = localSearch.trim() || searchQuery.trim();
@@ -67,6 +71,42 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
   // Calculate paginated slice
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedDevices = filteredDevices.slice(startIndex, startIndex + itemsPerPage);
+
+  // Selected SLs filtered by devices currently visible in this category filter
+  const validSelectedSls = selectedSls.filter((sl) =>
+    filteredDevices.some((d) => d.sl === sl)
+  );
+
+  const isAllSelected =
+    filteredDevices.length > 0 &&
+    filteredDevices.every((d) => validSelectedSls.includes(d.sl));
+
+  const isSomeSelected =
+    filteredDevices.some((d) => validSelectedSls.includes(d.sl)) && !isAllSelected;
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedSls([]);
+    } else {
+      setSelectedSls(filteredDevices.map((d) => d.sl));
+    }
+  };
+
+  const handleSelectOne = (sl: number) => {
+    setSelectedSls((prev) =>
+      prev.includes(sl) ? prev.filter((id) => id !== sl) : [...prev, sl]
+    );
+  };
+
+  const handleBulkDelete = () => {
+    if (validSelectedSls.length === 0) return;
+    if (onBulkDeleteDevices) {
+      onBulkDeleteDevices(validSelectedSls);
+    } else {
+      validSelectedSls.forEach((sl) => onDeleteDevice(sl));
+    }
+    setSelectedSls([]);
+  };
 
   const handleExportExcel = () => {
     const headers = [
@@ -174,6 +214,16 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
             )}
           </div>
 
+          {validSelectedSls.length > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded transition shadow flex items-center gap-1 cursor-pointer font-bold animate-pulse"
+              title="Delete selected entries"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete Selected ({validSelectedSls.length})
+            </button>
+          )}
+
           <button
             onClick={onOpenAddDeviceModal}
             className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded transition shadow flex items-center gap-1 cursor-pointer"
@@ -203,6 +253,18 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
           <table className="w-full text-left text-xs border-collapse min-w-[1500px]">
             <thead className="bg-slate-950 text-slate-300 uppercase font-bold border-b border-slate-800 text-[10px]">
               <tr>
+                <th className="p-2.5 border-r border-slate-800 text-center w-10">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isSomeSelected;
+                    }}
+                    onChange={handleSelectAll}
+                    className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
+                    title="Select or deselect all items in this category"
+                  />
+                </th>
                 <th className="p-2.5 border-r border-slate-800">SL</th>
                 <th className="p-2.5 border-r border-slate-800">Status</th>
                 <th className="p-2.5 border-r border-slate-800 bg-indigo-950/50 text-indigo-300">
@@ -226,7 +288,7 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
               {filteredDevices.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={15}
+                    colSpan={16}
                     className="text-center p-4 text-slate-500 font-sans"
                   >
                     No devices found in {activeCategory}
@@ -235,6 +297,7 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
               ) : (
                 paginatedDevices.map((item, idx) => {
                   const globalIdx = startIndex + idx;
+                  const isSelected = validSelectedSls.includes(item.sl);
                   const statusBadge =
                     item.status === 'LIVE' ? (
                       <span className="bg-emerald-900/50 text-emerald-300 border border-emerald-700/50 px-2 py-0.5 rounded text-[10px]">
@@ -260,7 +323,22 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
                       : 'text-emerald-400';
 
                   return (
-                    <tr key={item.sl} className="hover:bg-slate-800/40">
+                    <tr
+                      key={item.sl}
+                      className={
+                        isSelected
+                          ? 'bg-indigo-950/40 hover:bg-indigo-900/50'
+                          : 'hover:bg-slate-800/40'
+                      }
+                    >
+                      <td className="p-2.5 border-r border-slate-800 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleSelectOne(item.sl)}
+                          className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
+                        />
+                      </td>
                       <td className="p-2.5 border-r border-slate-800 font-bold">
                         {globalIdx + 1}
                       </td>

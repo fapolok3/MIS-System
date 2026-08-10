@@ -136,6 +136,20 @@ export async function deleteSupabaseDevice(sl: number): Promise<boolean> {
   }
 }
 
+export async function bulkDeleteSupabaseDevices(sls: number[]): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('devices').delete().in('sl', sls);
+    if (error) {
+      console.warn('Supabase bulkDeleteDevices error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkDeleteDevices catch error:', err);
+    return false;
+  }
+}
+
 // -------------------------------------------------------------
 // TICKETS
 // -------------------------------------------------------------
@@ -233,6 +247,21 @@ export async function deleteSupabaseTicket(id: string | number): Promise<boolean
   }
 }
 
+export async function bulkDeleteSupabaseTickets(ids: (string | number)[]): Promise<boolean> {
+  try {
+    const stringIds = ids.map(String);
+    const { error } = await supabase.from('tickets').delete().in('id', stringIds);
+    if (error) {
+      console.warn('Supabase bulkDeleteTickets error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkDeleteTickets catch error:', err);
+    return false;
+  }
+}
+
 // -------------------------------------------------------------
 // PURCHASE ORDERS (PO)
 // -------------------------------------------------------------
@@ -304,6 +333,20 @@ export async function deleteSupabasePO(id: string): Promise<boolean> {
   }
 }
 
+export async function bulkDeleteSupabasePOs(ids: string[]): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('purchase_orders').delete().in('id', ids);
+    if (error) {
+      console.warn('Supabase bulkDeletePOs error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkDeletePOs catch error:', err);
+    return false;
+  }
+}
+
 // -------------------------------------------------------------
 // SIM INVENTORY
 // -------------------------------------------------------------
@@ -367,6 +410,20 @@ export async function deleteSupabaseSIM(id: string): Promise<boolean> {
     return true;
   } catch (err) {
     console.warn('Supabase deleteSIM catch error:', err);
+    return false;
+  }
+}
+
+export async function bulkDeleteSupabaseSIMs(ids: string[]): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('sim_inventory').delete().in('id', ids);
+    if (error) {
+      console.warn('Supabase bulkDeleteSIMs error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkDeleteSIMs catch error:', err);
     return false;
   }
 }

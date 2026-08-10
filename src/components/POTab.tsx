@@ -11,6 +11,7 @@ interface POTabProps {
   onOpenAddPOModal: () => void;
   onOpenEditPOModal?: (po: PurchaseOrder) => void;
   onDeletePO: (id: string) => void;
+  onBulkDeletePOs?: (ids: string[]) => void;
 }
 
 export const POTab: React.FC<POTabProps> = ({
@@ -20,10 +21,17 @@ export const POTab: React.FC<POTabProps> = ({
   onOpenAddPOModal,
   onOpenEditPOModal,
   onDeletePO,
+  onBulkDeletePOs,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [localSearch, setLocalSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedIds([]);
+  }, [searchQuery, localSearch]);
 
   const effectiveSearch = localSearch.trim() || searchQuery.trim();
 
@@ -45,6 +53,41 @@ export const POTab: React.FC<POTabProps> = ({
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedPOs = filteredPOs.slice(startIndex, startIndex + itemsPerPage);
+
+  const validSelectedIds = selectedIds.filter((id) =>
+    filteredPOs.some((p) => p.id === id)
+  );
+
+  const isAllSelected =
+    filteredPOs.length > 0 &&
+    filteredPOs.every((p) => validSelectedIds.includes(p.id));
+
+  const isSomeSelected =
+    filteredPOs.some((p) => validSelectedIds.includes(p.id)) && !isAllSelected;
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredPOs.map((p) => p.id));
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = () => {
+    if (validSelectedIds.length === 0) return;
+    if (onBulkDeletePOs) {
+      onBulkDeletePOs(validSelectedIds);
+    } else {
+      validSelectedIds.forEach((id) => onDeletePO(id));
+    }
+    setSelectedIds([]);
+  };
 
   const handleExportExcel = () => {
     const headers = [
@@ -114,6 +157,16 @@ export const POTab: React.FC<POTabProps> = ({
             )}
           </div>
 
+          {validSelectedIds.length > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded transition shadow flex items-center gap-1 cursor-pointer font-bold text-xs animate-pulse"
+              title="Delete selected purchase orders"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete Selected ({validSelectedIds.length})
+            </button>
+          )}
+
           <button
             onClick={handleExportExcel}
             className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1 cursor-pointer"
@@ -154,6 +207,18 @@ export const POTab: React.FC<POTabProps> = ({
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950 text-slate-300 uppercase font-bold border-b border-slate-800">
               <tr>
+                <th className="p-3 text-center w-10">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isSomeSelected;
+                    }}
+                    onChange={handleSelectAll}
+                    className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
+                    title="Select or deselect all purchase orders"
+                  />
+                </th>
                 <th className="p-3">PO Number</th>
                 <th className="p-3">Vendor</th>
                 <th className="p-3">Category</th>
@@ -167,14 +232,31 @@ export const POTab: React.FC<POTabProps> = ({
             <tbody className="divide-y divide-slate-800 font-mono text-slate-300">
               {pos.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-4 text-center text-slate-500 font-sans">
+                  <td colSpan={9} className="p-4 text-center text-slate-500 font-sans">
                     No Purchase Orders recorded.
                   </td>
                 </tr>
               ) : (
-                paginatedPOs.map((po) => (
-                  <tr key={po.id} className="hover:bg-slate-800/40">
-                    <td className="p-3 text-indigo-400 font-bold">{po.poNumber}</td>
+                paginatedPOs.map((po) => {
+                  const isSelected = validSelectedIds.includes(po.id);
+                  return (
+                    <tr
+                      key={po.id}
+                      className={
+                        isSelected
+                          ? 'bg-indigo-950/40 hover:bg-indigo-900/50'
+                          : 'hover:bg-slate-800/40'
+                      }
+                    >
+                      <td className="p-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleSelectOne(po.id)}
+                          className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
+                        />
+                      </td>
+                      <td className="p-3 text-indigo-400 font-bold">{po.poNumber}</td>
                     <td className="p-3 font-sans">{po.vendor}</td>
                     <td className="p-3 font-sans">{po.category}</td>
                     <td className="p-3">{po.qty} Devices</td>
@@ -216,7 +298,8 @@ export const POTab: React.FC<POTabProps> = ({
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

@@ -14,15 +14,19 @@ import {
   insertSupabaseDevice,
   bulkInsertSupabaseDevices,
   deleteSupabaseDevice,
+  bulkDeleteSupabaseDevices,
   fetchSupabaseTickets,
   insertSupabaseTicket,
   deleteSupabaseTicket,
+  bulkDeleteSupabaseTickets,
   fetchSupabasePOs,
   insertSupabasePO,
   deleteSupabasePO,
+  bulkDeleteSupabasePOs,
   fetchSupabaseSIMs,
   insertSupabaseSIM,
   deleteSupabaseSIM,
+  bulkDeleteSupabaseSIMs,
   fetchSupabaseCategoryGroups,
   saveSupabaseCategoryGroups,
   fetchSupabaseSystemOptions,
@@ -322,6 +326,19 @@ export default function App() {
     );
   };
 
+  const handleBulkDeleteDevices = (sls: number[]) => {
+    if (sls.length === 0) return;
+    askConfirmation(
+      'Confirm Multiple Devices Deletion',
+      `Are you sure you want to delete ${sls.length} selected device(s)? This operation cannot be undone.`,
+      () => {
+        setDevices((prev) => prev.filter((d) => !sls.includes(d.sl)));
+        bulkDeleteSupabaseDevices(sls);
+        showToast(`${sls.length} device(s) deleted successfully!`);
+      }
+    );
+  };
+
   const handleImportDevices = (newDevices: Device[]) => {
     const baseTime = Date.now();
     const formattedDevices: Device[] = newDevices.map((d, index) => ({
@@ -399,6 +416,19 @@ export default function App() {
     );
   };
 
+  const handleBulkDeleteTickets = (ticketIds: string[]) => {
+    if (ticketIds.length === 0) return;
+    askConfirmation(
+      'Confirm Multiple Tickets Deletion',
+      `Are you sure you want to delete ${ticketIds.length} selected ticket(s)? This operation cannot be undone.`,
+      () => {
+        setTickets((prev) => prev.filter((t) => !ticketIds.includes(t.id)));
+        bulkDeleteSupabaseTickets(ticketIds);
+        showToast(`${ticketIds.length} ticket(s) deleted successfully!`);
+      }
+    );
+  };
+
   // PO & SIM Handlers
   const handleSaveNewPO = (newPO: PurchaseOrder) => {
     setPos((prev) => [newPO, ...prev]);
@@ -429,6 +459,19 @@ export default function App() {
     );
   };
 
+  const handleBulkDeletePOs = (poIds: string[]) => {
+    if (poIds.length === 0) return;
+    askConfirmation(
+      'Confirm Multiple Purchase Orders Deletion',
+      `Are you sure you want to delete ${poIds.length} selected Purchase Order(s)? This operation cannot be undone.`,
+      () => {
+        setPos((prev) => prev.filter((p) => !poIds.includes((p as any).id) && !poIds.includes(String((p as any).sl))));
+        bulkDeleteSupabasePOs(poIds);
+        showToast(`${poIds.length} Purchase Order(s) deleted successfully!`);
+      }
+    );
+  };
+
   const handleSaveNewSIM = (newSIM: SIMItem) => {
     setSims((prev) => [newSIM, ...prev]);
     insertSupabaseSIM(newSIM);
@@ -454,6 +497,19 @@ export default function App() {
         setSims((prev) => prev.filter((s) => (s as any).id !== targetIdOrSl && (s as any).sl !== targetIdOrSl));
         deleteSupabaseSIM(String(targetIdOrSl));
         showToast('SIM Card deleted successfully!');
+      }
+    );
+  };
+
+  const handleBulkDeleteSIMs = (simIds: string[]) => {
+    if (simIds.length === 0) return;
+    askConfirmation(
+      'Confirm Multiple SIM Cards Deletion',
+      `Are you sure you want to delete ${simIds.length} selected SIM card(s)? This operation cannot be undone.`,
+      () => {
+        setSims((prev) => prev.filter((s) => !simIds.includes((s as any).id) && !simIds.includes(String((s as any).sl))));
+        bulkDeleteSupabaseSIMs(simIds);
+        showToast(`${simIds.length} SIM card(s) deleted successfully!`);
       }
     );
   };
@@ -588,6 +644,7 @@ export default function App() {
               onOpenAddDeviceModal={() => setIsAddDeviceOpen(true)}
               onOpenEditDeviceModal={(d) => setEditingDevice(d)}
               onDeleteDevice={handleDeleteDevice}
+              onBulkDeleteDevices={handleBulkDeleteDevices}
               onOpenExcelUploadModal={() => setIsExcelUploadOpen(true)}
             />
           )}
@@ -600,6 +657,7 @@ export default function App() {
               onOpenAddPOModal={() => setIsAddPOOpen(true)}
               onOpenEditPOModal={(po) => setEditingPO(po)}
               onDeletePO={handleDeletePO}
+              onBulkDeletePOs={handleBulkDeletePOs}
             />
           )}
 
@@ -611,6 +669,7 @@ export default function App() {
               onOpenNewTicketModal={() => setIsNewTicketOpen(true)}
               onOpenEditTicketModal={(t) => setEditingTicket(t)}
               onDeleteTicket={handleDeleteTicket}
+              onBulkDeleteTickets={handleBulkDeleteTickets}
             />
           )}
 
@@ -622,6 +681,7 @@ export default function App() {
               onOpenAddSIMModal={() => setIsAddSIMOpen(true)}
               onOpenEditSIMModal={(sim) => setEditingSIM(sim)}
               onDeleteSIM={handleDeleteSIM}
+              onBulkDeleteSIMs={handleBulkDeleteSIMs}
             />
           )}
 

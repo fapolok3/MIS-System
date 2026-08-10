@@ -11,6 +11,7 @@ interface SIMTabProps {
   onOpenAddSIMModal: () => void;
   onOpenEditSIMModal?: (sim: SIMItem) => void;
   onDeleteSIM: (id: string) => void;
+  onBulkDeleteSIMs?: (ids: string[]) => void;
 }
 
 export const SIMTab: React.FC<SIMTabProps> = ({
@@ -20,10 +21,17 @@ export const SIMTab: React.FC<SIMTabProps> = ({
   onOpenAddSIMModal,
   onOpenEditSIMModal,
   onDeleteSIM,
+  onBulkDeleteSIMs,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [localSearch, setLocalSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedIds([]);
+  }, [searchQuery, localSearch]);
 
   const effectiveSearch = localSearch.trim() || searchQuery.trim();
 
@@ -42,6 +50,41 @@ export const SIMTab: React.FC<SIMTabProps> = ({
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedSIMs = filteredSIMs.slice(startIndex, startIndex + itemsPerPage);
+
+  const validSelectedIds = selectedIds.filter((id) =>
+    filteredSIMs.some((s) => s.id === id)
+  );
+
+  const isAllSelected =
+    filteredSIMs.length > 0 &&
+    filteredSIMs.every((s) => validSelectedIds.includes(s.id));
+
+  const isSomeSelected =
+    filteredSIMs.some((s) => validSelectedIds.includes(s.id)) && !isAllSelected;
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredSIMs.map((s) => s.id));
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = () => {
+    if (validSelectedIds.length === 0) return;
+    if (onBulkDeleteSIMs) {
+      onBulkDeleteSIMs(validSelectedIds);
+    } else {
+      validSelectedIds.forEach((id) => onDeleteSIM(id));
+    }
+    setSelectedIds([]);
+  };
 
   const handleExportExcel = () => {
     const headers = ['SL', 'SIM Number', 'Operator', 'Assigned Device', 'Location', 'Status'];
@@ -99,6 +142,16 @@ export const SIMTab: React.FC<SIMTabProps> = ({
             )}
           </div>
 
+          {validSelectedIds.length > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded transition shadow flex items-center gap-1 cursor-pointer font-bold text-xs animate-pulse"
+              title="Delete selected SIM cards"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete Selected ({validSelectedIds.length})
+            </button>
+          )}
+
           <button
             onClick={handleExportExcel}
             className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1 cursor-pointer"
@@ -119,6 +172,18 @@ export const SIMTab: React.FC<SIMTabProps> = ({
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950 text-slate-300 uppercase font-bold border-b border-slate-800">
               <tr>
+                <th className="p-3 text-center w-10">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isSomeSelected;
+                    }}
+                    onChange={handleSelectAll}
+                    className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
+                    title="Select or deselect all SIM cards"
+                  />
+                </th>
                 <th className="p-3">SIM Number</th>
                 <th className="p-3">Operator</th>
                 <th className="p-3">Assigned Device</th>
@@ -130,14 +195,31 @@ export const SIMTab: React.FC<SIMTabProps> = ({
             <tbody className="divide-y divide-slate-800 font-mono text-slate-300">
               {sims.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-4 text-center text-slate-500 font-sans">
+                  <td colSpan={7} className="p-4 text-center text-slate-500 font-sans">
                     No SIM cards registered.
                   </td>
                 </tr>
               ) : (
-                paginatedSIMs.map((sim) => (
-                  <tr key={sim.id} className="hover:bg-slate-800/40">
-                    <td className="p-3 font-bold">{sim.simNumber}</td>
+                paginatedSIMs.map((sim) => {
+                  const isSelected = validSelectedIds.includes(sim.id);
+                  return (
+                    <tr
+                      key={sim.id}
+                      className={
+                        isSelected
+                          ? 'bg-indigo-950/40 hover:bg-indigo-900/50'
+                          : 'hover:bg-slate-800/40'
+                      }
+                    >
+                      <td className="p-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleSelectOne(sim.id)}
+                          className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
+                        />
+                      </td>
+                      <td className="p-3 font-bold">{sim.simNumber}</td>
                     <td className="p-3 font-sans font-bold text-blue-400">
                       {sim.operator}
                     </td>
@@ -173,7 +255,8 @@ export const SIMTab: React.FC<SIMTabProps> = ({
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

@@ -11,6 +11,7 @@ interface ServiceTabProps {
   onOpenNewTicketModal: () => void;
   onOpenEditTicketModal: (ticket: Ticket) => void;
   onDeleteTicket: (ticketId: string) => void;
+  onBulkDeleteTickets?: (ticketIds: string[]) => void;
 }
 
 export const ServiceTab: React.FC<ServiceTabProps> = ({
@@ -20,10 +21,17 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
   onOpenNewTicketModal,
   onOpenEditTicketModal,
   onDeleteTicket,
+  onBulkDeleteTickets,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [localSearch, setLocalSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedIds([]);
+  }, [searchQuery, localSearch]);
 
   const effectiveSearch = localSearch.trim() || searchQuery.trim();
 
@@ -44,6 +52,41 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedTickets = filteredTickets.slice(startIndex, startIndex + itemsPerPage);
+
+  const validSelectedIds = selectedIds.filter((id) =>
+    filteredTickets.some((t) => t.id === id)
+  );
+
+  const isAllSelected =
+    filteredTickets.length > 0 &&
+    filteredTickets.every((t) => validSelectedIds.includes(t.id));
+
+  const isSomeSelected =
+    filteredTickets.some((t) => validSelectedIds.includes(t.id)) && !isAllSelected;
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredTickets.map((t) => t.id));
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = () => {
+    if (validSelectedIds.length === 0) return;
+    if (onBulkDeleteTickets) {
+      onBulkDeleteTickets(validSelectedIds);
+    } else {
+      validSelectedIds.forEach((id) => onDeleteTicket(id));
+    }
+    setSelectedIds([]);
+  };
 
   const handleExportExcel = () => {
     const headers = [
@@ -147,6 +190,16 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
             )}
           </div>
 
+          {validSelectedIds.length > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded transition shadow flex items-center gap-1 cursor-pointer font-bold text-xs animate-pulse"
+              title="Delete selected service tickets"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete Selected ({validSelectedIds.length})
+            </button>
+          )}
+
           <button
             onClick={handleExportExcel}
             className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1 cursor-pointer"
@@ -167,6 +220,18 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
           <table className="w-full text-left text-xs border-collapse whitespace-nowrap">
             <thead className="bg-slate-950 text-slate-300 uppercase font-bold border-b border-slate-800 text-[10px]">
               <tr>
+                <th className="p-2.5 border-r border-slate-800 text-center w-10">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isSomeSelected;
+                    }}
+                    onChange={handleSelectAll}
+                    className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
+                    title="Select or deselect all service tickets"
+                  />
+                </th>
                 <th className="p-2.5 border-r border-slate-800">Issue Number</th>
                 <th className="p-2.5 border-r border-slate-800">Email Subject</th>
                 <th className="p-2.5 border-r border-slate-800">Email From</th>
@@ -213,7 +278,7 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
               {tickets.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={22}
+                    colSpan={23}
                     className="text-center p-4 text-slate-500 font-sans"
                   >
                     No service tickets found
@@ -221,6 +286,7 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
                 </tr>
               ) : (
                 paginatedTickets.map((t) => {
+                  const isSelected = validSelectedIds.includes(t.id);
                   const priorityBadge =
                     t.priority === 'CRITICAL' ? (
                       <span className="bg-rose-900/80 text-rose-200 border border-rose-600 px-2 py-0.5 rounded text-[10px] font-bold">
@@ -233,7 +299,22 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
                     );
 
                   return (
-                    <tr key={t.id} className="hover:bg-slate-800/40">
+                    <tr
+                      key={t.id}
+                      className={
+                        isSelected
+                          ? 'bg-indigo-950/40 hover:bg-indigo-900/50'
+                          : 'hover:bg-slate-800/40'
+                      }
+                    >
+                      <td className="p-2.5 border-r border-slate-800 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleSelectOne(t.id)}
+                          className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
+                        />
+                      </td>
                       <td className="p-2.5 border-r border-slate-800 text-indigo-400 font-bold">
                         {t.id}
                       </td>
