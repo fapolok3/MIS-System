@@ -108,6 +108,8 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
     setSelectedSls([]);
   };
 
+  const isHeadOffice = (activeCategory || '').trim().toLowerCase() === 'all head office units';
+
   const handleExportExcel = () => {
     const headers = [
       'SL',
@@ -121,9 +123,9 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
       'Floor',
       'Placement',
       'Access Type',
-      'BM',
+      isHeadOffice ? 'Department' : 'BM',
       'Price',
-      'District',
+      isHeadOffice ? 'Division' : 'District',
       'Install Date',
     ];
 
@@ -277,9 +279,13 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
                 <th className="p-2.5 border-r border-slate-800">Floor</th>
                 <th className="p-2.5 border-r border-slate-800">Placement</th>
                 <th className="p-2.5 border-r border-slate-800">Access Type</th>
-                <th className="p-2.5 border-r border-slate-800">BM</th>
+                <th className="p-2.5 border-r border-slate-800">
+                  {isHeadOffice ? 'Department' : 'BM'}
+                </th>
                 <th className="p-2.5 border-r border-slate-800">Price</th>
-                <th className="p-2.5 border-r border-slate-800">District</th>
+                <th className="p-2.5 border-r border-slate-800">
+                  {isHeadOffice ? 'Division' : 'District'}
+                </th>
                 <th className="p-2.5 border-r border-slate-800">Install Date</th>
                 <th className="p-2.5 text-center">Action</th>
               </tr>

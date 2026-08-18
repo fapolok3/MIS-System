@@ -48,6 +48,8 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
     }
   };
 
+  const isHeadOffice = (formData.category || '').trim().toLowerCase() === 'all head office units';
+
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-900 border border-slate-700 rounded-lg max-w-lg w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -185,11 +187,14 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
             </select>
           </div>
           <div>
-            <label className="block text-slate-400 mb-1">BM</label>
+            <label className="block text-slate-400 mb-1">
+              {isHeadOffice ? 'Department' : 'BM'}
+            </label>
             <input
               type="text"
               value={formData.bm}
               onChange={(e) => handleChange('bm', e.target.value)}
+              placeholder={isHeadOffice ? 'e.g. Finance / HR / ICT' : 'e.g. BM Name'}
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
             />
           </div>
@@ -203,11 +208,14 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
             />
           </div>
           <div>
-            <label className="block text-slate-400 mb-1">District</label>
+            <label className="block text-slate-400 mb-1">
+              {isHeadOffice ? 'Division' : 'District'}
+            </label>
             <input
               type="text"
               value={formData.district}
               onChange={(e) => handleChange('district', e.target.value)}
+              placeholder={isHeadOffice ? 'e.g. Operations / Retail' : 'e.g. Dhaka'}
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
             />
           </div>

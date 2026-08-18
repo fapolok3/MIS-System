@@ -92,9 +92,9 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
           const floorVal = findVal('Floor', 'Floor Level') || 'Ground Floor';
           const placementVal = findVal('Placement', 'Placement Area', 'Position') || 'Main Gate';
           const accessTypeVal = findVal('Access Type', 'Access') || 'ENTRY/EXIT';
-          const bmVal = findVal('BM', 'Branch Manager') || '-';
+          const bmVal = findVal('Department', 'Dept', 'BM', 'Branch Manager') || '-';
           const priceVal = findVal('Price', 'Device Price', 'Cost') || '৳ 65,000';
-          const districtVal = findVal('District', 'City', 'Region') || 'Dhaka';
+          const districtVal = findVal('Division', 'Div', 'District', 'City', 'Region') || 'Dhaka';
           const installDateVal = findVal('Install Date', 'Date', 'Installation Date') || new Date().toISOString().split('T')[0];
 
           return {
@@ -125,46 +125,83 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     reader.readAsBinaryString(uploadedFile);
   };
 
+  const isHeadOffice = (activeCategory || '').trim().toLowerCase() === 'all head office units';
+
   const handleDownloadSampleExcel = () => {
-    const sampleRows = [
-      {
-        Category: activeCategory || 'ACCESS CONTROL SYSTEM',
-        Status: 'LIVE',
-        'SOL NO': '9941',
-        'Location Name': 'Gouripur Branch',
-        'Device ID': '300101',
-        'SIM No': '01708123884',
-        Operator: 'GP',
-        Floor: '1st Floor',
-        Placement: 'Main Vault Gate',
-        'Access Type': 'ENTRY/EXIT',
-        BM: 'Mr. Karim',
-        Price: '৳ 65,000',
-        District: 'Mymensingh',
-        'Install Date': '2026-02-10',
-      },
-      {
-        Category: activeCategory || 'ACCESS CONTROL SYSTEM',
-        Status: 'LIVE',
-        'SOL NO': '9942',
-        'Location Name': 'Uttara Branch',
-        'Device ID': '300102',
-        'SIM No': '01819234567',
-        Operator: 'Robi',
-        Floor: 'Ground Floor',
-        Placement: 'Server Room Gate',
-        'Access Type': 'ENTRY ONLY',
-        BM: 'Mr. Rahman',
-        Price: '৳ 70,000',
-        District: 'Dhaka',
-        'Install Date': '2026-03-15',
-      },
-    ];
+    const sampleRows = isHeadOffice
+      ? [
+          {
+            Category: activeCategory || 'All Head Office Units',
+            Status: 'LIVE',
+            'SOL NO': 'HO-01',
+            'Location Name': 'Head Office Tower',
+            'Device ID': 'HO-300101',
+            'SIM No': '01708123884',
+            Operator: 'GP',
+            Floor: '8th Floor',
+            Placement: 'Server Room',
+            'Access Type': 'BIOMETRIC',
+            Department: 'Information Technology (IT)',
+            Price: '৳ 65,000',
+            Division: 'Operations & IT',
+            'Install Date': '2026-02-10',
+          },
+          {
+            Category: activeCategory || 'All Head Office Units',
+            Status: 'LIVE',
+            'SOL NO': 'HO-02',
+            'Location Name': 'Head Office Annex',
+            'Device ID': 'HO-300102',
+            'SIM No': '01819234567',
+            Operator: 'Robi',
+            Floor: '4th Floor',
+            Placement: 'HR Executive Entry',
+            'Access Type': 'FACE RECOGNITION',
+            Department: 'Human Resources (HR)',
+            Price: '৳ 70,000',
+            Division: 'Human Resource Division',
+            'Install Date': '2026-03-15',
+          },
+        ]
+      : [
+          {
+            Category: activeCategory || 'ACCESS CONTROL SYSTEM',
+            Status: 'LIVE',
+            'SOL NO': '9941',
+            'Location Name': 'Gouripur Branch',
+            'Device ID': '300101',
+            'SIM No': '01708123884',
+            Operator: 'GP',
+            Floor: '1st Floor',
+            Placement: 'Main Vault Gate',
+            'Access Type': 'ENTRY/EXIT',
+            BM: 'Mr. Karim',
+            Price: '৳ 65,000',
+            District: 'Mymensingh',
+            'Install Date': '2026-02-10',
+          },
+          {
+            Category: activeCategory || 'ACCESS CONTROL SYSTEM',
+            Status: 'LIVE',
+            'SOL NO': '9942',
+            'Location Name': 'Uttara Branch',
+            'Device ID': '300102',
+            'SIM No': '01819234567',
+            Operator: 'Robi',
+            Floor: 'Ground Floor',
+            Placement: 'Server Room Gate',
+            'Access Type': 'ENTRY ONLY',
+            BM: 'Mr. Rahman',
+            Price: '৳ 70,000',
+            District: 'Dhaka',
+            'Install Date': '2026-03-15',
+          },
+        ];
 
     const worksheet = XLSX.utils.json_to_sheet(sampleRows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Devices');
-    XLSX.writeFile(workbook, 'Device_MIS_Tree_Import_Template.xlsx');
+    XLSX.writeFile(workbook, `${activeCategory.replace(/\s+/g, '_')}_Import_Template.xlsx`);
   };
 
   const handleImportSubmit = () => {
@@ -274,7 +311,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
                   Click to browse or drag & drop Excel file (.xlsx, .xls, .csv)
                 </p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  Supports columns: Category, Status, SOL NO, Location Name, Device ID, SIM No, Operator, Floor, Placement, Access Type, BM, Price, District, Install Date
+                  Supports columns: Category, Status, SOL NO, Location Name, Device ID, SIM No, Operator, Floor, Placement, Access Type, {isHeadOffice ? 'Department' : 'BM'}, Price, {isHeadOffice ? 'Division' : 'District'}, Install Date
                 </p>
               </div>
             )}
@@ -312,7 +349,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
                       <th className="p-2 border-r border-slate-800">Status</th>
                       <th className="p-2 border-r border-slate-800">SIM No</th>
                       <th className="p-2 border-r border-slate-800">Operator</th>
-                      <th className="p-2">District</th>
+                      <th className="p-2">{isHeadOffice ? 'Division' : 'District'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800 text-slate-300 font-mono">
