@@ -144,7 +144,7 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
 
     downloadStyledExcel({
       title: 'Service Tickets & SLA Report',
-      subtitle: 'MIS Helpdesk Support & Maintenance Audit Log',
+      subtitle: 'Helpdesk Support & Maintenance Audit Log',
       filename: 'Service_Tickets_Report.xls',
       headers,
       data: rows,

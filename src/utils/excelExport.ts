@@ -1,23 +1,56 @@
 import * as XLSX from 'xlsx';
 
-interface ExportExcelOptions {
+export interface ExportExcelOptions {
   title: string;
   subtitle?: string;
+  systemName?: string;
   filename: string;
   headers: string[];
   data: (string | number | boolean | null | undefined)[][];
   summaryCards?: { label: string; value: string | number }[];
 }
 
+/**
+ * Retrieve the active system branding configured in Settings / localStorage
+ */
+export const getActiveSystemBranding = (): { appName: string; tagline: string } => {
+  let appName = 'BBL DM System';
+  let tagline = 'Enterprise Management Suite';
+
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('appSettings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.appName && typeof parsed.appName === 'string' && parsed.appName.trim()) {
+          appName = parsed.appName.trim();
+        }
+        if (parsed.tagline && typeof parsed.tagline === 'string' && parsed.tagline.trim()) {
+          tagline = parsed.tagline.trim();
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read appSettings for Excel export:', e);
+    }
+  }
+
+  return { appName, tagline };
+};
+
 export const downloadStyledExcel = ({
   title,
-  subtitle = 'MIS Management System Data Export',
+  subtitle,
+  systemName,
   filename,
   headers,
   data,
   summaryCards = [],
 }: ExportExcelOptions) => {
   const dateStr = new Date().toLocaleString();
+  const branding = getActiveSystemBranding();
+  
+  const currentBrandName = (systemName || branding.appName || 'BBL DM System').trim();
+  const currentSubtitle = subtitle || `${currentBrandName} Data Export`;
 
   // Construct styled HTML table format for rich Excel styling (fonts, colors, borders, badges)
   let html = `
@@ -49,12 +82,12 @@ export const downloadStyledExcel = ({
       <!-- TITLE BANNER -->
       <tr>
         <td colspan="${headers.length}" style="background-color: #0f172a; color: #ffffff; font-size: 14pt; font-weight: bold; text-align: left; padding: 10px 12px; border: 1px solid #0f172a;">
-          🏢 MIS MANAGEMENT SYSTEM &nbsp;|&nbsp; ${title.toUpperCase()}
+          🏢 ${currentBrandName.toUpperCase()} &nbsp;|&nbsp; ${title.toUpperCase()}
         </td>
       </tr>
       <tr>
         <td colspan="${headers.length}" style="background-color: #1e293b; color: #cbd5e1; font-size: 9.5pt; text-align: left; padding: 6px 12px; border: 1px solid #1e293b;">
-          ${subtitle} &nbsp;•&nbsp; Exported on: ${dateStr}
+          ${currentSubtitle} &nbsp;•&nbsp; Exported on: ${dateStr}
         </td>
       </tr>
       <tr><td colspan="${headers.length}" style="height: 10px; border: none;"></td></tr>

@@ -152,7 +152,7 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
 
     downloadStyledExcel({
       title: `${activeCategory} Devices Inventory`,
-      subtitle: `MIS Device Registry for ${activeCategory} Category`,
+      subtitle: `Device Registry for ${activeCategory} Category`,
       filename: `${activeCategory.replace(/\s+/g, '_')}_Devices_Report.xls`,
       headers,
       data: rows,

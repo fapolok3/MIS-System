@@ -522,13 +522,14 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
         {/* 2-Column Grid: Status & Issue Date */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold">
-              Status
+            <label className="text-slate-300 font-semibold flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Status</span>
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-semibold focus:outline-none focus:border-indigo-500 transition"
+              className="w-full h-[42px] bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold focus:outline-none focus:border-indigo-500 transition"
             >
               {statusOptions.map((st) => {
                 const icon =
@@ -553,7 +554,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
           </div>
 
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold flex items-center gap-1">
+            <label className="text-slate-300 font-semibold flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-white" />
               <span>Issue Log Date</span>
             </label>
@@ -561,7 +562,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition"
+              className="w-full h-[42px] bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition [color-scheme:dark]"
             />
           </div>
         </div>

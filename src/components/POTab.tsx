@@ -114,7 +114,7 @@ export const POTab: React.FC<POTabProps> = ({
 
     downloadStyledExcel({
       title: 'Purchase Orders (PO) Audit Report',
-      subtitle: 'MIS Procurement & Order Tracking Audit Log',
+      subtitle: 'Procurement & Order Tracking Audit Log',
       filename: 'Purchase_Orders_Report.xls',
       headers,
       data: rows,

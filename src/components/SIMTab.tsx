@@ -101,7 +101,7 @@ export const SIMTab: React.FC<SIMTabProps> = ({
 
     downloadStyledExcel({
       title: 'Cellular SIM Inventory & Assignment Report',
-      subtitle: 'MIS Cellular Connectivity Audit Report',
+      subtitle: 'Cellular Connectivity Audit Report',
       filename: 'SIM_Inventory_Report.xls',
       headers,
       data: rows,

@@ -391,7 +391,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
     downloadStyledExcel({
       title: 'Issue Tracker & Incident SLA Report',
-      subtitle: 'MIS Incident Management & Hardware Replacement Register',
+      subtitle: 'Incident Management & Hardware Replacement Register',
       filename: `Issue_Report_${new Date().toISOString().split('T')[0]}.xls`,
       headers,
       data: rows,
