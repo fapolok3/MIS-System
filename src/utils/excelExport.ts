@@ -11,6 +11,29 @@ export interface ExportExcelOptions {
 }
 
 /**
+ * Format 24-hour time string (HH:MM or HH:MM:SS) to 12-hour format with AM/PM (e.g. 02:30 PM)
+ */
+export const format12HourTime = (timeStr?: string | null): string => {
+  if (!timeStr || !timeStr.trim() || timeStr === '-') return '';
+  const trimmed = timeStr.trim();
+  if (/am|pm/i.test(trimmed)) return trimmed;
+
+  const parts = trimmed.split(':');
+  if (parts.length >= 2) {
+    const rawHours = parseInt(parts[0], 10);
+    const rawMinutes = parseInt(parts[1], 10);
+    if (!isNaN(rawHours) && !isNaN(rawMinutes)) {
+      const period = rawHours >= 12 ? 'PM' : 'AM';
+      const hours12 = rawHours % 12 === 0 ? 12 : rawHours % 12;
+      const paddedHours = String(hours12).padStart(2, '0');
+      const paddedMinutes = String(rawMinutes).padStart(2, '0');
+      return `${paddedHours}:${paddedMinutes} ${period}`;
+    }
+  }
+  return trimmed;
+};
+
+/**
  * Retrieve the active system branding configured in Settings / localStorage
  */
 export const getActiveSystemBranding = (): { appName: string; tagline: string } => {

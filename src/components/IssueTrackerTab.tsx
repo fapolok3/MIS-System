@@ -28,6 +28,7 @@ import {
   Device,
 } from '../types';
 import { ConfirmModal } from './Modals/ConfirmModal';
+import { format12HourTime } from '../utils/excelExport';
 
 interface IssueTrackerTabProps {
   issues: IssueTrackerItem[];
@@ -821,19 +822,24 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 <div>
                   <span className="text-[10px] text-slate-400 block">Client Reported:</span>
                   <span className="font-mono text-slate-200">
-                    {viewingIssue.clientReportingDate || 'N/A'} {viewingIssue.clientReportingTime}
+                    {viewingIssue.clientReportingDate || 'N/A'}{' '}
+                    {format12HourTime(viewingIssue.clientReportingTime)}
                   </span>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 block">Client Responded:</span>
                   <span className="font-mono text-slate-200">
-                    {viewingIssue.clientResponseDate ? `${viewingIssue.clientResponseDate} ${viewingIssue.clientResponseTime}` : 'Pending'}
+                    {viewingIssue.clientResponseDate
+                      ? `${viewingIssue.clientResponseDate} ${format12HourTime(viewingIssue.clientResponseTime)}`
+                      : 'Pending'}
                   </span>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 block">Resolution:</span>
                   <span className="font-mono text-slate-200">
-                    {viewingIssue.resolutionDate ? `${viewingIssue.resolutionDate} ${viewingIssue.resolutionTime}` : 'In Progress'}
+                    {viewingIssue.resolutionDate
+                      ? `${viewingIssue.resolutionDate} ${format12HourTime(viewingIssue.resolutionTime)}`
+                      : 'In Progress'}
                   </span>
                 </div>
               </div>

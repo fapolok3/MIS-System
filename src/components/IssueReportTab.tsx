@@ -40,7 +40,7 @@ import {
 } from '../types';
 import { ConfirmModal } from './Modals/ConfirmModal';
 import { Pagination } from './Pagination';
-import { downloadStyledExcel } from '../utils/excelExport';
+import { downloadStyledExcel, format12HourTime } from '../utils/excelExport';
 
 interface IssueReportTabProps {
   issues: IssueTrackerItem[];
@@ -370,11 +370,11 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
         i.status || 'OPEN',
         i.date || '-',
         i.clientReportingDate || '-',
-        i.clientReportingTime || '-',
+        format12HourTime(i.clientReportingTime) || '-',
         i.clientResponseDate || '-',
-        i.clientResponseTime || '-',
+        format12HourTime(i.clientResponseTime) || '-',
         i.resolutionDate || '-',
-        i.resolutionTime || '-',
+        format12HourTime(i.resolutionTime) || '-',
         responseTAT,
         resolutionTAT,
         (i.details || '').replace(/\n/g, ' '),
@@ -1028,8 +1028,8 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                               <div className="space-y-0.5">
                                 <span className="text-slate-200 block">{item.clientReportingDate}</span>
                                 {item.clientReportingTime && (
-                                  <span className="text-[10px] text-slate-400 block">
-                                    🕒 {item.clientReportingTime}
+                                  <span className="text-[10px] text-slate-400 block font-semibold">
+                                    🕒 {format12HourTime(item.clientReportingTime)}
                                   </span>
                                 )}
                               </div>
@@ -1044,8 +1044,8 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                               <div className="space-y-0.5">
                                 <span className="text-amber-300/90 block">{item.clientResponseDate}</span>
                                 {item.clientResponseTime && (
-                                  <span className="text-[10px] text-amber-400/70 block">
-                                    🕒 {item.clientResponseTime}
+                                  <span className="text-[10px] text-amber-400/80 block font-semibold">
+                                    🕒 {format12HourTime(item.clientResponseTime)}
                                   </span>
                                 )}
                               </div>
@@ -1060,8 +1060,8 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                               <div className="space-y-0.5">
                                 <span className="text-emerald-300 block">{item.resolutionDate}</span>
                                 {item.resolutionTime && (
-                                  <span className="text-[10px] text-emerald-400/70 block">
-                                    🕒 {item.resolutionTime}
+                                  <span className="text-[10px] text-emerald-400/80 block font-semibold">
+                                    🕒 {format12HourTime(item.resolutionTime)}
                                   </span>
                                 )}
                               </div>
@@ -1500,8 +1500,8 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                   <span className="font-mono text-white font-medium block">
                     {viewingIssue.clientReportingDate || 'N/A'}
                   </span>
-                  <span className="text-[10px] text-indigo-400 font-mono">
-                    Time: {viewingIssue.clientReportingTime || 'N/A'}
+                  <span className="text-[10px] text-indigo-400 font-mono font-semibold">
+                    Time: {format12HourTime(viewingIssue.clientReportingTime) || 'N/A'}
                   </span>
                 </div>
 
@@ -1510,8 +1510,8 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                   <span className="font-mono text-white font-medium block">
                     {viewingIssue.clientResponseDate || 'Pending'}
                   </span>
-                  <span className="text-[10px] text-amber-400 font-mono">
-                    Time: {viewingIssue.clientResponseTime || 'N/A'}
+                  <span className="text-[10px] text-amber-400 font-mono font-semibold">
+                    Time: {format12HourTime(viewingIssue.clientResponseTime) || 'N/A'}
                   </span>
                 </div>
 
@@ -1520,8 +1520,8 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                   <span className="font-mono text-white font-medium block">
                     {viewingIssue.resolutionDate || 'In Progress'}
                   </span>
-                  <span className="text-[10px] text-emerald-400 font-mono">
-                    Time: {viewingIssue.resolutionTime || 'N/A'}
+                  <span className="text-[10px] text-emerald-400 font-mono font-semibold">
+                    Time: {format12HourTime(viewingIssue.resolutionTime) || 'N/A'}
                   </span>
                 </div>
               </div>
