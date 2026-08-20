@@ -316,11 +316,10 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
     const headers = [
       'SL',
-      'Issue ID',
+      'Odoo Ticket ID',
       'Branch Name',
       'Issue Type',
       'Category',
-      'Odoo Ticket ID',
       'Priority',
       'Device Replace',
       'Old Device ID',
@@ -358,11 +357,10 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
       return [
         index + 1,
-        i.id || '-',
+        i.odooTicketId || '-',
         i.branchName || '-',
         i.issueType || '-',
         i.category || '-',
-        i.odooTicketId || '-',
         i.priority || 'MEDIUM',
         i.deviceReplace || 'NO',
         i.oldDeviceId || '-',
@@ -836,7 +834,6 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                         />
                       </th>
                       <th className="p-3 w-10 text-center font-bold">#</th>
-                      <th className="p-3 font-bold whitespace-nowrap">Incident ID</th>
                       <th className="p-3 font-bold whitespace-nowrap">Odoo Ticket ID</th>
                       <th className="p-3 font-bold whitespace-nowrap">Branch Name</th>
                       <th className="p-3 font-bold whitespace-nowrap">Specific Location</th>
@@ -896,14 +893,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                             {slNumber}
                           </td>
 
-                          {/* 3. Incident ID */}
-                          <td className="p-3 whitespace-nowrap">
-                            <span className="font-mono font-bold text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/80">
-                              {item.id}
-                            </span>
-                          </td>
-
-                          {/* 4. Odoo Ticket ID */}
+                          {/* 3. Odoo Ticket ID */}
                           <td className="p-3 whitespace-nowrap font-mono">
                             {item.odooTicketId ? (
                               <span className="text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/60">
