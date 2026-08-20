@@ -341,8 +341,8 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
           </span>
         </div>
 
-        {/* 4-Column Grid: Core Attributes */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+        {/* 3-Column Grid: Core Attributes */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           {/* 1. Branch Name */}
           <div className="space-y-1">
             <label className="text-slate-300 font-semibold flex items-center gap-1">
@@ -378,26 +378,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
             </select>
           </div>
 
-          {/* 3. Category */}
-          <div className="space-y-1">
-            <label className="text-slate-300 font-semibold flex items-center gap-1">
-              <Layers className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Category *</span>
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition"
-            >
-              {availableCategories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 4. Odoo Ticket ID */}
+          {/* 3. Odoo Ticket ID */}
           <div className="space-y-1">
             <label className="text-slate-300 font-semibold flex items-center gap-1">
               <FileText className="w-3.5 h-3.5 text-indigo-400" />

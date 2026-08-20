@@ -25,6 +25,13 @@ import {
   TrendingUp,
   Activity,
   Check,
+  ChevronDown,
+  ChevronRight,
+  MapPin,
+  Calendar,
+  MessageSquare,
+  Sparkles,
+  SlidersHorizontal,
 } from 'lucide-react';
 import {
   IssueTrackerItem,
@@ -76,6 +83,13 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
   const [viewingIssue, setViewingIssue] = useState<IssueTrackerItem | null>(null);
   const [editingIssue, setEditingIssue] = useState<IssueTrackerItem | null>(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [expandedDetailsIds, setExpandedDetailsIds] = useState<string[]>([]);
+
+  const toggleExpandDetails = (id: string) => {
+    setExpandedDetailsIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
@@ -791,7 +805,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
             </div>
           )}
 
-          {/* Issue Data Table */}
+          {/* Issue Data Table with ALL Fields Visible */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-md overflow-hidden">
             {filteredIssues.length === 0 ? (
               <div className="p-12 text-center text-slate-400 text-xs space-y-3">
@@ -807,10 +821,10 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full text-left text-xs border-collapse min-w-[2000px]">
                   <thead>
-                    <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 uppercase tracking-wider text-[10px]">
-                      <th className="p-3 w-8">
+                    <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 uppercase tracking-wider text-[10px] sticky top-0 z-10">
+                      <th className="p-3 w-8 text-center">
                         <input
                           type="checkbox"
                           checked={
@@ -821,19 +835,30 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                           className="rounded bg-slate-900 border-slate-700 text-indigo-600 cursor-pointer"
                         />
                       </th>
-                      <th className="p-3 font-bold">Issue & Odoo ID</th>
-                      <th className="p-3 font-bold">Branch & Location</th>
-                      <th className="p-3 font-bold">Issue Type & Category</th>
-                      <th className="p-3 font-bold">Priority</th>
-                      <th className="p-3 font-bold">Device Replace</th>
-                      <th className="p-3 font-bold">Assignee</th>
-                      <th className="p-3 font-bold">Status</th>
-                      <th className="p-3 font-bold">Reported Date & TAT</th>
-                      <th className="p-3 font-bold text-right">Actions</th>
+                      <th className="p-3 w-10 text-center font-bold">#</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Incident ID</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Odoo Ticket ID</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Branch Name</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Specific Location</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Issue Type</th>
+                      <th className="p-3 font-bold whitespace-nowrap text-center">Priority</th>
+                      <th className="p-3 font-bold whitespace-nowrap text-center">Device Swap</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Old Device ID</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Replacement Device ID</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Assigned Person</th>
+                      <th className="p-3 font-bold whitespace-nowrap text-center">Status</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Entry Date</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Client Reporting (Date & Time)</th>
+                      <th className="p-3 font-bold whitespace-nowrap">First Response (Date & Time)</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Resolution (Date & Time)</th>
+                      <th className="p-3 font-bold whitespace-nowrap text-center">Response TAT</th>
+                      <th className="p-3 font-bold whitespace-nowrap text-center">Resolution TAT</th>
+                      <th className="p-3 font-bold min-w-[250px]">Incident Details / Notes</th>
+                      <th className="p-3 font-bold text-right sticky right-0 bg-slate-950 shadow-l z-10">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/80">
-                    {paginatedIssues.map((item) => {
+                    {paginatedIssues.map((item, idx) => {
                       const responseTAT = calculateTAT(
                         item.clientReportingDate,
                         item.clientReportingTime,
@@ -846,15 +871,18 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                         item.resolutionDate,
                         item.resolutionTime
                       );
+                      const isExpanded = expandedDetailsIds.includes(item.id);
+                      const slNumber = (currentPage - 1) * itemsPerPage + idx + 1;
 
                       return (
                         <tr
                           key={item.id}
-                          className={`hover:bg-slate-800/50 transition ${
-                            selectedIds.includes(item.id) ? 'bg-indigo-950/20' : ''
+                          className={`hover:bg-slate-800/60 transition group ${
+                            selectedIds.includes(item.id) ? 'bg-indigo-950/30' : ''
                           }`}
                         >
-                          <td className="p-3">
+                          {/* 1. Checkbox */}
+                          <td className="p-3 text-center">
                             <input
                               type="checkbox"
                               checked={selectedIds.includes(item.id)}
@@ -862,69 +890,126 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                               className="rounded bg-slate-900 border-slate-700 text-indigo-600 cursor-pointer"
                             />
                           </td>
-                          <td className="p-3">
-                            <div className="font-mono font-bold text-indigo-400 flex items-center gap-1.5">
-                              <span>{item.id}</span>
-                            </div>
-                            {item.odooTicketId ? (
-                              <span className="text-[10px] text-emerald-400/90 font-mono block">
-                                Odoo: {item.odooTicketId}
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-slate-500 font-mono block">No Odoo ID</span>
-                            )}
+
+                          {/* 2. SL Number */}
+                          <td className="p-3 text-center text-slate-500 font-mono text-[11px]">
+                            {slNumber}
                           </td>
-                          <td className="p-3">
-                            <span className="font-semibold text-white block">{item.branchName}</span>
-                            {item.location && (
-                              <span className="text-[10px] text-slate-400 block truncate max-w-[150px]">
-                                {item.location}
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-3">
-                            <span className="text-slate-200 font-medium block">{item.issueType}</span>
-                            <span className="text-[10px] text-slate-400 block">{item.category}</span>
-                          </td>
-                          <td className="p-3">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                                item.priority === 'CRITICAL'
-                                  ? 'bg-rose-950/80 text-rose-300 border-rose-800'
-                                  : item.priority === 'HIGH'
-                                  ? 'bg-orange-950/80 text-orange-300 border-orange-800'
-                                  : item.priority === 'MEDIUM'
-                                  ? 'bg-amber-950/80 text-amber-300 border-amber-800'
-                                  : 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
-                              }`}
-                            >
-                              {item.priority}
+
+                          {/* 3. Incident ID */}
+                          <td className="p-3 whitespace-nowrap">
+                            <span className="font-mono font-bold text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/80">
+                              {item.id}
                             </span>
                           </td>
-                          <td className="p-3">
-                            {item.deviceReplace === 'YES' ? (
-                              <div className="space-y-0.5">
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800 flex items-center gap-1 w-max">
-                                  <Repeat className="w-3 h-3" /> Replaced
-                                </span>
-                                {item.replaceDeviceId && (
-                                  <span className="text-[9px] text-slate-400 font-mono block">
-                                    New: {item.replaceDeviceId}
-                                  </span>
-                                )}
-                              </div>
+
+                          {/* 4. Odoo Ticket ID */}
+                          <td className="p-3 whitespace-nowrap font-mono">
+                            {item.odooTicketId ? (
+                              <span className="text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/60">
+                                {item.odooTicketId}
+                              </span>
                             ) : (
-                              <span className="text-slate-500 text-[11px]">No Swap</span>
+                              <span className="text-slate-500">-</span>
                             )}
                           </td>
-                          <td className="p-3 text-slate-300">
-                            <span>{item.assignPerson || 'Unassigned'}</span>
+
+                          {/* 5. Branch Name */}
+                          <td className="p-3 whitespace-nowrap">
+                            <span className="font-semibold text-white">
+                              {item.branchName || '-'}
+                            </span>
                           </td>
-                          <td className="p-3">
+
+                          {/* 6. Specific Location */}
+                          <td className="p-3 whitespace-nowrap text-slate-300">
+                            {item.location ? (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                                <span>{item.location}</span>
+                              </span>
+                            ) : (
+                              <span className="text-slate-500">-</span>
+                            )}
+                          </td>
+
+                          {/* 7. Issue Type */}
+                          <td className="p-3 whitespace-nowrap">
+                            <span className="text-slate-200 font-medium bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+                              {item.issueType || '-'}
+                            </span>
+                          </td>
+
+                          {/* 8. Priority */}
+                          <td className="p-3 whitespace-nowrap text-center">
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border inline-block ${
+                                item.priority === 'CRITICAL'
+                                  ? 'bg-rose-950/90 text-rose-300 border-rose-800'
+                                  : item.priority === 'HIGH'
+                                  ? 'bg-orange-950/90 text-orange-300 border-orange-800'
+                                  : item.priority === 'MEDIUM'
+                                  ? 'bg-amber-950/90 text-amber-300 border-amber-800'
+                                  : 'bg-emerald-950/90 text-emerald-300 border-emerald-800'
+                              }`}
+                            >
+                              {item.priority || 'MEDIUM'}
+                            </span>
+                          </td>
+
+                          {/* 9. Device Swap */}
+                          <td className="p-3 whitespace-nowrap text-center">
+                            {item.deviceReplace === 'YES' ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800 inline-flex items-center gap-1">
+                                <Repeat className="w-3 h-3" /> Replaced
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800/60 text-slate-400 border border-slate-700">
+                                No Swap
+                              </span>
+                            )}
+                          </td>
+
+                          {/* 10. Old Device ID */}
+                          <td className="p-3 whitespace-nowrap font-mono text-slate-300">
+                            {item.oldDeviceId ? (
+                              <span className="bg-rose-950/30 text-rose-300 px-2 py-0.5 rounded border border-rose-900/60">
+                                {item.oldDeviceId}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500">-</span>
+                            )}
+                          </td>
+
+                          {/* 11. Replacement Device ID */}
+                          <td className="p-3 whitespace-nowrap font-mono text-slate-300">
+                            {item.replaceDeviceId ? (
+                              <span className="bg-emerald-950/30 text-emerald-300 px-2 py-0.5 rounded border border-emerald-900/60">
+                                {item.replaceDeviceId}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500">-</span>
+                            )}
+                          </td>
+
+                          {/* 12. Assigned Person */}
+                          <td className="p-3 whitespace-nowrap text-slate-200 font-medium">
+                            {item.assignPerson ? (
+                              <span className="flex items-center gap-1.5">
+                                <User className="w-3 h-3 text-indigo-400" />
+                                <span>{item.assignPerson}</span>
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 italic">Unassigned</span>
+                            )}
+                          </td>
+
+                          {/* 13. Status */}
+                          <td className="p-3 whitespace-nowrap text-center">
                             <select
                               value={item.status}
                               onChange={(e) => handleQuickStatusChange(item, e.target.value)}
-                              className={`text-[10px] font-bold px-2 py-1 rounded border cursor-pointer transition focus:outline-none ${
+                              className={`text-[10px] font-bold px-2 py-1 rounded-lg border cursor-pointer transition focus:outline-none ${
                                 item.status === 'RESOLVED' || item.status === 'CLOSED'
                                   ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
                                   : item.status === 'IN_PROGRESS'
@@ -941,28 +1026,126 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                               <option value="CLOSED">CLOSED</option>
                             </select>
                           </td>
-                          <td className="p-3">
-                            <span className="text-slate-300 font-mono block">{item.date}</span>
-                            <div className="space-y-0.5 mt-0.5">
-                              {responseTAT && (
-                                <span className="text-[10px] text-amber-400/90 block">
-                                  Resp TAT: <strong>{responseTAT}</strong>
-                                </span>
-                              )}
-                              {resolutionTAT && (
-                                <span className="text-[10px] text-emerald-400/90 block">
-                                  Res TAT: <strong>{resolutionTAT}</strong>
-                                </span>
-                              )}
-                            </div>
+
+                          {/* 14. Entry Date */}
+                          <td className="p-3 whitespace-nowrap font-mono text-slate-300">
+                            {item.date || '-'}
                           </td>
-                          <td className="p-3 text-right">
+
+                          {/* 15. Client Reporting (Date & Time) */}
+                          <td className="p-3 whitespace-nowrap font-mono">
+                            {item.clientReportingDate ? (
+                              <div className="space-y-0.5">
+                                <span className="text-slate-200 block">{item.clientReportingDate}</span>
+                                {item.clientReportingTime && (
+                                  <span className="text-[10px] text-slate-400 block">
+                                    🕒 {item.clientReportingTime}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-slate-500">-</span>
+                            )}
+                          </td>
+
+                          {/* 16. First Response (Date & Time) */}
+                          <td className="p-3 whitespace-nowrap font-mono">
+                            {item.clientResponseDate ? (
+                              <div className="space-y-0.5">
+                                <span className="text-amber-300/90 block">{item.clientResponseDate}</span>
+                                {item.clientResponseTime && (
+                                  <span className="text-[10px] text-amber-400/70 block">
+                                    🕒 {item.clientResponseTime}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-slate-500 italic text-[11px]">Pending Resp</span>
+                            )}
+                          </td>
+
+                          {/* 17. Resolution (Date & Time) */}
+                          <td className="p-3 whitespace-nowrap font-mono">
+                            {item.resolutionDate ? (
+                              <div className="space-y-0.5">
+                                <span className="text-emerald-300 block">{item.resolutionDate}</span>
+                                {item.resolutionTime && (
+                                  <span className="text-[10px] text-emerald-400/70 block">
+                                    🕒 {item.resolutionTime}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-slate-500 italic text-[11px]">In Progress</span>
+                            )}
+                          </td>
+
+                          {/* 18. Response TAT */}
+                          <td className="p-3 whitespace-nowrap text-center font-mono">
+                            {responseTAT ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800">
+                                {responseTAT}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 text-[10px]">-</span>
+                            )}
+                          </td>
+
+                          {/* 19. Resolution TAT */}
+                          <td className="p-3 whitespace-nowrap text-center font-mono">
+                            {resolutionTAT ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800">
+                                {resolutionTAT}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 text-[10px]">-</span>
+                            )}
+                          </td>
+
+                          {/* 20. Incident Details / Notes */}
+                          <td className="p-3 min-w-[250px] max-w-[380px]">
+                            {item.details ? (
+                              <div className="space-y-1">
+                                <div
+                                  className={`text-slate-300 text-[11px] leading-relaxed ${
+                                    isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'
+                                  }`}
+                                >
+                                  {item.details}
+                                </div>
+                                {item.details.length > 80 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExpandDetails(item.id)}
+                                    className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer flex items-center gap-0.5"
+                                  >
+                                    {isExpanded ? (
+                                      <>
+                                        <span>Show less</span>
+                                        <ChevronDown className="w-3 h-3 rotate-180" />
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span>Read full details</span>
+                                        <ChevronDown className="w-3 h-3" />
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-slate-500 italic text-[11px]">No notes</span>
+                            )}
+                          </td>
+
+                          {/* 21. Actions */}
+                          <td className="p-3 text-right sticky right-0 bg-slate-900 group-hover:bg-slate-800 transition shadow-l z-10">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => setViewingIssue(item)}
                                 className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded cursor-pointer transition"
-                                title="View Complete Report"
+                                title="View Complete Report Card"
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
