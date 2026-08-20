@@ -336,9 +336,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
               {editingId ? 'Edit Incident Details' : 'New Issue Registration'}
             </h2>
           </div>
-          <span className="text-[11px] text-slate-400">
-            * All fields are auto-synced with Cloud Database
-          </span>
         </div>
 
         {/* 3-Column Grid: Core Attributes */}
@@ -718,14 +715,12 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
         {/* Submit Actions */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
           <div className="text-[11px] text-slate-400">
-            {editingId ? (
+            {editingId && (
               <span className="text-amber-400 font-semibold">Updating existing incident: {editingId}</span>
-            ) : (
-              <span>Ready to submit new issue</span>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto">
             <button
               type="button"
               onClick={handleResetForm}
@@ -735,14 +730,17 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
               <span>Reset Form</span>
             </button>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-2 shadow-md"
-            >
-              <Check className="w-4 h-4" />
-              <span>{isSubmitting ? 'Saving...' : editingId ? 'Update Issue' : 'Submit Issue'}</span>
-            </button>
+            {/* Submit / Update button visible only after typing in Details & Incident Notes (or if editing) */}
+            {(details.trim().length > 0 || editingId) && (
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-2 shadow-md animate-in fade-in zoom-in-95 duration-200"
+              >
+                <Check className="w-4 h-4" />
+                <span>{isSubmitting ? 'Saving...' : editingId ? 'Update Issue' : 'Submit Issue'}</span>
+              </button>
+            )}
           </div>
         </div>
       </form>
