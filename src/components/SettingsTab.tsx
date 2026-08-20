@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Settings,
   FolderPlus,
@@ -21,6 +21,9 @@ import {
   Sparkles,
   Server,
   Box,
+  Filter,
+  Tag,
+  AlertCircle,
 } from 'lucide-react';
 import { CategoryGroup, SystemOptions, AppSettings } from '../types';
 import { ConfirmModal } from './Modals/ConfirmModal';
@@ -90,6 +93,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     simStatuses: '',
     technicians: '',
   });
+
+  // Filter tab for System Dropdown Options
+  const [optionFilterTab, setOptionFilterTab] = useState<'ALL' | 'ISSUE_TRACKER' | 'DEVICES' | 'PO'>('ALL');
 
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -402,13 +408,64 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     description: string;
     icon: React.ReactNode;
     badgeColor: string;
+    group: 'ISSUE_TRACKER' | 'DEVICES' | 'PO';
+    feedTag: string;
   }[] = [
+    // ISSUE TRACKER DROPDOWNS FIRST
+    {
+      key: 'issueTypes',
+      title: 'Issue Types',
+      description: 'Appears in Issue Tracker, Issue Reports & Service Ticket dropdowns',
+      icon: <AlertTriangle className="w-4 h-4 text-amber-400" />,
+      badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-800',
+      group: 'ISSUE_TRACKER',
+      feedTag: 'Feeds Issue Tracker Form & Reports',
+    },
+    {
+      key: 'ticketPriorities',
+      title: 'Priority Levels',
+      description: 'Appears in Issue Tracker, Issue Reports & Service Ticket priorities',
+      icon: <ShieldAlert className="w-4 h-4 text-rose-400" />,
+      badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-800',
+      group: 'ISSUE_TRACKER',
+      feedTag: 'Feeds Issue Tracker Priority',
+    },
+    {
+      key: 'ticketStatuses',
+      title: 'Ticket / Issue Statuses',
+      description: 'Appears in Issue Tracker and Service Ticket status options',
+      icon: <CheckCircle2 className="w-4 h-4 text-blue-400" />,
+      badgeColor: 'bg-blue-950/80 text-blue-300 border-blue-800',
+      group: 'ISSUE_TRACKER',
+      feedTag: 'Feeds Issue Tracker Status',
+    },
+    {
+      key: 'technicians',
+      title: 'Assign Person / Technicians',
+      description: 'Appears in Issue Tracker, Issue Reports & Service Ticket assignee dropdowns',
+      icon: <Users className="w-4 h-4 text-orange-400" />,
+      badgeColor: 'bg-orange-950/80 text-orange-300 border-orange-800',
+      group: 'ISSUE_TRACKER',
+      feedTag: 'Feeds Assign Person Dropdown',
+    },
+    {
+      key: 'locationTypes',
+      title: 'Location & Branch Types',
+      description: 'Appears in Service Tickets & Location categories',
+      icon: <Building className="w-4 h-4 text-purple-400" />,
+      badgeColor: 'bg-purple-950/80 text-purple-300 border-purple-800',
+      group: 'ISSUE_TRACKER',
+      feedTag: 'Feeds Location Categories',
+    },
+    // DEVICES & SIM DROPDOWNS
     {
       key: 'deviceStatuses',
       title: 'Device Status Options',
       description: 'Appears in Device add/edit status dropdowns',
       icon: <Cpu className="w-4 h-4 text-emerald-400" />,
       badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-800',
+      group: 'DEVICES',
+      feedTag: 'Feeds Device Inventory',
     },
     {
       key: 'accessTypes',
@@ -416,6 +473,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       description: 'Appears in Device access type configuration',
       icon: <Layers className="w-4 h-4 text-indigo-400" />,
       badgeColor: 'bg-indigo-950/80 text-indigo-300 border-indigo-800',
+      group: 'DEVICES',
+      feedTag: 'Feeds Device Access Types',
     },
     {
       key: 'simOperators',
@@ -423,48 +482,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       description: 'Appears in Device and SIM Management operator dropdowns',
       icon: <Radio className="w-4 h-4 text-cyan-400" />,
       badgeColor: 'bg-cyan-950/80 text-cyan-300 border-cyan-800',
-    },
-    {
-      key: 'locationTypes',
-      title: 'Location & Branch Types',
-      description: 'Appears in Service Tickets location category dropdown',
-      icon: <Building className="w-4 h-4 text-purple-400" />,
-      badgeColor: 'bg-purple-950/80 text-purple-300 border-purple-800',
-    },
-    {
-      key: 'issueTypes',
-      title: 'Service Issue Types',
-      description: 'Appears in Service Ticket issue selection',
-      icon: <AlertTriangle className="w-4 h-4 text-amber-400" />,
-      badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-800',
-    },
-    {
-      key: 'ticketPriorities',
-      title: 'Ticket Priority Levels',
-      description: 'Appears in Service Ticket priority options',
-      icon: <ShieldAlert className="w-4 h-4 text-rose-400" />,
-      badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-800',
-    },
-    {
-      key: 'ticketStatuses',
-      title: 'Ticket Statuses',
-      description: 'Appears in Service Ticket status updates',
-      icon: <CheckCircle2 className="w-4 h-4 text-blue-400" />,
-      badgeColor: 'bg-blue-950/80 text-blue-300 border-blue-800',
-    },
-    {
-      key: 'vendors',
-      title: 'Vendors & Suppliers',
-      description: 'Appears in Purchase Order vendor selection',
-      icon: <ShoppingBag className="w-4 h-4 text-teal-400" />,
-      badgeColor: 'bg-teal-950/80 text-teal-300 border-teal-800',
-    },
-    {
-      key: 'poStatuses',
-      title: 'Purchase Order Statuses',
-      description: 'Appears in Purchase Order status dropdowns',
-      icon: <ListPlus className="w-4 h-4 text-emerald-400" />,
-      badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-800',
+      group: 'DEVICES',
+      feedTag: 'Feeds SIM Operators',
     },
     {
       key: 'simStatuses',
@@ -472,13 +491,27 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       description: 'Appears in SIM Inventory status dropdowns',
       icon: <Radio className="w-4 h-4 text-sky-400" />,
       badgeColor: 'bg-sky-950/80 text-sky-300 border-sky-800',
+      group: 'DEVICES',
+      feedTag: 'Feeds SIM Card Status',
+    },
+    // PO & VENDOR DROPDOWNS
+    {
+      key: 'vendors',
+      title: 'Vendors & Suppliers',
+      description: 'Appears in Purchase Order vendor selection',
+      icon: <ShoppingBag className="w-4 h-4 text-teal-400" />,
+      badgeColor: 'bg-teal-950/80 text-teal-300 border-teal-800',
+      group: 'PO',
+      feedTag: 'Feeds PO Vendors',
     },
     {
-      key: 'technicians',
-      title: 'Technicians & Engineers',
-      description: 'Appears in Service Ticket technician assignment',
-      icon: <Users className="w-4 h-4 text-orange-400" />,
-      badgeColor: 'bg-orange-950/80 text-orange-300 border-orange-800',
+      key: 'poStatuses',
+      title: 'Purchase Order Statuses',
+      description: 'Appears in Purchase Order status dropdowns',
+      icon: <ListPlus className="w-4 h-4 text-emerald-400" />,
+      badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-800',
+      group: 'PO',
+      feedTag: 'Feeds PO Statuses',
     },
   ];
 
@@ -952,110 +985,194 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
       {/* SECTION 2: SYSTEM DROPDOWN OPTIONS MANAGER */}
       <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-6 shadow-md">
-        <div className="border-b border-slate-800/80 pb-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Sliders className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-              System Dropdown Options Configurator
-            </h3>
+        <div className="border-b border-slate-800/80 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-lg">
+              <Sliders className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                System Dropdown Options Configurator
+              </h3>
+              <p className="text-xs text-slate-400">
+                Configure dynamic dropdown options for all modules. Add custom options that immediately flow into forms!
+              </p>
+            </div>
           </div>
-          <span className="text-[11px] text-indigo-400 font-bold bg-indigo-950/80 px-2.5 py-1 rounded border border-indigo-800">
+          <span className="text-[11px] text-indigo-400 font-bold bg-indigo-950/80 px-3 py-1 rounded border border-indigo-800 self-start md:self-auto">
             Dynamic Form Options
           </span>
         </div>
 
-        <p className="text-xs text-slate-400">
-          Add or remove options for any dropdown in the system. Any newly added item here will automatically populate in forms across Devices, Service Tracker, POs, and SIM Management!
-        </p>
+        {/* Quick Filter Tabs */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-800/80 pb-3 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setOptionFilterTab('ALL')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
+              optionFilterTab === 'ALL'
+                ? 'bg-indigo-600 text-white font-bold shadow-sm'
+                : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
+            }`}
+          >
+            <Filter className="w-3.5 h-3.5" />
+            <span>All Dropdowns ({optionSections.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOptionFilterTab('ISSUE_TRACKER')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
+              optionFilterTab === 'ISSUE_TRACKER'
+                ? 'bg-rose-600 text-white font-bold shadow-sm ring-2 ring-rose-400/40'
+                : 'bg-slate-900 text-rose-300 hover:text-white hover:bg-slate-800 border border-rose-900/60'
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <span>Issue Tracker & Service Desk ({optionSections.filter((s) => s.group === 'ISSUE_TRACKER').length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOptionFilterTab('DEVICES')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
+              optionFilterTab === 'DEVICES'
+                ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                : 'bg-slate-900 text-emerald-300 hover:text-white hover:bg-slate-800 border border-emerald-900/60'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Devices & SIM ({optionSections.filter((s) => s.group === 'DEVICES').length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOptionFilterTab('PO')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
+              optionFilterTab === 'PO'
+                ? 'bg-teal-600 text-white font-bold shadow-sm'
+                : 'bg-slate-900 text-teal-300 hover:text-white hover:bg-slate-800 border border-teal-900/60'
+            }`}
+          >
+            <ShoppingBag className="w-3.5 h-3.5 text-teal-400" />
+            <span>Procurement & PO ({optionSections.filter((s) => s.group === 'PO').length})</span>
+          </button>
+        </div>
+
+        {/* Issue Tracker Highlight Notice */}
+        {(optionFilterTab === 'ALL' || optionFilterTab === 'ISSUE_TRACKER') && (
+          <div className="bg-rose-950/30 border border-rose-800/60 rounded-xl p-4 flex items-start gap-3 text-xs">
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-bold text-rose-200">
+                Issue Tracker Dropdown Synchronization
+              </h4>
+              <p className="text-slate-300 leading-relaxed">
+                Options created or deleted below (<strong>Issue Types</strong>, <strong>Priority Levels</strong>, <strong>Issue Statuses</strong>, and <strong>Assign Person / Technicians</strong>) directly update the dropdown menus in the <strong>Issue Tracker</strong> and <strong>Issue Reports</strong> tabs. Category options are managed hierarchically in the Category Tree Manager above.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Options Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {optionSections.map((section) => {
-            const list = systemOptions[section.key] || [];
+          {optionSections
+            .filter((section) => optionFilterTab === 'ALL' || section.group === optionFilterTab)
+            .map((section) => {
+              const list = systemOptions[section.key] || [];
 
-            return (
-              <div
-                key={section.key}
-                className="bg-slate-900 border border-slate-800/90 rounded-xl p-4 flex flex-col justify-between space-y-4 hover:border-slate-700 transition"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2 border-b border-slate-800 pb-2">
-                    {section.icon}
-                    <div>
-                      <h4 className="text-xs font-bold text-white">
-                        {section.title}
-                      </h4>
-                      <p className="text-[10px] text-slate-400">
-                        {section.description}
-                      </p>
+              return (
+                <div
+                  key={section.key}
+                  className={`bg-slate-900 border rounded-xl p-4 flex flex-col justify-between space-y-4 transition ${
+                    section.group === 'ISSUE_TRACKER'
+                      ? 'border-rose-900/50 hover:border-rose-700/80'
+                      : 'border-slate-800/90 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-start justify-between border-b border-slate-800 pb-2.5 gap-2">
+                      <div className="flex items-center space-x-2">
+                        {section.icon}
+                        <div>
+                          <h4 className="text-xs font-bold text-white">
+                            {section.title}
+                          </h4>
+                          <p className="text-[10px] text-slate-400">
+                            {section.description}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-950 text-indigo-300 border border-slate-800 shrink-0">
+                        {section.feedTag}
+                      </span>
+                    </div>
+
+                    {/* Badges List */}
+                    <div className="flex flex-wrap gap-1.5 min-h-[60px] max-h-[120px] overflow-y-auto p-1.5 bg-slate-950/70 rounded-lg border border-slate-800/60">
+                      {list.length === 0 ? (
+                        <span className="text-[11px] text-slate-500 p-1">
+                          No options available.
+                        </span>
+                      ) : (
+                        list.map((item) => (
+                          <span
+                            key={item}
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${section.badgeColor}`}
+                          >
+                            {item}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleRemoveOption(section.key, item);
+                              }}
+                              className="p-0.5 hover:bg-rose-900/80 text-slate-300 hover:text-rose-200 rounded transition cursor-pointer flex items-center justify-center ml-0.5"
+                              title={`Remove "${item}"`}
+                            >
+                              <Trash2 className="w-2.5 h-2.5" />
+                            </button>
+                          </span>
+                        ))
+                      )}
                     </div>
                   </div>
 
-                  {/* Badges List */}
-                  <div className="flex flex-wrap gap-1.5 min-h-[60px] max-h-[120px] overflow-y-auto p-1 bg-slate-950/60 rounded border border-slate-800/50">
-                    {list.length === 0 ? (
-                      <span className="text-[11px] text-slate-500 p-1">
-                        No options available.
-                      </span>
-                    ) : (
-                      list.map((item) => (
-                        <span
-                          key={item}
-                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${section.badgeColor}`}
-                        >
-                          {item}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleRemoveOption(section.key, item);
-                            }}
-                            className="p-0.5 hover:bg-rose-900/80 text-slate-300 hover:text-rose-200 rounded transition cursor-pointer flex items-center justify-center ml-0.5"
-                            title={`Remove "${item}"`}
-                          >
-                            <Trash2 className="w-2.5 h-2.5" />
-                          </button>
-                        </span>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Add Option Form */}
-                <div className="pt-2 border-t border-slate-800">
-                  <div className="flex gap-1.5">
-                    <input
-                      type="text"
-                      value={inputs[section.key] || ''}
-                      onChange={(e) =>
-                        setInputs((prev) => ({
-                          ...prev,
-                          [section.key]: e.target.value,
-                        }))
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddOption(section.key);
+                  {/* Add Option Form */}
+                  <div className="pt-2 border-t border-slate-800">
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={inputs[section.key] || ''}
+                        onChange={(e) =>
+                          setInputs((prev) => ({
+                            ...prev,
+                            [section.key]: e.target.value,
+                          }))
                         }
-                      }}
-                      placeholder="Add new option..."
-                      className="flex-1 bg-slate-950 border border-slate-700/80 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleAddOption(section.key)}
-                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded text-xs cursor-pointer flex items-center justify-center transition"
-                      title="Add option"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddOption(section.key);
+                          }
+                        }}
+                        placeholder={`Add new ${section.title.toLowerCase()}...`}
+                        className="flex-1 bg-slate-950 border border-slate-700/80 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddOption(section.key)}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded text-xs cursor-pointer flex items-center justify-center transition"
+                        title="Add option"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </div>
 

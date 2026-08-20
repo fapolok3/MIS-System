@@ -1,10 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { TabType, Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup, SystemOptions, AppSettings } from './types';
+import {
+  TabType,
+  Device,
+  Ticket,
+  PurchaseOrder,
+  SIMItem,
+  CategoryGroup,
+  SystemOptions,
+  AppSettings,
+  IssueTrackerItem,
+} from './types';
 import {
   initialDevices,
   initialTickets,
   initialPOs,
   initialSIMs,
+  initialIssues,
   initialCategoryGroups,
   initialSystemOptions,
 } from './data/initialData';
@@ -33,12 +44,19 @@ import {
   saveSupabaseSystemOptions,
   fetchSupabaseAppSettings,
   saveSupabaseAppSettings,
+  fetchSupabaseIssues,
+  insertSupabaseIssue,
+  deleteSupabaseIssue,
+  bulkInsertSupabaseIssues,
+  bulkDeleteSupabaseIssues,
   defaultAppSettings,
 } from './lib/supabase';
 
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { DashboardTab } from './components/DashboardTab';
+import { IssueTrackerTab } from './components/IssueTrackerTab';
+import { IssueReportTab } from './components/IssueReportTab';
 import { DevicesTab } from './components/DevicesTab';
 import { POTab } from './components/POTab';
 import { ServiceTab } from './components/ServiceTab';
@@ -63,6 +81,8 @@ import { Toast, ToastData } from './components/Toast';
 
 const pathToTab = (path: string): TabType => {
   const cleanPath = path.toLowerCase().replace(/\/$/, '') || '/';
+  if (cleanPath === '/issue-tracker' || cleanPath === '/tracker' || cleanPath === '/issues') return 'issue_tracker';
+  if (cleanPath === '/issue-report' || cleanPath === '/issue-analytics' || cleanPath === '/reports') return 'issue_report';
   if (cleanPath === '/devices') return 'devices';
   if (cleanPath === '/po' || cleanPath === '/purchase-orders') return 'po';
   if (cleanPath === '/service' || cleanPath === '/service-tickets') return 'service';
@@ -75,6 +95,8 @@ const pathToTab = (path: string): TabType => {
 
 const tabToPath = (tab: TabType): string => {
   switch (tab) {
+    case 'issue_tracker': return '/issue-tracker';
+    case 'issue_report': return '/issue-report';
     case 'devices': return '/devices';
     case 'po': return '/po';
     case 'service': return '/service';
@@ -133,6 +155,23 @@ export default function App() {
   const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
   const [pos, setPos] = useState<PurchaseOrder[]>(initialPOs);
   const [sims, setSims] = useState<SIMItem[]>(initialSIMs);
+  const [issues, setIssues] = useState<IssueTrackerItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('issueTrackerData');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            const demoIds = new Set(['ISSUE-1001', 'ISSUE-1002', 'ISSUE-1003', 'ISSUE-1004']);
+            return parsed.filter((item: IssueTrackerItem) => !demoIds.has(item.id));
+          }
+        }
+      } catch (e) {
+        console.warn('localStorage parse error', e);
+      }
+    }
+    return initialIssues;
+  });
   const [categoryGroups, setCategoryGroups] =
     useState<CategoryGroup[]>(initialCategoryGroups);
   const [systemOptions, setSystemOptions] = useState<SystemOptions>(() => {
@@ -204,11 +243,21 @@ export default function App() {
   // Load live data from Supabase on mount
   useEffect(() => {
     async function loadSupabaseData() {
-      const [dbDevices, dbTickets, dbPOs, dbSIMs, dbCategoryGroups, dbSystemOptions, dbAppSettings] = await Promise.all([
+      const [
+        dbDevices,
+        dbTickets,
+        dbPOs,
+        dbSIMs,
+        dbIssues,
+        dbCategoryGroups,
+        dbSystemOptions,
+        dbAppSettings,
+      ] = await Promise.all([
         fetchSupabaseDevices(),
         fetchSupabaseTickets(),
         fetchSupabasePOs(),
         fetchSupabaseSIMs(),
+        fetchSupabaseIssues(),
         fetchSupabaseCategoryGroups(),
         fetchSupabaseSystemOptions(),
         fetchSupabaseAppSettings(),
@@ -225,6 +274,14 @@ export default function App() {
       }
       if (dbSIMs && dbSIMs.length > 0) {
         setSims(dbSIMs);
+      }
+      if (dbIssues && dbIssues.length > 0) {
+        setIssues(dbIssues);
+        try {
+          localStorage.setItem('issueTrackerData', JSON.stringify(dbIssues));
+        } catch (e) {
+          console.warn('localStorage save error', e);
+        }
       }
       if (dbCategoryGroups && dbCategoryGroups.length > 0) {
         setCategoryGroups(dbCategoryGroups);
@@ -708,12 +765,53 @@ export default function App() {
     );
   };
 
+  const handleSaveIssue = async (issue: IssueTrackerItem) => {
+    setIssues((prev) => {
+      const exists = prev.some((i) => i.id === issue.id);
+      const updated = exists ? prev.map((i) => (i.id === issue.id ? issue : i)) : [issue, ...prev];
+      try {
+        localStorage.setItem('issueTrackerData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save error', e);
+      }
+      return updated;
+    });
+    insertSupabaseIssue(issue);
+  };
+
+  const handleDeleteIssue = (id: string) => {
+    setIssues((prev) => {
+      const updated = prev.filter((i) => i.id !== id);
+      try {
+        localStorage.setItem('issueTrackerData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save error', e);
+      }
+      return updated;
+    });
+    deleteSupabaseIssue(id);
+  };
+
+  const handleBulkDeleteIssues = (ids: string[]) => {
+    setIssues((prev) => {
+      const updated = prev.filter((i) => !ids.includes(i.id));
+      try {
+        localStorage.setItem('issueTrackerData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save error', e);
+      }
+      return updated;
+    });
+    bulkDeleteSupabaseIssues(ids);
+  };
+
   // Backup Restore Handler
   const handleRestoreData = (restored: {
     devices: Device[];
     tickets: Ticket[];
     pos: PurchaseOrder[];
     sims: SIMItem[];
+    issues?: IssueTrackerItem[];
     categoryGroups: CategoryGroup[];
     systemOptions?: SystemOptions;
   }) => {
@@ -736,6 +834,15 @@ export default function App() {
         if (restored.sims) {
           setSims(restored.sims);
           restored.sims.forEach((s) => insertSupabaseSIM(s));
+        }
+        if (restored.issues) {
+          setIssues(restored.issues);
+          bulkInsertSupabaseIssues(restored.issues);
+          try {
+            localStorage.setItem('issueTrackerData', JSON.stringify(restored.issues));
+          } catch (e) {
+            console.warn('localStorage save error', e);
+          }
         }
         if (restored.categoryGroups) {
           setCategoryGroups(restored.categoryGroups);
@@ -838,6 +945,30 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'issue_tracker' && (
+            <IssueTrackerTab
+              issues={issues}
+              onSaveIssue={handleSaveIssue}
+              onDeleteIssue={handleDeleteIssue}
+              categoryGroups={categoryGroups}
+              systemOptions={systemOptions}
+              devices={devices}
+              onNavigateToReport={() => setActiveTab('issue_report')}
+            />
+          )}
+
+          {activeTab === 'issue_report' && (
+            <IssueReportTab
+              issues={issues}
+              onSaveIssue={handleSaveIssue}
+              onDeleteIssue={handleDeleteIssue}
+              onBulkDeleteIssues={handleBulkDeleteIssues}
+              categoryGroups={categoryGroups}
+              systemOptions={systemOptions}
+              onNavigateToTracker={() => setActiveTab('issue_tracker')}
+            />
+          )}
+
           {activeTab === 'devices' && (
             <DevicesTab
               activeCategory={activeCategory}
@@ -907,6 +1038,7 @@ export default function App() {
                 tickets,
                 pos,
                 sims,
+                issues,
                 categoryGroups,
                 systemOptions,
               }}

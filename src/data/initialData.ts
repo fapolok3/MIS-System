@@ -1,4 +1,4 @@
-import { Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup, SystemOptions } from '../types';
+import { Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup, SystemOptions, IssueTrackerItem } from '../types';
 
 export const initialDevices: Device[] = [];
 
@@ -7,6 +7,8 @@ export const initialTickets: Ticket[] = [];
 export const initialPOs: PurchaseOrder[] = [];
 
 export const initialSIMs: SIMItem[] = [];
+
+export const initialIssues: IssueTrackerItem[] = [];
 
 export const initialSystemOptions: SystemOptions = {
   deviceStatuses: ['LIVE', 'OFFLINE', 'MAINTENANCE'],

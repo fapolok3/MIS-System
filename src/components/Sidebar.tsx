@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import {
   PieChart,
+  AlertCircle,
+  FileBarChart2,
   FileText,
   Headphones,
   Smartphone,
@@ -104,6 +106,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
           >
             <PieChart className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setActiveTab('issue_tracker')}
+            title="Issue Tracker"
+            className={`p-2.5 rounded-lg flex items-center justify-center transition cursor-pointer ${
+              activeTab === 'issue_tracker'
+                ? 'bg-indigo-600/30 text-indigo-400 border border-indigo-500/40'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <AlertCircle className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setActiveTab('issue_report')}
+            title="Issue Report"
+            className={`p-2.5 rounded-lg flex items-center justify-center transition cursor-pointer ${
+              activeTab === 'issue_report'
+                ? 'bg-indigo-600/30 text-indigo-400 border border-indigo-500/40'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+            }`}
+          >
+            <FileBarChart2 className="w-5 h-5" />
           </button>
           <button
             onClick={() => setActiveTab('po')}
@@ -239,6 +263,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               <PieChart className="w-4 h-4" /> Dashboard
+            </button>
+            <button
+              onClick={() => setActiveTab('issue_tracker')}
+              className={`w-full text-left px-3 py-2 rounded flex items-center gap-2 transition cursor-pointer ${
+                activeTab === 'issue_tracker'
+                  ? 'bg-slate-900 text-indigo-400 font-bold border-l-2 border-indigo-500'
+                  : 'text-slate-300 hover:bg-slate-800'
+              }`}
+            >
+              <AlertCircle className="w-4 h-4 text-indigo-400" /> Issue Tracker
+            </button>
+            <button
+              onClick={() => setActiveTab('issue_report')}
+              className={`w-full text-left px-3 py-2 rounded flex items-center gap-2 transition cursor-pointer ${
+                activeTab === 'issue_report'
+                  ? 'bg-slate-900 text-indigo-400 font-bold border-l-2 border-indigo-500'
+                  : 'text-slate-300 hover:bg-slate-800'
+              }`}
+            >
+              <FileBarChart2 className="w-4 h-4 text-indigo-400" /> Issue Report
             </button>
             <button
               onClick={() => setActiveTab('po')}

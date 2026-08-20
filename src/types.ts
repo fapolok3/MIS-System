@@ -1,4 +1,39 @@
-export type TabType = 'dashboard' | 'devices' | 'po' | 'service' | 'sim' | 'branch_report' | 'backup' | 'settings';
+export type TabType =
+  | 'dashboard'
+  | 'issue_tracker'
+  | 'issue_report'
+  | 'devices'
+  | 'po'
+  | 'service'
+  | 'sim'
+  | 'branch_report'
+  | 'backup'
+  | 'settings';
+
+export interface IssueTrackerItem {
+  id: string;
+  branchName: string;
+  issueType: string;
+  category: string;
+  odooTicketId: string;
+  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | string;
+  deviceReplace: 'YES' | 'NO';
+  replaceDeviceId: string;
+  oldDeviceId: string;
+  location: string;
+  assignPerson: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'PENDING_CLIENT' | 'RESOLVED' | 'CLOSED' | string;
+  date: string;
+  clientReportingDate: string;
+  clientReportingTime: string;
+  clientResponseDate: string;
+  clientResponseTime: string;
+  resolutionDate: string;
+  resolutionTime: string;
+  details: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface SystemOptions {
   deviceStatuses: string[];

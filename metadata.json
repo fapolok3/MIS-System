@@ -1,6 +1,6 @@
 {
   "name": "BBL DM System",
-  "description": "BBL Device & Service Management System with PO, Service Tickets, SIM Inventory, and Category Tree",
+  "description": "BBL Device & Service Management System with Issue Tracker, Issue Reporting & Analytics, PO, Service Tickets, SIM Inventory, and Device MIS Tree",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

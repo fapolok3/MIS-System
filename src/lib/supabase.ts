@@ -1,5 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
-import { Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup, SystemOptions, AppSettings } from '../types';
+import {
+  Device,
+  Ticket,
+  PurchaseOrder,
+  SIMItem,
+  CategoryGroup,
+  SystemOptions,
+  AppSettings,
+  IssueTrackerItem,
+} from '../types';
 import { initialSystemOptions } from '../data/initialData';
 
 export const defaultAppSettings: AppSettings = {
@@ -682,6 +691,159 @@ export async function saveSupabaseAppSettings(settings: AppSettings): Promise<bo
     return true;
   } catch (err) {
     console.warn('Supabase saveAppSettings catch error:', err);
+    return false;
+  }
+}
+
+// -------------------------------------------------------------
+// ISSUE TRACKER & ISSUE REPORTS
+// -------------------------------------------------------------
+export async function fetchSupabaseIssues(): Promise<IssueTrackerItem[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('issues')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('Supabase fetchIssues warning:', error.message);
+      return null;
+    }
+
+    if (!data) return [];
+
+    return data.map((d: any) => ({
+      id: d.id || `ISSUE-${Date.now()}`,
+      branchName: d.branch_name || '',
+      issueType: d.issue_type || '',
+      category: d.category || '',
+      odooTicketId: d.odoo_ticket_id || '',
+      priority: d.priority || 'MEDIUM',
+      deviceReplace: d.device_replace === 'YES' || d.device_replace === true ? 'YES' : 'NO',
+      replaceDeviceId: d.replace_device_id || '',
+      oldDeviceId: d.old_device_id || '',
+      location: d.location || '',
+      assignPerson: d.assign_person || '',
+      status: d.status || 'OPEN',
+      date: d.date || '',
+      clientReportingDate: d.client_reporting_date || '',
+      clientReportingTime: d.client_reporting_time || '',
+      clientResponseDate: d.client_response_date || '',
+      clientResponseTime: d.client_response_time || '',
+      resolutionDate: d.resolution_date || '',
+      resolutionTime: d.resolution_time || '',
+      details: d.details || '',
+      createdAt: d.created_at || new Date().toISOString(),
+      updatedAt: d.updated_at || new Date().toISOString(),
+    }));
+  } catch (err) {
+    console.warn('Supabase fetchIssues catch error:', err);
+    return null;
+  }
+}
+
+export async function insertSupabaseIssue(issue: IssueTrackerItem): Promise<boolean> {
+  try {
+    const row = {
+      id: issue.id,
+      branch_name: issue.branchName,
+      issue_type: issue.issueType,
+      category: issue.category,
+      odoo_ticket_id: issue.odooTicketId,
+      priority: issue.priority,
+      device_replace: issue.deviceReplace,
+      replace_device_id: issue.replaceDeviceId,
+      old_device_id: issue.oldDeviceId,
+      location: issue.location,
+      assign_person: issue.assignPerson,
+      status: issue.status,
+      date: issue.date,
+      client_reporting_date: issue.clientReportingDate,
+      client_reporting_time: issue.clientReportingTime,
+      client_response_date: issue.clientResponseDate,
+      client_response_time: issue.clientResponseTime,
+      resolution_date: issue.resolutionDate,
+      resolution_time: issue.resolutionTime,
+      details: issue.details,
+      created_at: issue.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from('issues').upsert([row]);
+    if (error) {
+      console.warn('Supabase insertIssue error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase insertIssue catch error:', err);
+    return false;
+  }
+}
+
+export async function bulkInsertSupabaseIssues(issues: IssueTrackerItem[]): Promise<boolean> {
+  try {
+    const rows = issues.map((issue) => ({
+      id: issue.id,
+      branch_name: issue.branchName,
+      issue_type: issue.issueType,
+      category: issue.category,
+      odoo_ticket_id: issue.odooTicketId,
+      priority: issue.priority,
+      device_replace: issue.deviceReplace,
+      replace_device_id: issue.replaceDeviceId,
+      old_device_id: issue.oldDeviceId,
+      location: issue.location,
+      assign_person: issue.assignPerson,
+      status: issue.status,
+      date: issue.date,
+      client_reporting_date: issue.clientReportingDate,
+      client_reporting_time: issue.clientReportingTime,
+      client_response_date: issue.clientResponseDate,
+      client_response_time: issue.clientResponseTime,
+      resolution_date: issue.resolutionDate,
+      resolution_time: issue.resolutionTime,
+      details: issue.details,
+      created_at: issue.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabase.from('issues').upsert(rows);
+    if (error) {
+      console.warn('Supabase bulkInsertIssues error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkInsertIssues catch error:', err);
+    return false;
+  }
+}
+
+export async function deleteSupabaseIssue(issueId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('issues').delete().eq('id', issueId);
+    if (error) {
+      console.warn('Supabase deleteIssue error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase deleteIssue catch error:', err);
+    return false;
+  }
+}
+
+export async function bulkDeleteSupabaseIssues(issueIds: string[]): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('issues').delete().in('id', issueIds);
+    if (error) {
+      console.warn('Supabase bulkDeleteIssues error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkDeleteIssues catch error:', err);
     return false;
   }
 }
