@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Settings,
   FolderPlus,
@@ -15,17 +15,30 @@ import {
   Users,
   ShieldAlert,
   ShoppingBag,
+  Upload,
+  Image as ImageIcon,
+  RotateCcw,
+  Sparkles,
+  Server,
+  Box,
 } from 'lucide-react';
-import { CategoryGroup, SystemOptions } from '../types';
+import { CategoryGroup, SystemOptions, AppSettings } from '../types';
 import { ConfirmModal } from './Modals/ConfirmModal';
-import { saveSupabaseCategoryGroups, saveSupabaseSystemOptions } from '../lib/supabase';
+import {
+  saveSupabaseCategoryGroups,
+  saveSupabaseSystemOptions,
+  saveSupabaseAppSettings,
+  defaultAppSettings,
+} from '../lib/supabase';
 
 interface SettingsTabProps {
   categoryGroups: CategoryGroup[];
   setCategoryGroups: React.Dispatch<React.SetStateAction<CategoryGroup[]>>;
   systemOptions: SystemOptions;
   setSystemOptions: React.Dispatch<React.SetStateAction<SystemOptions>>;
-  onResetOptions: () => void;
+  appSettings?: AppSettings;
+  setAppSettings?: React.Dispatch<React.SetStateAction<AppSettings>>;
+  onResetOptions?: () => void;
 }
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({
@@ -33,8 +46,18 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   setCategoryGroups,
   systemOptions,
   setSystemOptions,
+  appSettings = defaultAppSettings,
+  setAppSettings,
   onResetOptions,
 }) => {
+  // Brand & Logo Form State
+  const [appNameInput, setAppNameInput] = useState(appSettings.appName || 'BBL DM System');
+  const [taglineInput, setTaglineInput] = useState(appSettings.tagline || 'Enterprise Management Suite');
+  const [logoInput, setLogoInput] = useState(appSettings.appLogo || '');
+  const [urlInputMode, setUrlInputMode] = useState(false);
+  const [isSavingBrand, setIsSavingBrand] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Category Group Form
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [newGroupIcon, setNewGroupIcon] = useState('branch');
@@ -87,6 +110,141 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       message,
       onConfirm,
     });
+  };
+
+  // Compress & Resize image to keep payload lightweight for Supabase & LocalStorage
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, SVG, WebP)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const imgUrl = event.target?.result as string;
+      if (!imgUrl) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/png', 0.9);
+          setLogoInput(compressedDataUrl);
+          showToast('Logo image loaded successfully! Click "Save Brand & Logo Settings" to apply.');
+        } else {
+          setLogoInput(imgUrl);
+        }
+      };
+      img.onerror = () => {
+        setLogoInput(imgUrl);
+      };
+      img.src = imgUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Save Brand & Logo settings
+  const handleSaveBrandSettings = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSavingBrand(true);
+
+    const updated: AppSettings = {
+      appName: appNameInput.trim() || 'BBL DM System',
+      appLogo: logoInput.trim(),
+      tagline: taglineInput.trim() || 'Enterprise Management Suite',
+    };
+
+    if (setAppSettings) {
+      setAppSettings(updated);
+    }
+
+    try {
+      localStorage.setItem('appSettings', JSON.stringify(updated));
+    } catch (err) {
+      console.warn('localStorage save appSettings error', err);
+    }
+
+    const saved = await saveSupabaseAppSettings(updated);
+    setIsSavingBrand(false);
+
+    if (saved) {
+      showToast('Brand settings & Logo saved to Supabase successfully!');
+    } else {
+      showToast('Brand settings saved locally! Ensure the app_settings table exists in Supabase.');
+    }
+  };
+
+  // Remove Logo
+  const handleRemoveLogo = () => {
+    askConfirmation(
+      'Remove System Logo',
+      'Are you sure you want to remove the custom logo? The default system icon will be displayed.',
+      () => {
+        setLogoInput('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        const updated: AppSettings = {
+          appName: appNameInput.trim() || 'BBL DM System',
+          appLogo: '',
+          tagline: taglineInput.trim() || 'Enterprise Management Suite',
+        };
+        if (setAppSettings) setAppSettings(updated);
+        try {
+          localStorage.setItem('appSettings', JSON.stringify(updated));
+        } catch (e) {
+          console.warn(e);
+        }
+        saveSupabaseAppSettings(updated);
+        showToast('Custom logo removed. Default icon restored.');
+      }
+    );
+  };
+
+  // Reset to default
+  const handleResetBrandDefaults = () => {
+    askConfirmation(
+      'Reset Branding to Defaults',
+      'Reset application name to "BBL DM System" and clear custom logo?',
+      () => {
+        setAppNameInput('BBL DM System');
+        setTaglineInput('Enterprise Management Suite');
+        setLogoInput('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        const updated = { ...defaultAppSettings };
+        if (setAppSettings) setAppSettings(updated);
+        try {
+          localStorage.setItem('appSettings', JSON.stringify(updated));
+        } catch (e) {
+          console.warn(e);
+        }
+        saveSupabaseAppSettings(updated);
+        showToast('Brand settings reset to defaults.');
+      }
+    );
   };
 
   // Add Category Group
@@ -334,11 +492,245 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </div>
           <div>
             <h2 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
-              System Settings & Dynamic Options
+              System Settings & Brand Configuration
             </h2>
             <p className="text-xs text-slate-400">
-              Manage MIS Device Categories, Sidebar Tree, and custom System Dropdown Options.
+              Manage System Logo, Brand Identity, MIS Tree Categories, and Custom System Dropdown Options.
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 0: BRAND IDENTITY & SYSTEM LOGO CONFIGURATION */}
+      <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-6 shadow-md">
+        <div className="border-b border-slate-800/80 pb-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-5 h-5 text-amber-400" />
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+              Brand Identity & Logo Configuration (BBL DM System)
+            </h3>
+          </div>
+          <span className="text-[11px] text-amber-400 font-bold bg-amber-950/80 px-2.5 py-1 rounded border border-amber-800">
+            Logo & Branding Sync
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs">
+          {/* Left Column: Form Controls */}
+          <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-lg p-5 space-y-5">
+            <form onSubmit={handleSaveBrandSettings} className="space-y-4">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  System / Application Name
+                </label>
+                <input
+                  type="text"
+                  value={appNameInput}
+                  onChange={(e) => setAppNameInput(e.target.value)}
+                  placeholder="e.g. BBL DM System"
+                  required
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-medium focus:outline-none focus:border-indigo-500 transition"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Appears in Header navigation, Login Modal, and window title bar.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  Tagline / Subtitle
+                </label>
+                <input
+                  type="text"
+                  value={taglineInput}
+                  onChange={(e) => setTaglineInput(e.target.value)}
+                  placeholder="e.g. Enterprise Management Suite"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition"
+                />
+              </div>
+
+              {/* Logo Upload / URL Switch */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-slate-300 font-semibold">
+                    System Logo
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setUrlInputMode(false)}
+                      className={`text-[11px] px-2 py-0.5 rounded transition cursor-pointer font-medium ${
+                        !urlInputMode
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      File Upload
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUrlInputMode(true)}
+                      className={`text-[11px] px-2 py-0.5 rounded transition cursor-pointer font-medium ${
+                        urlInputMode
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Image URL
+                    </button>
+                  </div>
+                </div>
+
+                {!urlInputMode ? (
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png, image/jpeg, image/svg+xml, image/webp"
+                      onChange={handleLogoFileUpload}
+                      className="hidden"
+                      id="logo-file-input"
+                    />
+                    <label
+                      htmlFor="logo-file-input"
+                      className="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-lg p-4 flex flex-col items-center justify-center gap-2 cursor-pointer bg-slate-950/60 hover:bg-slate-950 transition text-center"
+                    >
+                      <Upload className="w-6 h-6 text-indigo-400" />
+                      <div>
+                        <span className="text-indigo-400 font-semibold">
+                          Click to upload logo
+                        </span>{' '}
+                        <span className="text-slate-400">or drag and drop</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500">
+                        PNG, JPG, SVG, WebP (Square or Horizontal recommended)
+                      </span>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <input
+                      type="url"
+                      value={logoInput}
+                      onChange={(e) => setLogoInput(e.target.value)}
+                      placeholder="https://example.com/logo.png"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition"
+                    />
+                    <p className="text-[10px] text-slate-400">
+                      Enter a direct image link or Supabase Storage public URL.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="submit"
+                  disabled={isSavingBrand}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold rounded-lg cursor-pointer flex items-center gap-2 transition shadow-md"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>
+                    {isSavingBrand ? 'Saving to Supabase...' : 'Save Brand & Logo Settings'}
+                  </span>
+                </button>
+
+                {logoInput && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="px-3.5 py-2.5 bg-slate-800 hover:bg-rose-950/80 text-rose-300 border border-rose-900/60 rounded-lg cursor-pointer flex items-center gap-1.5 transition font-medium"
+                    title="Remove custom logo and restore default icon"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Remove Logo</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleResetBrandDefaults}
+                  className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg cursor-pointer flex items-center gap-1.5 transition font-medium"
+                  title="Reset all branding values to default"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Defaults</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Right Column: Live Previews */}
+          <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-lg p-5 space-y-4 flex flex-col justify-between">
+            <div>
+              <h4 className="font-bold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5 mb-3 text-indigo-400">
+                <ImageIcon className="w-4 h-4" />
+                Live Branding Previews
+              </h4>
+
+              <div className="space-y-4">
+                {/* 1. Header Preview */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                    1. Header Navigation Bar Preview:
+                  </span>
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 flex items-center justify-between shadow-inner">
+                    <div className="flex items-center space-x-2.5">
+                      {logoInput ? (
+                        <img
+                          src={logoInput}
+                          alt="Logo Preview"
+                          className="w-7 h-7 rounded-md object-contain bg-slate-900 border border-slate-700/80 p-0.5 shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <Box className="text-indigo-500 w-6 h-6 shrink-0" />
+                      )}
+                      <div>
+                        <span className="text-xs font-bold text-white tracking-wide block leading-tight">
+                          {appNameInput || 'BBL DM System'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded">
+                      Header Bar
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Login Card Preview */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                    2. Login Screen Card Preview:
+                  </span>
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-4 flex flex-col items-center text-center shadow-inner">
+                    {logoInput ? (
+                      <img
+                        src={logoInput}
+                        alt="Logo Preview"
+                        className="w-12 h-12 rounded-xl object-contain bg-slate-900 border border-slate-700/80 p-1 mb-2 shadow-sm"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center mb-2">
+                        <Server className="w-5 h-5" />
+                      </div>
+                    )}
+                    <span className="text-sm font-bold text-white leading-tight">
+                      {appNameInput || 'BBL DM System'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">
+                      {taglineInput || 'Enterprise Management Suite'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-900/60 text-[11px] text-indigo-200">
+              Logo is instantly reflected in the live interface and synced with Supabase!
+            </div>
           </div>
         </div>
       </div>

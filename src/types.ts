@@ -82,3 +82,9 @@ export interface CategoryGroup {
   icon: string; // 'branch' | 'security' | 'infra' | 'headoffice'
   items: string[];
 }
+
+export interface AppSettings {
+  appName: string;
+  appLogo: string; // base64 data URL or web image URL
+  tagline?: string;
+}

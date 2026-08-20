@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
-import { Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup, SystemOptions } from '../types';
+import { Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup, SystemOptions, AppSettings } from '../types';
 import { initialSystemOptions } from '../data/initialData';
+
+export const defaultAppSettings: AppSettings = {
+  appName: 'BBL DM System',
+  appLogo: '',
+  tagline: 'Enterprise Management Suite',
+};
 
 const env = (import.meta as any).env || {};
 
@@ -628,3 +634,55 @@ export async function addSupabaseUserCredential(
     return false;
   }
 }
+
+// -------------------------------------------------------------
+// APP SETTINGS & BRANDING (LOGO & SYSTEM NAME)
+// -------------------------------------------------------------
+export async function fetchSupabaseAppSettings(): Promise<AppSettings | null> {
+  try {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('*')
+      .eq('id', 'global')
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Supabase fetchAppSettings warning:', error.message);
+      return null;
+    }
+
+    if (!data) return null;
+
+    return {
+      appName: data.app_name || defaultAppSettings.appName,
+      appLogo: data.app_logo || '',
+      tagline: data.tagline || defaultAppSettings.tagline,
+    };
+  } catch (err) {
+    console.warn('Supabase fetchAppSettings catch error:', err);
+    return null;
+  }
+}
+
+export async function saveSupabaseAppSettings(settings: AppSettings): Promise<boolean> {
+  try {
+    const row = {
+      id: 'global',
+      app_name: settings.appName || defaultAppSettings.appName,
+      app_logo: settings.appLogo || '',
+      tagline: settings.tagline || defaultAppSettings.tagline,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from('app_settings').upsert([row]);
+    if (error) {
+      console.warn('Supabase saveAppSettings error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase saveAppSettings catch error:', err);
+    return false;
+  }
+}
+

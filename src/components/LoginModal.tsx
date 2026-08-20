@@ -4,9 +4,15 @@ import { verifySupabaseCredentials } from '../lib/supabase';
 
 interface LoginModalProps {
   onLoginSuccess: () => void;
+  appName?: string;
+  appLogo?: string;
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
+export const LoginModal: React.FC<LoginModalProps> = ({
+  onLoginSuccess,
+  appName = 'BBL DM System',
+  appLogo = '',
+}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -35,11 +41,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
     <div className="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-800 p-8 rounded-xl shadow-2xl max-w-md w-full">
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600/20 text-indigo-400 rounded-lg mb-3">
-            <Server className="w-6 h-6" />
-          </div>
+          {appLogo ? (
+            <div className="inline-flex items-center justify-center mb-3">
+              <img
+                src={appLogo}
+                alt={appName}
+                className="w-16 h-16 rounded-xl object-contain bg-slate-950 border border-slate-700/80 p-1.5 shadow-md"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          ) : (
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600/20 text-indigo-400 rounded-lg mb-3">
+              <Server className="w-6 h-6" />
+            </div>
+          )}
           <h2 className="text-xl font-bold text-white tracking-wide">
-            Device MIS System
+            {appName || 'BBL DM System'}
           </h2>
           <p className="text-xs text-slate-400 mt-1">
             Enterprise Management Suite

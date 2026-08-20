@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TabType, Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup, SystemOptions } from './types';
+import { TabType, Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup, SystemOptions, AppSettings } from './types';
 import {
   initialDevices,
   initialTickets,
@@ -31,6 +31,9 @@ import {
   saveSupabaseCategoryGroups,
   fetchSupabaseSystemOptions,
   saveSupabaseSystemOptions,
+  fetchSupabaseAppSettings,
+  saveSupabaseAppSettings,
+  defaultAppSettings,
 } from './lib/supabase';
 
 import { Header } from './components/Header';
@@ -143,6 +146,17 @@ export default function App() {
     }
     return initialSystemOptions;
   });
+  const [appSettings, setAppSettings] = useState<AppSettings>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('appSettings');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.warn('localStorage parse error', e);
+      }
+    }
+    return defaultAppSettings;
+  });
 
   // Modals Visibility State
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
@@ -190,13 +204,14 @@ export default function App() {
   // Load live data from Supabase on mount
   useEffect(() => {
     async function loadSupabaseData() {
-      const [dbDevices, dbTickets, dbPOs, dbSIMs, dbCategoryGroups, dbSystemOptions] = await Promise.all([
+      const [dbDevices, dbTickets, dbPOs, dbSIMs, dbCategoryGroups, dbSystemOptions, dbAppSettings] = await Promise.all([
         fetchSupabaseDevices(),
         fetchSupabaseTickets(),
         fetchSupabasePOs(),
         fetchSupabaseSIMs(),
         fetchSupabaseCategoryGroups(),
         fetchSupabaseSystemOptions(),
+        fetchSupabaseAppSettings(),
       ]);
 
       if (dbDevices && dbDevices.length > 0) {
@@ -218,6 +233,14 @@ export default function App() {
         setSystemOptions(dbSystemOptions);
         try {
           localStorage.setItem('systemOptions', JSON.stringify(dbSystemOptions));
+        } catch (e) {
+          console.warn('localStorage save error', e);
+        }
+      }
+      if (dbAppSettings) {
+        setAppSettings(dbAppSettings);
+        try {
+          localStorage.setItem('appSettings', JSON.stringify(dbAppSettings));
         } catch (e) {
           console.warn('localStorage save error', e);
         }
@@ -728,7 +751,13 @@ export default function App() {
   };
 
   if (!isLoggedIn) {
-    return <LoginModal onLoginSuccess={() => setIsLoggedIn(true)} />;
+    return (
+      <LoginModal
+        onLoginSuccess={() => setIsLoggedIn(true)}
+        appName={appSettings.appName}
+        appLogo={appSettings.appLogo}
+      />
+    );
   }
 
   return (
@@ -737,6 +766,8 @@ export default function App() {
       <Header
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        appName={appSettings.appName}
+        appLogo={appSettings.appLogo}
         devices={devices}
         tickets={tickets}
         pos={pos}
@@ -855,6 +886,8 @@ export default function App() {
               setCategoryGroups={setCategoryGroups}
               systemOptions={systemOptions}
               setSystemOptions={setSystemOptions}
+              appSettings={appSettings}
+              setAppSettings={setAppSettings}
             />
           )}
         </main>
@@ -903,6 +936,7 @@ export default function App() {
 
       <AddPOModal
         isOpen={isAddPOOpen}
+        categoryGroups={categoryGroups}
         systemOptions={systemOptions}
         onClose={() => setIsAddPOOpen(false)}
         onSavePO={handleSaveNewPO}
@@ -912,6 +946,7 @@ export default function App() {
       <EditPOModal
         isOpen={Boolean(editingPO)}
         po={editingPO}
+        categoryGroups={categoryGroups}
         systemOptions={systemOptions}
         onClose={() => setEditingPO(null)}
         onSavePO={handleSaveEditedPO}

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { PurchaseOrder, SystemOptions } from '../../types';
+import { PurchaseOrder, SystemOptions, CategoryGroup } from '../../types';
 
 interface EditPOModalProps {
   isOpen: boolean;
   po: PurchaseOrder | null;
+  categoryGroups?: CategoryGroup[];
   systemOptions: SystemOptions;
   onClose: () => void;
   onSavePO: (updatedPO: PurchaseOrder) => void;
@@ -12,6 +13,7 @@ interface EditPOModalProps {
 export const EditPOModal: React.FC<EditPOModalProps> = ({
   isOpen,
   po,
+  categoryGroups = [],
   systemOptions,
   onClose,
   onSavePO,
@@ -31,6 +33,8 @@ export const EditPOModal: React.FC<EditPOModalProps> = ({
     onSavePO(formData);
     onClose();
   };
+
+  const allCategoryItems = categoryGroups.flatMap((g) => g.items);
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
@@ -64,14 +68,42 @@ export const EditPOModal: React.FC<EditPOModalProps> = ({
             </select>
           </div>
           <div>
-            <label className="block text-slate-400 mb-1">Category</label>
-            <input
-              type="text"
+            <label className="block text-slate-400 mb-1">Category (Device MIS Tree)</label>
+            <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               required
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
-            />
+            >
+              {categoryGroups.length > 0 ? (
+                categoryGroups.map((group) => (
+                  <optgroup
+                    key={group.id}
+                    label={group.title}
+                    className="bg-slate-900 text-indigo-400 font-bold"
+                  >
+                    {group.items.map((item) => (
+                      <option
+                        key={item}
+                        value={item}
+                        className="bg-slate-800 text-slate-100 font-normal"
+                      >
+                        {item}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))
+              ) : (
+                <option value={formData.category}>{formData.category}</option>
+              )}
+              {formData.category && !allCategoryItems.includes(formData.category) && (
+                <optgroup label="Current" className="bg-slate-900 text-slate-400">
+                  <option value={formData.category} className="bg-slate-800 text-white">
+                    {formData.category}
+                  </option>
+                </optgroup>
+              )}
+            </select>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>

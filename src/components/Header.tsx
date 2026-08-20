@@ -16,6 +16,8 @@ import { Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup } from '../types'
 interface HeaderProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  appName?: string;
+  appLogo?: string;
   devices?: Device[];
   tickets?: Ticket[];
   pos?: PurchaseOrder[];
@@ -31,6 +33,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   setSearchQuery,
+  appName = 'BBL DM System',
+  appLogo = '',
   devices = [],
   tickets = [],
   pos = [],
@@ -151,10 +155,19 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="bg-slate-950 border-b border-slate-800 px-4 md:px-6 py-3 flex justify-between items-center sticky top-0 z-50 shrink-0 w-full">
       <div className="flex items-center space-x-3">
-        <Box className="text-indigo-500 w-7 h-7" />
+        {appLogo ? (
+          <img
+            src={appLogo}
+            alt={appName}
+            className="w-8 h-8 rounded-lg object-contain bg-slate-900 border border-slate-700/80 p-0.5 shadow-sm shrink-0"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <Box className="text-indigo-500 w-7 h-7 shrink-0" />
+        )}
         <div>
           <h1 className="text-sm font-bold text-white tracking-wide">
-            MIS MANAGEMENT SYSTEM
+            {appName || 'BBL DM System'}
           </h1>
         </div>
       </div>

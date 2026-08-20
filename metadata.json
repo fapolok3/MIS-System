@@ -1,6 +1,6 @@
 {
-  "name": "MIS - Device & Service Management System",
-  "description": "Enterprise Offline Device & Service Management System with PO, Service Tickets, and Category Tree",
+  "name": "BBL DM System",
+  "description": "BBL Device & Service Management System with PO, Service Tickets, SIM Inventory, and Category Tree",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
