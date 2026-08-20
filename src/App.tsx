@@ -311,30 +311,105 @@ export default function App() {
     showToast(`Device "${updatedDevice.id}" updated successfully!`);
   };
 
+  const isValidKey = (val?: string): boolean => {
+    if (!val) return false;
+    const trimmed = val.trim().toLowerCase();
+    return (
+      trimmed !== '' &&
+      trimmed !== '-' &&
+      trimmed !== 'n/a' &&
+      trimmed !== 'none' &&
+      trimmed !== 'unassigned'
+    );
+  };
+
   const handleDeleteDevice = (sl: number) => {
     const target = devices.find((d) => d.sl === sl);
     const label = target ? `Device ID "${target.id}" (SOL: ${target.sol})` : 'this device';
 
+    // Find linked SIMs in SIM Management
+    const matchingSims = target
+      ? sims.filter((s) => {
+          const matchSimNum =
+            isValidKey(target.sim) &&
+            isValidKey(s.simNumber) &&
+            s.simNumber.trim().toLowerCase() === target.sim.trim().toLowerCase();
+          const matchDeviceId =
+            isValidKey(target.id) &&
+            isValidKey(s.assignedDevice) &&
+            s.assignedDevice.trim().toLowerCase() === target.id.trim().toLowerCase();
+          return matchSimNum || matchDeviceId;
+        })
+      : [];
+
+    const simNote =
+      matchingSims.length > 0
+        ? `\n\nNote: Associated SIM card (${matchingSims.map((s) => s.simNumber).join(', ')}) in SIM Management will also be deleted automatically.`
+        : '';
+
     askConfirmation(
       'Confirm Device Deletion',
-      `Are you sure you want to delete ${label}? This operation cannot be undone.`,
+      `Are you sure you want to delete ${label}? This operation cannot be undone.${simNote}`,
       () => {
+        // 1. Delete device
         setDevices((prev) => prev.filter((d) => d.sl !== sl));
         deleteSupabaseDevice(sl);
-        showToast('Device deleted successfully!');
+
+        // 2. Cascade delete associated SIM card(s)
+        if (matchingSims.length > 0) {
+          const simIdsToDelete = matchingSims.map((s) => s.id);
+          setSims((prev) => prev.filter((s) => !simIdsToDelete.includes(s.id)));
+          bulkDeleteSupabaseSIMs(simIdsToDelete);
+          showToast(`Device & associated SIM (${matchingSims.map((s) => s.simNumber).join(', ')}) deleted successfully!`);
+        } else {
+          showToast('Device deleted successfully!');
+        }
       }
     );
   };
 
   const handleBulkDeleteDevices = (sls: number[]) => {
     if (sls.length === 0) return;
+
+    const targetDevices = devices.filter((d) => sls.includes(d.sl));
+
+    // Find all linked SIMs in SIM Management
+    const matchingSims = sims.filter((s) => {
+      return targetDevices.some((d) => {
+        const matchSimNum =
+          isValidKey(d.sim) &&
+          isValidKey(s.simNumber) &&
+          s.simNumber.trim().toLowerCase() === d.sim.trim().toLowerCase();
+        const matchDeviceId =
+          isValidKey(d.id) &&
+          isValidKey(s.assignedDevice) &&
+          s.assignedDevice.trim().toLowerCase() === d.id.trim().toLowerCase();
+        return matchSimNum || matchDeviceId;
+      });
+    });
+
+    const simNote =
+      matchingSims.length > 0
+        ? `\n\nNote: ${matchingSims.length} associated SIM card(s) in SIM Management will also be deleted automatically.`
+        : '';
+
     askConfirmation(
       'Confirm Multiple Devices Deletion',
-      `Are you sure you want to delete ${sls.length} selected device(s)? This operation cannot be undone.`,
+      `Are you sure you want to delete ${sls.length} selected device(s)? This operation cannot be undone.${simNote}`,
       () => {
+        // 1. Delete devices
         setDevices((prev) => prev.filter((d) => !sls.includes(d.sl)));
         bulkDeleteSupabaseDevices(sls);
-        showToast(`${sls.length} device(s) deleted successfully!`);
+
+        // 2. Cascade delete associated SIM cards
+        if (matchingSims.length > 0) {
+          const simIdsToDelete = matchingSims.map((s) => s.id);
+          setSims((prev) => prev.filter((s) => !simIdsToDelete.includes(s.id)));
+          bulkDeleteSupabaseSIMs(simIdsToDelete);
+          showToast(`${sls.length} device(s) & ${matchingSims.length} linked SIM(s) deleted successfully!`);
+        } else {
+          showToast(`${sls.length} device(s) deleted successfully!`);
+        }
       }
     );
   };
@@ -490,26 +565,89 @@ export default function App() {
     const target = sims.find((s) => (s as any).id === targetIdOrSl || (s as any).sl === targetIdOrSl);
     const label = target ? `SIM Number "${target.simNumber}"` : 'this SIM card';
 
+    // Find linked devices in Device MIS Tree
+    const matchingDevices = target
+      ? devices.filter((d) => {
+          const matchSimNum =
+            isValidKey(target.simNumber) &&
+            isValidKey(d.sim) &&
+            d.sim.trim().toLowerCase() === target.simNumber.trim().toLowerCase();
+          const matchDeviceId =
+            isValidKey(target.assignedDevice) &&
+            isValidKey(d.id) &&
+            d.id.trim().toLowerCase() === target.assignedDevice.trim().toLowerCase();
+          return matchSimNum || matchDeviceId;
+        })
+      : [];
+
+    const devNote =
+      matchingDevices.length > 0
+        ? `\n\nNote: Associated device (${matchingDevices.map((d) => d.id).join(', ')}) in Device MIS Tree will also be deleted automatically.`
+        : '';
+
     askConfirmation(
       'Confirm SIM Card Deletion',
-      `Are you sure you want to delete ${label}? This operation cannot be undone.`,
+      `Are you sure you want to delete ${label}? This operation cannot be undone.${devNote}`,
       () => {
+        // 1. Delete SIM
         setSims((prev) => prev.filter((s) => (s as any).id !== targetIdOrSl && (s as any).sl !== targetIdOrSl));
         deleteSupabaseSIM(String(targetIdOrSl));
-        showToast('SIM Card deleted successfully!');
+
+        // 2. Cascade delete associated device(s)
+        if (matchingDevices.length > 0) {
+          const devSlsToDelete = matchingDevices.map((d) => d.sl);
+          setDevices((prev) => prev.filter((d) => !devSlsToDelete.includes(d.sl)));
+          bulkDeleteSupabaseDevices(devSlsToDelete);
+          showToast(`SIM Card & associated Device (${matchingDevices.map((d) => d.id).join(', ')}) deleted successfully!`);
+        } else {
+          showToast('SIM Card deleted successfully!');
+        }
       }
     );
   };
 
   const handleBulkDeleteSIMs = (simIds: string[]) => {
     if (simIds.length === 0) return;
+
+    const targetSims = sims.filter((s) => simIds.includes((s as any).id) || simIds.includes(String((s as any).sl)));
+
+    // Find all linked devices in Device MIS Tree
+    const matchingDevices = devices.filter((d) => {
+      return targetSims.some((s) => {
+        const matchSimNum =
+          isValidKey(s.simNumber) &&
+          isValidKey(d.sim) &&
+          d.sim.trim().toLowerCase() === s.simNumber.trim().toLowerCase();
+        const matchDeviceId =
+          isValidKey(s.assignedDevice) &&
+          isValidKey(d.id) &&
+          d.id.trim().toLowerCase() === s.assignedDevice.trim().toLowerCase();
+        return matchSimNum || matchDeviceId;
+      });
+    });
+
+    const devNote =
+      matchingDevices.length > 0
+        ? `\n\nNote: ${matchingDevices.length} associated device(s) in Device MIS Tree will also be deleted automatically.`
+        : '';
+
     askConfirmation(
       'Confirm Multiple SIM Cards Deletion',
-      `Are you sure you want to delete ${simIds.length} selected SIM card(s)? This operation cannot be undone.`,
+      `Are you sure you want to delete ${simIds.length} selected SIM card(s)? This operation cannot be undone.${devNote}`,
       () => {
+        // 1. Delete SIMs
         setSims((prev) => prev.filter((s) => !simIds.includes((s as any).id) && !simIds.includes(String((s as any).sl))));
         bulkDeleteSupabaseSIMs(simIds);
-        showToast(`${simIds.length} SIM card(s) deleted successfully!`);
+
+        // 2. Cascade delete associated devices
+        if (matchingDevices.length > 0) {
+          const devSlsToDelete = matchingDevices.map((d) => d.sl);
+          setDevices((prev) => prev.filter((d) => !devSlsToDelete.includes(d.sl)));
+          bulkDeleteSupabaseDevices(devSlsToDelete);
+          showToast(`${simIds.length} SIM card(s) & ${matchingDevices.length} linked device(s) deleted successfully!`);
+        } else {
+          showToast(`${simIds.length} SIM card(s) deleted successfully!`);
+        }
       }
     );
   };
