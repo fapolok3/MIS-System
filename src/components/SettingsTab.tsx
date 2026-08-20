@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Settings,
   FolderPlus,
@@ -57,6 +57,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [urlInputMode, setUrlInputMode] = useState(false);
   const [isSavingBrand, setIsSavingBrand] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (appSettings) {
+      if (appSettings.appName !== undefined) setAppNameInput(appSettings.appName);
+      if (appSettings.tagline !== undefined) setTaglineInput(appSettings.tagline);
+      if (appSettings.appLogo !== undefined) setLogoInput(appSettings.appLogo);
+    }
+  }, [appSettings]);
 
   // Category Group Form
   const [newGroupTitle, setNewGroupTitle] = useState('');
@@ -725,11 +733,34 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     </span>
                   </div>
                 </div>
+                {/* 3. Browser Tab & Favicon Preview */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                    3. Browser Tab & Favicon Preview:
+                  </span>
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2.5 flex items-center shadow-inner">
+                    <div className="bg-slate-900 border border-slate-700/80 rounded-t-md px-3 py-1.5 flex items-center space-x-2 max-w-[200px] border-b-2 border-indigo-500">
+                      {logoInput ? (
+                        <img
+                          src={logoInput}
+                          alt="Favicon"
+                          className="w-4 h-4 rounded-sm object-contain shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <Box className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                      )}
+                      <span className="text-[11px] font-medium text-slate-200 truncate">
+                        {appNameInput || 'BBL DM System'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-900/60 text-[11px] text-indigo-200">
-              Logo is instantly reflected in the live interface and synced with Supabase!
+              Logo is instantly set as the browser tab Favicon and synced with Supabase!
             </div>
           </div>
         </div>

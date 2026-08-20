@@ -6,12 +6,14 @@ interface LoginModalProps {
   onLoginSuccess: () => void;
   appName?: string;
   appLogo?: string;
+  tagline?: string;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({
   onLoginSuccess,
   appName = 'BBL DM System',
   appLogo = '',
+  tagline = 'Enterprise Management Suite',
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,7 +61,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             {appName || 'BBL DM System'}
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Enterprise Management Suite
+            {tagline || 'Enterprise Management Suite'}
           </p>
         </div>
 
