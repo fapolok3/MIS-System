@@ -172,8 +172,20 @@ export default function App() {
     }
     return initialIssues;
   });
-  const [categoryGroups, setCategoryGroups] =
-    useState<CategoryGroup[]>(initialCategoryGroups);
+  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('categoryGroups');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {
+        console.warn('localStorage parse error', e);
+      }
+    }
+    return initialCategoryGroups;
+  });
   const [systemOptions, setSystemOptions] = useState<SystemOptions>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -285,6 +297,11 @@ export default function App() {
       }
       if (dbCategoryGroups && dbCategoryGroups.length > 0) {
         setCategoryGroups(dbCategoryGroups);
+        try {
+          localStorage.setItem('categoryGroups', JSON.stringify(dbCategoryGroups));
+        } catch (e) {
+          console.warn('localStorage save error', e);
+        }
       }
       if (dbSystemOptions) {
         setSystemOptions(dbSystemOptions);
@@ -305,6 +322,15 @@ export default function App() {
     }
     loadSupabaseData();
   }, []);
+
+  // Persist categoryGroups changes to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('categoryGroups', JSON.stringify(categoryGroups));
+    } catch (e) {
+      console.warn('localStorage save error', e);
+    }
+  }, [categoryGroups]);
 
   // Dynamically update document title and browser favicon based on app branding & uploaded logo
   useEffect(() => {

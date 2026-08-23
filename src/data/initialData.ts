@@ -30,6 +30,7 @@ export const initialSystemOptions: SystemOptions = {
   poStatuses: ['PENDING', 'ONGOING', 'COMPLETED'],
   simStatuses: ['ACTIVE', 'INACTIVE'],
   technicians: ['Rahim Ahmed', 'Karim Ullah', 'Shakil Hossain', 'Support Engineer Team'],
+  slaStatuses: ['WITHIN SLA', 'SLA BREACH', 'NEAR BREACH', 'RESOLVED IN SLA', 'PENDING'],
 };
 
 export const initialCategoryGroups: CategoryGroup[] = [

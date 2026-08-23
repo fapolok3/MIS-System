@@ -47,6 +47,7 @@ export interface SystemOptions {
   poStatuses: string[];
   simStatuses: string[];
   technicians: string[];
+  slaStatuses?: string[];
 }
 
 export interface Device {

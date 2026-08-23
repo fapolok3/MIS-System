@@ -35,7 +35,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   const [provDate, setProvDate] = useState('Pending');
   const [location, setLocation] = useState('');
   const [deviceId, setDeviceId] = useState('');
-  const [locType, setLocType] = useState(systemOptions.locationTypes[0] || 'Main Branch');
+  const [locType, setLocType] = useState('Main Branch');
   const [issueType, setIssueType] = useState(systemOptions.issueTypes[0] || 'Network Disconnection');
   const [receivedBy, setReceivedBy] = useState('System Logged');
   const [priority, setPriority] = useState<any>(systemOptions.ticketPriorities[0] || 'HIGH');
@@ -43,7 +43,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   const [resTime, setResTime] = useState(0);
   const [slaThreshold, setSlaThreshold] = useState(2);
   const [slaStatus, setSlaStatus] = useState('WITHIN SLA');
-  const [tech, setTech] = useState(systemOptions.technicians[0] || 'Rahim Ahmed');
+  const [tech, setTech] = useState('');
   const [remarks, setRemarks] = useState('');
   const [emailDetails, setEmailDetails] = useState('');
 
@@ -202,17 +202,13 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
             <label className="block text-slate-400 mb-1">
               Location Type / Category
             </label>
-            <select
+            <input
+              type="text"
               value={locType}
               onChange={(e) => setLocType(e.target.value)}
+              placeholder="e.g. Main Branch, Sub Branch, SME, Head Office"
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
-            >
-              {systemOptions.locationTypes.map((lt) => (
-                <option key={lt} value={lt}>
-                  {lt}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           <div>
             <label className="block text-slate-400 mb-1">Issue Type</label>
@@ -268,17 +264,13 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
           </div>
           <div>
             <label className="block text-slate-400 mb-1">Technician Details</label>
-            <select
+            <input
+              type="text"
               value={tech}
               onChange={(e) => setTech(e.target.value)}
+              placeholder="e.g. Rahim Ahmed / Engineer Name & Phone"
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
-            >
-              {systemOptions.technicians.map((tc) => (
-                <option key={tc} value={tc}>
-                  {tc}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           <div>
             <label className="block text-slate-400 mb-1">Resolution Time (Days)</label>
@@ -304,11 +296,17 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
             <label className="block text-slate-400 mb-1">SLA Status</label>
             <input
               type="text"
+              list="sla-status-options"
               value={slaStatus}
               onChange={(e) => setSlaStatus(e.target.value)}
               placeholder="e.g. WITHIN SLA or SLA BREACH"
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
             />
+            <datalist id="sla-status-options">
+              {(systemOptions.slaStatuses || ['WITHIN SLA', 'SLA BREACH', 'NEAR BREACH']).map((status) => (
+                <option key={status} value={status} />
+              ))}
+            </datalist>
           </div>
           <div className="col-span-2">
             <label className="block text-slate-400 mb-1">

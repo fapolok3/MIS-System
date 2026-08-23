@@ -150,17 +150,13 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
           </div>
           <div>
             <label className="block text-slate-400 mb-1">Location Type / Category</label>
-            <select
+            <input
+              type="text"
               value={formData.locType}
               onChange={(e) => handleChange('locType', e.target.value)}
+              placeholder="e.g. Main Branch, Sub Branch, SME, Head Office"
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
-            >
-              {systemOptions.locationTypes.map((lt) => (
-                <option key={lt} value={lt}>
-                  {lt}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           <div>
             <label className="block text-slate-400 mb-1">Issue Type</label>
@@ -201,17 +197,13 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
           </div>
           <div>
             <label className="block text-slate-400 mb-1">Technician Details</label>
-            <select
+            <input
+              type="text"
               value={formData.tech}
               onChange={(e) => handleChange('tech', e.target.value)}
+              placeholder="e.g. Rahim Ahmed / Engineer Name & Phone"
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
-            >
-              {systemOptions.technicians.map((tc) => (
-                <option key={tc} value={tc}>
-                  {tc}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           <div>
             <label className="block text-slate-400 mb-1">Resolution Time (Days)</label>
@@ -237,10 +229,17 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
             <label className="block text-slate-400 mb-1">SLA Status</label>
             <input
               type="text"
+              list="edit-sla-status-options"
               value={formData.slaStatus}
               onChange={(e) => handleChange('slaStatus', e.target.value)}
+              placeholder="e.g. WITHIN SLA or SLA BREACH"
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
             />
+            <datalist id="edit-sla-status-options">
+              {(systemOptions.slaStatuses || ['WITHIN SLA', 'SLA BREACH', 'NEAR BREACH']).map((status) => (
+                <option key={status} value={status} />
+              ))}
+            </datalist>
           </div>
           <div className="col-span-2">
             <label className="block text-slate-400 mb-1">

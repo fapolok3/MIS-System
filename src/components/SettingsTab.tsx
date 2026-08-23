@@ -24,11 +24,14 @@ import {
   Filter,
   Tag,
   AlertCircle,
+  Headphones,
+  Clock,
 } from 'lucide-react';
 import { CategoryGroup, SystemOptions, AppSettings } from '../types';
 import { ConfirmModal } from './Modals/ConfirmModal';
 import {
   saveSupabaseCategoryGroups,
+  deleteSupabaseCategoryGroup,
   saveSupabaseSystemOptions,
   saveSupabaseAppSettings,
   defaultAppSettings,
@@ -92,10 +95,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     poStatuses: '',
     simStatuses: '',
     technicians: '',
+    slaStatuses: '',
   });
 
   // Filter tab for System Dropdown Options
-  const [optionFilterTab, setOptionFilterTab] = useState<'ALL' | 'ISSUE_TRACKER' | 'DEVICES' | 'PO'>('ALL');
+  const [optionFilterTab, setOptionFilterTab] = useState<
+    'ALL' | 'ISSUE_TRACKER' | 'SERVICE' | 'DEVICES' | 'PO'
+  >('ALL');
 
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -276,6 +282,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     setCategoryGroups((prev) => {
       const updated = [...prev, newGroup];
       saveSupabaseCategoryGroups(updated);
+      try {
+        localStorage.setItem('categoryGroups', JSON.stringify(updated));
+      } catch (err) {
+        console.warn(err);
+      }
       return updated;
     });
     setSelectedGroupId(newGroup.id);
@@ -303,6 +314,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         return group;
       });
       saveSupabaseCategoryGroups(updated);
+      try {
+        localStorage.setItem('categoryGroups', JSON.stringify(updated));
+      } catch (err) {
+        console.warn(err);
+      }
       return updated;
     });
 
@@ -327,6 +343,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             return group;
           });
           saveSupabaseCategoryGroups(updated);
+          try {
+            localStorage.setItem('categoryGroups', JSON.stringify(updated));
+          } catch (err) {
+            console.warn(err);
+          }
           return updated;
         });
         showToast(`Removed "${itemToDelete}" from category tree.`);
@@ -340,9 +361,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       'Confirm Group Deletion',
       `Are you sure you want to delete category group "${groupTitle}" and all its subcategories?`,
       () => {
+        deleteSupabaseCategoryGroup(groupId);
         setCategoryGroups((prev) => {
           const updated = prev.filter((g) => g.id !== groupId);
           saveSupabaseCategoryGroups(updated);
+          try {
+            localStorage.setItem('categoryGroups', JSON.stringify(updated));
+          } catch (err) {
+            console.warn(err);
+          }
           return updated;
         });
         showToast(`Category Group "${groupTitle}" deleted.`);
@@ -355,15 +382,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const value = inputs[key]?.trim();
     if (!value) return;
 
-    if (systemOptions[key].includes(value)) {
+    const existingList = systemOptions[key] || [];
+    if (existingList.includes(value)) {
       showToast(`"${value}" already exists in option list!`);
       return;
     }
 
     setSystemOptions((prev) => {
+      const currentList = prev[key] || [];
       const updated = {
         ...prev,
-        [key]: [...prev[key], value],
+        [key]: [...currentList, value],
       };
       saveSupabaseSystemOptions(updated);
       try {
@@ -385,9 +414,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       `Are you sure you want to remove option "${valueToRemove}"?`,
       () => {
         setSystemOptions((prev) => {
+          const currentList = prev[key] || [];
           const updated = {
             ...prev,
-            [key]: prev[key].filter((item) => item !== valueToRemove),
+            [key]: currentList.filter((item) => item !== valueToRemove),
           };
           saveSupabaseSystemOptions(updated);
           try {
@@ -408,53 +438,62 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     description: string;
     icon: React.ReactNode;
     badgeColor: string;
-    group: 'ISSUE_TRACKER' | 'DEVICES' | 'PO';
+    groups: ('ISSUE_TRACKER' | 'SERVICE' | 'DEVICES' | 'PO')[];
     feedTag: string;
   }[] = [
-    // ISSUE TRACKER DROPDOWNS FIRST
+    // SERVICE TICKET & ISSUE TRACKER DROPDOWNS
     {
       key: 'issueTypes',
       title: 'Issue Types',
-      description: 'Appears in Issue Tracker, Issue Reports & Service Ticket dropdowns',
+      description: 'Appears in Service Ticket & SLA Tracker, Issue Tracker & Reports',
       icon: <AlertTriangle className="w-4 h-4 text-amber-400" />,
       badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-800',
-      group: 'ISSUE_TRACKER',
-      feedTag: 'Feeds Issue Tracker Form & Reports',
+      groups: ['ISSUE_TRACKER', 'SERVICE'],
+      feedTag: 'Feeds Service Ticket & Issue Tracker',
     },
     {
       key: 'ticketPriorities',
       title: 'Priority Levels',
-      description: 'Appears in Issue Tracker, Issue Reports & Service Ticket priorities',
+      description: 'Appears in Service Ticket & SLA Tracker priorities & Issue Tracker',
       icon: <ShieldAlert className="w-4 h-4 text-rose-400" />,
       badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-800',
-      group: 'ISSUE_TRACKER',
-      feedTag: 'Feeds Issue Tracker Priority',
+      groups: ['ISSUE_TRACKER', 'SERVICE'],
+      feedTag: 'Feeds Service Ticket & Issue Priorities',
     },
     {
       key: 'ticketStatuses',
-      title: 'Ticket / Issue Statuses',
-      description: 'Appears in Issue Tracker and Service Ticket status options',
+      title: 'Ticket / Service Statuses',
+      description: 'Appears in Service Ticket & SLA Tracker, and Issue Tracker status options',
       icon: <CheckCircle2 className="w-4 h-4 text-blue-400" />,
       badgeColor: 'bg-blue-950/80 text-blue-300 border-blue-800',
-      group: 'ISSUE_TRACKER',
-      feedTag: 'Feeds Issue Tracker Status',
+      groups: ['ISSUE_TRACKER', 'SERVICE'],
+      feedTag: 'Feeds Service Ticket & Issue Status',
+    },
+    {
+      key: 'slaStatuses',
+      title: 'SLA Tracking Statuses',
+      description: 'Appears in Service Ticket & SLA Tracker (WITHIN SLA, SLA BREACH, NEAR BREACH)',
+      icon: <Clock className="w-4 h-4 text-cyan-400" />,
+      badgeColor: 'bg-cyan-950/80 text-cyan-300 border-cyan-800',
+      groups: ['SERVICE'],
+      feedTag: 'Feeds SLA Tracker Status',
     },
     {
       key: 'technicians',
       title: 'Assign Person / Technicians',
-      description: 'Appears in Issue Tracker, Issue Reports & Service Ticket assignee dropdowns',
+      description: 'Appears in Issue Tracker, Issue Reports & Service Ticket assignee lists',
       icon: <Users className="w-4 h-4 text-orange-400" />,
       badgeColor: 'bg-orange-950/80 text-orange-300 border-orange-800',
-      group: 'ISSUE_TRACKER',
+      groups: ['ISSUE_TRACKER', 'SERVICE'],
       feedTag: 'Feeds Assign Person Dropdown',
     },
     {
       key: 'locationTypes',
       title: 'Location & Branch Types',
-      description: 'Appears in Service Tickets & Location categories',
+      description: 'Appears in Branch MIS & Location categories',
       icon: <Building className="w-4 h-4 text-purple-400" />,
       badgeColor: 'bg-purple-950/80 text-purple-300 border-purple-800',
-      group: 'ISSUE_TRACKER',
+      groups: ['ISSUE_TRACKER'],
       feedTag: 'Feeds Location Categories',
     },
     // DEVICES & SIM DROPDOWNS
@@ -464,7 +503,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       description: 'Appears in Device add/edit status dropdowns',
       icon: <Cpu className="w-4 h-4 text-emerald-400" />,
       badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-800',
-      group: 'DEVICES',
+      groups: ['DEVICES'],
       feedTag: 'Feeds Device Inventory',
     },
     {
@@ -473,7 +512,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       description: 'Appears in Device access type configuration',
       icon: <Layers className="w-4 h-4 text-indigo-400" />,
       badgeColor: 'bg-indigo-950/80 text-indigo-300 border-indigo-800',
-      group: 'DEVICES',
+      groups: ['DEVICES'],
       feedTag: 'Feeds Device Access Types',
     },
     {
@@ -482,7 +521,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       description: 'Appears in Device and SIM Management operator dropdowns',
       icon: <Radio className="w-4 h-4 text-cyan-400" />,
       badgeColor: 'bg-cyan-950/80 text-cyan-300 border-cyan-800',
-      group: 'DEVICES',
+      groups: ['DEVICES'],
       feedTag: 'Feeds SIM Operators',
     },
     {
@@ -491,7 +530,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       description: 'Appears in SIM Inventory status dropdowns',
       icon: <Radio className="w-4 h-4 text-sky-400" />,
       badgeColor: 'bg-sky-950/80 text-sky-300 border-sky-800',
-      group: 'DEVICES',
+      groups: ['DEVICES'],
       feedTag: 'Feeds SIM Card Status',
     },
     // PO & VENDOR DROPDOWNS
@@ -501,7 +540,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       description: 'Appears in Purchase Order vendor selection',
       icon: <ShoppingBag className="w-4 h-4 text-teal-400" />,
       badgeColor: 'bg-teal-950/80 text-teal-300 border-teal-800',
-      group: 'PO',
+      groups: ['PO'],
       feedTag: 'Feeds PO Vendors',
     },
     {
@@ -510,7 +549,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       description: 'Appears in Purchase Order status dropdowns',
       icon: <ListPlus className="w-4 h-4 text-emerald-400" />,
       badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-800',
-      group: 'PO',
+      groups: ['PO'],
       feedTag: 'Feeds PO Statuses',
     },
   ];
@@ -1021,6 +1060,19 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
           <button
             type="button"
+            onClick={() => setOptionFilterTab('SERVICE')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
+              optionFilterTab === 'SERVICE'
+                ? 'bg-cyan-600 text-white font-bold shadow-sm ring-2 ring-cyan-400/40'
+                : 'bg-slate-900 text-cyan-300 hover:text-white hover:bg-slate-800 border border-cyan-900/60'
+            }`}
+          >
+            <Headphones className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Service Ticket & SLA ({optionSections.filter((s) => s.groups.includes('SERVICE')).length})</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setOptionFilterTab('ISSUE_TRACKER')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
               optionFilterTab === 'ISSUE_TRACKER'
@@ -1029,7 +1081,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             }`}
           >
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-            <span>Issue Tracker & Service Desk ({optionSections.filter((s) => s.group === 'ISSUE_TRACKER').length})</span>
+            <span>Issue Tracker ({optionSections.filter((s) => s.groups.includes('ISSUE_TRACKER')).length})</span>
           </button>
 
           <button
@@ -1042,7 +1094,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             }`}
           >
             <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Devices & SIM ({optionSections.filter((s) => s.group === 'DEVICES').length})</span>
+            <span>Devices & SIM ({optionSections.filter((s) => s.groups.includes('DEVICES')).length})</span>
           </button>
 
           <button
@@ -1055,9 +1107,24 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             }`}
           >
             <ShoppingBag className="w-3.5 h-3.5 text-teal-400" />
-            <span>Procurement & PO ({optionSections.filter((s) => s.group === 'PO').length})</span>
+            <span>Procurement & PO ({optionSections.filter((s) => s.groups.includes('PO')).length})</span>
           </button>
         </div>
+
+        {/* Service Ticket & SLA Highlight Notice */}
+        {optionFilterTab === 'SERVICE' && (
+          <div className="bg-cyan-950/30 border border-cyan-800/60 rounded-xl p-4 flex items-start gap-3 text-xs">
+            <Headphones className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-bold text-cyan-200">
+                Service Ticket & SLA Tracker Dropdown Synchronization
+              </h4>
+              <p className="text-slate-300 leading-relaxed">
+                Options configured below (<strong>Issue Types</strong>, <strong>Priority Levels</strong>, <strong>Ticket / Service Statuses</strong>, <strong>SLA Tracking Statuses</strong>, and <strong>Assign Person / Technicians</strong>) directly update the dynamic dropdown options across the <strong>Service Ticket & SLA Tracker</strong> module.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Issue Tracker Highlight Notice */}
         {(optionFilterTab === 'ALL' || optionFilterTab === 'ISSUE_TRACKER') && (
@@ -1077,7 +1144,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         {/* Options Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {optionSections
-            .filter((section) => optionFilterTab === 'ALL' || section.group === optionFilterTab)
+            .filter((section) => optionFilterTab === 'ALL' || section.groups.includes(optionFilterTab))
             .map((section) => {
               const list = systemOptions[section.key] || [];
 
@@ -1085,7 +1152,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 <div
                   key={section.key}
                   className={`bg-slate-900 border rounded-xl p-4 flex flex-col justify-between space-y-4 transition ${
-                    section.group === 'ISSUE_TRACKER'
+                    section.groups.includes('SERVICE') && optionFilterTab === 'SERVICE'
+                      ? 'border-cyan-900/60 hover:border-cyan-700/80'
+                      : section.groups.includes('ISSUE_TRACKER') && optionFilterTab === 'ISSUE_TRACKER'
                       ? 'border-rose-900/50 hover:border-rose-700/80'
                       : 'border-slate-800/90 hover:border-slate-700'
                   }`}

@@ -457,7 +457,7 @@ export async function fetchSupabaseCategoryGroups(): Promise<CategoryGroup[] | n
       return null;
     }
 
-    if (!data) return [];
+    if (!data || data.length === 0) return null;
 
     return data.map((cg: any) => ({
       id: cg.id,
@@ -471,18 +471,51 @@ export async function fetchSupabaseCategoryGroups(): Promise<CategoryGroup[] | n
   }
 }
 
+export async function deleteSupabaseCategoryGroup(groupId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('category_groups').delete().eq('id', groupId);
+    if (error) {
+      console.warn('Supabase deleteCategoryGroup error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase deleteCategoryGroup catch error:', err);
+    return false;
+  }
+}
+
 export async function saveSupabaseCategoryGroups(groups: CategoryGroup[]): Promise<boolean> {
   try {
-    const rows = groups.map((g) => ({
-      id: g.id,
-      title: g.title,
-      icon: g.icon || '',
-      items: g.items,
-    }));
-    const { error } = await supabase.from('category_groups').upsert(rows);
-    if (error) {
-      console.warn('Supabase saveCategoryGroups error:', error.message);
-      return false;
+    // 1. Check for deleted groups in DB and clean them up
+    try {
+      const { data: existingData } = await supabase.from('category_groups').select('id');
+      if (existingData && Array.isArray(existingData)) {
+        const currentGroupIds = new Set(groups.map((g) => g.id));
+        const idsToDelete = existingData
+          .map((row: any) => row.id)
+          .filter((id: string) => !currentGroupIds.has(id));
+
+        if (idsToDelete.length > 0) {
+          await supabase.from('category_groups').delete().in('id', idsToDelete);
+        }
+      }
+    } catch (cleanErr) {
+      console.warn('Supabase clean deleted category groups warning:', cleanErr);
+    }
+
+    if (groups.length > 0) {
+      const rows = groups.map((g) => ({
+        id: g.id,
+        title: g.title,
+        icon: g.icon || '',
+        items: g.items || [],
+      }));
+      const { error } = await supabase.from('category_groups').upsert(rows);
+      if (error) {
+        console.warn('Supabase saveCategoryGroups error:', error.message);
+        return false;
+      }
     }
     return true;
   } catch (err) {
@@ -525,6 +558,11 @@ export async function fetchSupabaseSystemOptions(): Promise<SystemOptions | null
       poStatuses: Array.isArray(data.po_statuses) ? data.po_statuses : initialSystemOptions.poStatuses,
       simStatuses: Array.isArray(data.sim_statuses) ? data.sim_statuses : initialSystemOptions.simStatuses,
       technicians: Array.isArray(data.technicians) ? data.technicians : initialSystemOptions.technicians,
+      slaStatuses: Array.isArray(data.sla_statuses)
+        ? data.sla_statuses
+        : Array.isArray(data.options?.slaStatuses)
+        ? data.options.slaStatuses
+        : initialSystemOptions.slaStatuses,
     };
   } catch (err) {
     console.warn('Supabase fetchSystemOptions catch error:', err);
@@ -547,6 +585,7 @@ export async function saveSupabaseSystemOptions(options: SystemOptions): Promise
       po_statuses: options.poStatuses,
       sim_statuses: options.simStatuses,
       technicians: options.technicians,
+      sla_statuses: options.slaStatuses || initialSystemOptions.slaStatuses,
       options: options,
       updated_at: new Date().toISOString(),
     };
