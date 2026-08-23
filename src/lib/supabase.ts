@@ -168,75 +168,88 @@ export async function bulkDeleteSupabaseDevices(sls: number[]): Promise<boolean>
 // -------------------------------------------------------------
 // TICKETS
 // -------------------------------------------------------------
+// SERVICE TICKETS & SLA TRACKER
+// -------------------------------------------------------------
 export async function fetchSupabaseTickets(): Promise<Ticket[] | null> {
   try {
     const { data, error } = await supabase
       .from('tickets')
       .select('*')
-      .order('id', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
-      console.warn('Supabase fetchTickets warning:', error.message);
-      return null;
+      console.warn('Supabase fetchTickets warning (trying fallback query):', error.message);
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('tickets')
+        .select('*');
+      if (fallbackError) {
+        console.warn('Supabase fetchTickets fallback error:', fallbackError.message);
+        return null;
+      }
+      if (!fallbackData) return [];
+      return mapSupabaseTickets(fallbackData);
     }
 
     if (!data) return [];
-
-    return data.map((t: any) => ({
-      id: t.id || '',
-      subject: t.subject || '',
-      from: t.from_user || '',
-      reqDate: t.req_date || '',
-      reqTime: t.req_time || '',
-      planDate: t.plan_date || '',
-      countDate: t.count_date || '',
-      provDate: t.prov_date || '',
-      location: t.location || '',
-      deviceId: t.device_id || '',
-      locType: t.loc_type || '',
-      issueType: t.issue_type || '',
-      receivedBy: t.received_by || '',
-      priority: t.priority || 'MEDIUM',
-      status: t.status || 'OPEN',
-      resTime: Number(t.res_time) || 0,
-      slaThreshold: Number(t.sla_threshold) || 24,
-      slaStatus: t.sla_status || '',
-      tech: t.tech || '',
-      remarks: t.remarks || '',
-      emailDetails: t.email_details || '',
-    }));
+    return mapSupabaseTickets(data);
   } catch (err) {
     console.warn('Supabase fetchTickets catch error:', err);
     return null;
   }
 }
 
+function mapSupabaseTickets(data: any[]): Ticket[] {
+  return data.map((t: any) => ({
+    id: String(t.id || ''),
+    subject: t.subject || t.title || '',
+    from: t.from_user || t.from || t.sender || '',
+    reqDate: t.req_date || t.reqDate || '',
+    reqTime: t.req_time || t.reqTime || '',
+    planDate: t.plan_date || t.planDate || '',
+    countDate: t.count_date || t.countDate || '',
+    provDate: t.prov_date || t.provDate || '',
+    location: t.location || '',
+    deviceId: t.device_id || t.deviceId || '',
+    locType: t.loc_type || t.locType || '',
+    issueType: t.issue_type || t.issueType || '',
+    receivedBy: t.received_by || t.receivedBy || '',
+    priority: t.priority || 'MEDIUM',
+    status: t.status || 'OPEN',
+    resTime: Number(t.res_time ?? t.resTime) || 0,
+    slaThreshold: Number(t.sla_threshold ?? t.slaThreshold) || 24,
+    slaStatus: t.sla_status || t.slaStatus || '',
+    tech: t.tech || t.technician || '',
+    remarks: t.remarks || t.remark || '',
+    emailDetails: t.email_details || t.emailDetails || '',
+  }));
+}
+
 export async function insertSupabaseTicket(ticket: Ticket): Promise<boolean> {
   try {
-    const row = {
-      id: ticket.id,
-      subject: ticket.subject,
-      from_user: ticket.from,
-      req_date: ticket.reqDate,
-      req_time: ticket.reqTime,
-      plan_date: ticket.planDate,
-      count_date: ticket.countDate,
-      prov_date: ticket.provDate,
-      location: ticket.location,
-      device_id: ticket.deviceId,
-      loc_type: ticket.locType,
-      issue_type: ticket.issueType,
-      received_by: ticket.receivedBy,
-      priority: ticket.priority,
-      status: ticket.status,
-      res_time: ticket.resTime,
-      sla_threshold: ticket.slaThreshold,
-      sla_status: ticket.slaStatus,
-      tech: ticket.tech,
-      remarks: ticket.remarks,
-      email_details: ticket.emailDetails,
+    const row: Record<string, any> = {
+      id: String(ticket.id),
+      subject: ticket.subject || '',
+      from_user: ticket.from || '',
+      req_date: ticket.reqDate || '',
+      req_time: ticket.reqTime || '',
+      plan_date: ticket.planDate || '',
+      count_date: ticket.countDate || '',
+      prov_date: ticket.provDate || '',
+      location: ticket.location || '',
+      device_id: ticket.deviceId || '',
+      loc_type: ticket.locType || '',
+      issue_type: ticket.issueType || '',
+      received_by: ticket.receivedBy || '',
+      priority: ticket.priority || 'MEDIUM',
+      status: ticket.status || 'OPEN',
+      res_time: Number(ticket.resTime) || 0,
+      sla_threshold: Number(ticket.slaThreshold) || 24,
+      sla_status: ticket.slaStatus || '',
+      tech: ticket.tech || '',
+      remarks: ticket.remarks || '',
+      email_details: ticket.emailDetails || '',
     };
-    const { error } = await supabase.from('tickets').upsert([row]);
+    const { error } = await supabase.from('tickets').upsert([row], { onConflict: 'id' });
     if (error) {
       console.warn('Supabase insertTicket error:', error.message);
       return false;
@@ -251,29 +264,29 @@ export async function insertSupabaseTicket(ticket: Ticket): Promise<boolean> {
 export async function bulkInsertSupabaseTickets(tickets: Ticket[]): Promise<boolean> {
   try {
     const rows = tickets.map((ticket) => ({
-      id: ticket.id,
-      subject: ticket.subject,
-      from_user: ticket.from,
-      req_date: ticket.reqDate,
-      req_time: ticket.reqTime,
-      plan_date: ticket.planDate,
-      count_date: ticket.countDate,
-      prov_date: ticket.provDate,
-      location: ticket.location,
-      device_id: ticket.deviceId,
-      loc_type: ticket.locType,
-      issue_type: ticket.issueType,
-      received_by: ticket.receivedBy,
-      priority: ticket.priority,
-      status: ticket.status,
-      res_time: ticket.resTime,
-      sla_threshold: ticket.slaThreshold,
-      sla_status: ticket.slaStatus,
-      tech: ticket.tech,
-      remarks: ticket.remarks,
-      email_details: ticket.emailDetails,
+      id: String(ticket.id),
+      subject: ticket.subject || '',
+      from_user: ticket.from || '',
+      req_date: ticket.reqDate || '',
+      req_time: ticket.reqTime || '',
+      plan_date: ticket.planDate || '',
+      count_date: ticket.countDate || '',
+      prov_date: ticket.provDate || '',
+      location: ticket.location || '',
+      device_id: ticket.deviceId || '',
+      loc_type: ticket.locType || '',
+      issue_type: ticket.issueType || '',
+      received_by: ticket.receivedBy || '',
+      priority: ticket.priority || 'MEDIUM',
+      status: ticket.status || 'OPEN',
+      res_time: Number(ticket.resTime) || 0,
+      sla_threshold: Number(ticket.slaThreshold) || 24,
+      sla_status: ticket.slaStatus || '',
+      tech: ticket.tech || '',
+      remarks: ticket.remarks || '',
+      email_details: ticket.emailDetails || '',
     }));
-    const { error } = await supabase.from('tickets').upsert(rows);
+    const { error } = await supabase.from('tickets').upsert(rows, { onConflict: 'id' });
     if (error) {
       console.warn('Supabase bulkInsertTickets error:', error.message);
       return false;

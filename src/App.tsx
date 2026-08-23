@@ -153,10 +153,65 @@ export default function App() {
   }, []);
 
   // Collections State
-  const [devices, setDevices] = useState<Device[]>(initialDevices);
-  const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
-  const [pos, setPos] = useState<PurchaseOrder[]>(initialPOs);
-  const [sims, setSims] = useState<SIMItem[]>(initialSIMs);
+  const [devices, setDevices] = useState<Device[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('devicesData');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {
+        console.warn('localStorage parse error', e);
+      }
+    }
+    return initialDevices;
+  });
+
+  const [tickets, setTickets] = useState<Ticket[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('serviceTicketsData');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {
+        console.warn('localStorage parse error', e);
+      }
+    }
+    return initialTickets;
+  });
+
+  const [pos, setPos] = useState<PurchaseOrder[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('purchaseOrdersData');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {
+        console.warn('localStorage parse error', e);
+      }
+    }
+    return initialPOs;
+  });
+
+  const [sims, setSims] = useState<SIMItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('simsData');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {
+        console.warn('localStorage parse error', e);
+      }
+    }
+    return initialSIMs;
+  });
   const [issues, setIssues] = useState<IssueTrackerItem[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -278,18 +333,72 @@ export default function App() {
         fetchSupabaseAppSettings(),
       ]);
 
-      if (dbDevices && dbDevices.length > 0) {
-        setDevices(dbDevices);
+      if (dbDevices && Array.isArray(dbDevices)) {
+        if (dbDevices.length > 0) {
+          setDevices(dbDevices);
+          try {
+            localStorage.setItem('devicesData', JSON.stringify(dbDevices));
+          } catch (e) {
+            console.warn('localStorage save devices error', e);
+          }
+        } else {
+          // If Supabase table is empty but localStorage has data, auto-sync to DB
+          const localSaved = localStorage.getItem('devicesData');
+          if (localSaved) {
+            try {
+              const parsed = JSON.parse(localSaved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                bulkInsertSupabaseDevices(parsed);
+              }
+            } catch (e) {}
+          }
+        }
       }
-      if (dbTickets && dbTickets.length > 0) {
-        setTickets(dbTickets);
+
+      if (dbTickets && Array.isArray(dbTickets)) {
+        if (dbTickets.length > 0) {
+          setTickets(dbTickets);
+          try {
+            localStorage.setItem('serviceTicketsData', JSON.stringify(dbTickets));
+          } catch (e) {
+            console.warn('localStorage save tickets error', e);
+          }
+        } else {
+          // If Supabase table is empty but localStorage has data, auto-sync to DB
+          const localSaved = localStorage.getItem('serviceTicketsData');
+          if (localSaved) {
+            try {
+              const parsed = JSON.parse(localSaved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                bulkInsertSupabaseTickets(parsed);
+              }
+            } catch (e) {}
+          }
+        }
       }
-      if (dbPOs && dbPOs.length > 0) {
-        setPos(dbPOs);
+
+      if (dbPOs && Array.isArray(dbPOs)) {
+        if (dbPOs.length > 0) {
+          setPos(dbPOs);
+          try {
+            localStorage.setItem('purchaseOrdersData', JSON.stringify(dbPOs));
+          } catch (e) {
+            console.warn('localStorage save pos error', e);
+          }
+        }
       }
-      if (dbSIMs && dbSIMs.length > 0) {
-        setSims(dbSIMs);
+
+      if (dbSIMs && Array.isArray(dbSIMs)) {
+        if (dbSIMs.length > 0) {
+          setSims(dbSIMs);
+          try {
+            localStorage.setItem('simsData', JSON.stringify(dbSIMs));
+          } catch (e) {
+            console.warn('localStorage save sims error', e);
+          }
+        }
       }
+
       if (dbIssues && dbIssues.length > 0) {
         setIssues(dbIssues);
         try {
@@ -325,6 +434,39 @@ export default function App() {
     }
     loadSupabaseData();
   }, []);
+
+  // Persist collections to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('serviceTicketsData', JSON.stringify(tickets));
+    } catch (e) {
+      console.warn('localStorage save error', e);
+    }
+  }, [tickets]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('devicesData', JSON.stringify(devices));
+    } catch (e) {
+      console.warn('localStorage save error', e);
+    }
+  }, [devices]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('purchaseOrdersData', JSON.stringify(pos));
+    } catch (e) {
+      console.warn('localStorage save error', e);
+    }
+  }, [pos]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('simsData', JSON.stringify(sims));
+    } catch (e) {
+      console.warn('localStorage save error', e);
+    }
+  }, [sims]);
 
   // Persist categoryGroups changes to localStorage
   useEffect(() => {
