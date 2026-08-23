@@ -28,6 +28,7 @@ import {
   bulkDeleteSupabaseDevices,
   fetchSupabaseTickets,
   insertSupabaseTicket,
+  bulkInsertSupabaseTickets,
   deleteSupabaseTicket,
   bulkDeleteSupabaseTickets,
   fetchSupabasePOs,
@@ -76,6 +77,7 @@ import { EditPOModal } from './components/Modals/EditPOModal';
 import { AddSIMModal } from './components/Modals/AddSIMModal';
 import { EditSIMModal } from './components/Modals/EditSIMModal';
 import { ExcelUploadModal } from './components/Modals/ExcelUploadModal';
+import { TicketExcelUploadModal } from './components/Modals/TicketExcelUploadModal';
 import { ConfirmModal } from './components/Modals/ConfirmModal';
 import { Toast, ToastData } from './components/Toast';
 
@@ -220,6 +222,7 @@ export default function App() {
   const [isAddSIMOpen, setIsAddSIMOpen] = useState(false);
   const [editingSIM, setEditingSIM] = useState<SIMItem | null>(null);
   const [isExcelUploadOpen, setIsExcelUploadOpen] = useState(false);
+  const [isTicketExcelUploadOpen, setIsTicketExcelUploadOpen] = useState(false);
 
   // Global Toast & Confirm Notification State
   const [toast, setToast] = useState<ToastData | null>(null);
@@ -601,6 +604,12 @@ export default function App() {
   };
 
   // Ticket Handlers
+  const handleImportTickets = (newTickets: Ticket[]) => {
+    setTickets((prev) => [...newTickets, ...prev]);
+    bulkInsertSupabaseTickets(newTickets);
+    showToast(`${newTickets.length} Service Ticket(s) imported from Excel successfully!`);
+  };
+
   const handleSaveNewTicket = (newTicket: Ticket) => {
     setTickets((prev) => [newTicket, ...prev]);
     insertSupabaseTicket(newTicket);
@@ -1030,6 +1039,7 @@ export default function App() {
               onOpenEditTicketModal={(t) => setEditingTicket(t)}
               onDeleteTicket={handleDeleteTicket}
               onBulkDeleteTickets={handleBulkDeleteTickets}
+              onOpenExcelUploadModal={() => setIsTicketExcelUploadOpen(true)}
             />
           )}
 
@@ -1164,6 +1174,14 @@ export default function App() {
         activeCategory={activeCategory}
         onClose={() => setIsExcelUploadOpen(false)}
         onImportDevices={handleImportDevices}
+      />
+
+      <TicketExcelUploadModal
+        isOpen={isTicketExcelUploadOpen}
+        onClose={() => setIsTicketExcelUploadOpen(false)}
+        onImportTickets={handleImportTickets}
+        systemOptions={systemOptions}
+        ticketCount={tickets.length}
       />
 
       {/* Global Toast Notification */}

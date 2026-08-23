@@ -196,6 +196,20 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
             </select>
           </div>
           <div>
+            <label className="block text-slate-400 mb-1">Current Status</label>
+            <select
+              value={formData.status}
+              onChange={(e) => handleChange('status', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
+            >
+              {systemOptions.ticketStatuses.map((st) => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label className="block text-slate-400 mb-1">Technician Details</label>
             <input
               type="text"
@@ -229,17 +243,11 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
             <label className="block text-slate-400 mb-1">SLA Status</label>
             <input
               type="text"
-              list="edit-sla-status-options"
               value={formData.slaStatus}
               onChange={(e) => handleChange('slaStatus', e.target.value)}
               placeholder="e.g. WITHIN SLA or SLA BREACH"
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
             />
-            <datalist id="edit-sla-status-options">
-              {(systemOptions.slaStatuses || ['WITHIN SLA', 'SLA BREACH', 'NEAR BREACH']).map((status) => (
-                <option key={status} value={status} />
-              ))}
-            </datalist>
           </div>
           <div className="col-span-2">
             <label className="block text-slate-400 mb-1">

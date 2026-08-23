@@ -248,6 +248,43 @@ export async function insertSupabaseTicket(ticket: Ticket): Promise<boolean> {
   }
 }
 
+export async function bulkInsertSupabaseTickets(tickets: Ticket[]): Promise<boolean> {
+  try {
+    const rows = tickets.map((ticket) => ({
+      id: ticket.id,
+      subject: ticket.subject,
+      from_user: ticket.from,
+      req_date: ticket.reqDate,
+      req_time: ticket.reqTime,
+      plan_date: ticket.planDate,
+      count_date: ticket.countDate,
+      prov_date: ticket.provDate,
+      location: ticket.location,
+      device_id: ticket.deviceId,
+      loc_type: ticket.locType,
+      issue_type: ticket.issueType,
+      received_by: ticket.receivedBy,
+      priority: ticket.priority,
+      status: ticket.status,
+      res_time: ticket.resTime,
+      sla_threshold: ticket.slaThreshold,
+      sla_status: ticket.slaStatus,
+      tech: ticket.tech,
+      remarks: ticket.remarks,
+      email_details: ticket.emailDetails,
+    }));
+    const { error } = await supabase.from('tickets').upsert(rows);
+    if (error) {
+      console.warn('Supabase bulkInsertTickets error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkInsertTickets catch error:', err);
+    return false;
+  }
+}
+
 export async function deleteSupabaseTicket(id: string | number): Promise<boolean> {
   try {
     const { error } = await supabase.from('tickets').delete().eq('id', String(id));

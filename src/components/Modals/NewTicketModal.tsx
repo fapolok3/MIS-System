@@ -296,17 +296,11 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
             <label className="block text-slate-400 mb-1">SLA Status</label>
             <input
               type="text"
-              list="sla-status-options"
               value={slaStatus}
               onChange={(e) => setSlaStatus(e.target.value)}
               placeholder="e.g. WITHIN SLA or SLA BREACH"
               className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white focus:outline-none"
             />
-            <datalist id="sla-status-options">
-              {(systemOptions.slaStatuses || ['WITHIN SLA', 'SLA BREACH', 'NEAR BREACH']).map((status) => (
-                <option key={status} value={status} />
-              ))}
-            </datalist>
           </div>
           <div className="col-span-2">
             <label className="block text-slate-400 mb-1">

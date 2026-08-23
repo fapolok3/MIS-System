@@ -453,7 +453,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     },
     {
       key: 'ticketPriorities',
-      title: 'Priority Levels',
+      title: 'Issue Priority',
       description: 'Appears in Service Ticket & SLA Tracker priorities & Issue Tracker',
       icon: <ShieldAlert className="w-4 h-4 text-rose-400" />,
       badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-800',
@@ -462,30 +462,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     },
     {
       key: 'ticketStatuses',
-      title: 'Ticket / Service Statuses',
-      description: 'Appears in Service Ticket & SLA Tracker, and Issue Tracker status options',
+      title: 'Current Status',
+      description: 'Appears in Service Ticket & SLA Tracker Current Status, and Issue Tracker status',
       icon: <CheckCircle2 className="w-4 h-4 text-blue-400" />,
       badgeColor: 'bg-blue-950/80 text-blue-300 border-blue-800',
       groups: ['ISSUE_TRACKER', 'SERVICE'],
       feedTag: 'Feeds Service Ticket & Issue Status',
     },
     {
-      key: 'slaStatuses',
-      title: 'SLA Tracking Statuses',
-      description: 'Appears in Service Ticket & SLA Tracker (WITHIN SLA, SLA BREACH, NEAR BREACH)',
-      icon: <Clock className="w-4 h-4 text-cyan-400" />,
-      badgeColor: 'bg-cyan-950/80 text-cyan-300 border-cyan-800',
-      groups: ['SERVICE'],
-      feedTag: 'Feeds SLA Tracker Status',
-    },
-    {
       key: 'technicians',
       title: 'Assign Person / Technicians',
-      description: 'Appears in Issue Tracker, Issue Reports & Service Ticket assignee lists',
+      description: 'Appears in Issue Tracker and Issue Reports assignee dropdowns',
       icon: <Users className="w-4 h-4 text-orange-400" />,
       badgeColor: 'bg-orange-950/80 text-orange-300 border-orange-800',
-      groups: ['ISSUE_TRACKER', 'SERVICE'],
-      feedTag: 'Feeds Assign Person Dropdown',
+      groups: ['ISSUE_TRACKER'],
+      feedTag: 'Feeds Issue Tracker Assignee',
     },
     {
       key: 'locationTypes',
@@ -1120,7 +1111,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 Service Ticket & SLA Tracker Dropdown Synchronization
               </h4>
               <p className="text-slate-300 leading-relaxed">
-                Options configured below (<strong>Issue Types</strong>, <strong>Priority Levels</strong>, <strong>Ticket / Service Statuses</strong>, <strong>SLA Tracking Statuses</strong>, and <strong>Assign Person / Technicians</strong>) directly update the dynamic dropdown options across the <strong>Service Ticket & SLA Tracker</strong> module.
+                The 3 dropdown options configured below (<strong>Issue Types</strong>, <strong>Issue Priority</strong>, and <strong>Current Status</strong>) directly update the dynamic dropdown options across the <strong>Service Ticket & SLA Tracker</strong> module.
               </p>
             </div>
           </div>

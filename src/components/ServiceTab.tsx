@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Headphones, Plus, Edit, Trash2, FileSpreadsheet, Search, X } from 'lucide-react';
+import { Headphones, Plus, Edit, Trash2, FileSpreadsheet, Search, X, Upload } from 'lucide-react';
 import { Ticket } from '../types';
 import { Pagination } from './Pagination';
 import { downloadStyledExcel } from '../utils/excelExport';
@@ -12,6 +12,7 @@ interface ServiceTabProps {
   onOpenEditTicketModal: (ticket: Ticket) => void;
   onDeleteTicket: (ticketId: string) => void;
   onBulkDeleteTickets?: (ticketIds: string[]) => void;
+  onOpenExcelUploadModal?: () => void;
 }
 
 export const ServiceTab: React.FC<ServiceTabProps> = ({
@@ -22,6 +23,7 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
   onOpenEditTicketModal,
   onDeleteTicket,
   onBulkDeleteTickets,
+  onOpenExcelUploadModal,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
@@ -200,6 +202,15 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
             </button>
           )}
 
+          {onOpenExcelUploadModal && (
+            <button
+              onClick={onOpenExcelUploadModal}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow flex items-center gap-1 cursor-pointer"
+              title="Bulk import service tickets from Excel file (.xlsx, .xls, .csv)"
+            >
+              <Upload className="w-3.5 h-3.5" /> Upload from Excel
+            </button>
+          )}
           <button
             onClick={handleExportExcel}
             className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1 cursor-pointer"
