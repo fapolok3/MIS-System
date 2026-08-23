@@ -593,7 +593,22 @@ export async function fetchSupabaseSystemOptions(): Promise<SystemOptions | null
     if (!data) return null;
 
     if (data.options && typeof data.options === 'object') {
-      return { ...initialSystemOptions, ...data.options };
+      return {
+        ...initialSystemOptions,
+        ...data.options,
+        deviceStatuses: Array.isArray(data.options.deviceStatuses) && data.options.deviceStatuses.length > 0 ? data.options.deviceStatuses : (Array.isArray(data.device_statuses) ? data.device_statuses : initialSystemOptions.deviceStatuses),
+        simOperators: Array.isArray(data.options.simOperators) && data.options.simOperators.length > 0 ? data.options.simOperators : (Array.isArray(data.sim_operators) ? data.sim_operators : initialSystemOptions.simOperators),
+        accessTypes: Array.isArray(data.options.accessTypes) && data.options.accessTypes.length > 0 ? data.options.accessTypes : (Array.isArray(data.access_types) ? data.access_types : initialSystemOptions.accessTypes),
+        locationTypes: Array.isArray(data.options.locationTypes) && data.options.locationTypes.length > 0 ? data.options.locationTypes : (Array.isArray(data.location_types) ? data.location_types : initialSystemOptions.locationTypes),
+        issueTypes: Array.isArray(data.options.issueTypes) && data.options.issueTypes.length > 0 ? data.options.issueTypes : (Array.isArray(data.issue_types) ? data.issue_types : initialSystemOptions.issueTypes),
+        ticketPriorities: Array.isArray(data.options.ticketPriorities) && data.options.ticketPriorities.length > 0 ? data.options.ticketPriorities : (Array.isArray(data.ticket_priorities) ? data.ticket_priorities : initialSystemOptions.ticketPriorities),
+        ticketStatuses: Array.isArray(data.options.ticketStatuses) && data.options.ticketStatuses.length > 0 ? data.options.ticketStatuses : (Array.isArray(data.ticket_statuses) ? data.ticket_statuses : initialSystemOptions.ticketStatuses),
+        vendors: Array.isArray(data.options.vendors) && data.options.vendors.length > 0 ? data.options.vendors : (Array.isArray(data.vendors) ? data.vendors : initialSystemOptions.vendors),
+        poStatuses: Array.isArray(data.options.poStatuses) && data.options.poStatuses.length > 0 ? data.options.poStatuses : (Array.isArray(data.po_statuses) ? data.po_statuses : initialSystemOptions.poStatuses),
+        simStatuses: Array.isArray(data.options.simStatuses) && data.options.simStatuses.length > 0 ? data.options.simStatuses : (Array.isArray(data.sim_statuses) ? data.sim_statuses : initialSystemOptions.simStatuses),
+        technicians: Array.isArray(data.options.technicians) && data.options.technicians.length > 0 ? data.options.technicians : (Array.isArray(data.technicians) ? data.technicians : initialSystemOptions.technicians),
+        slaStatuses: Array.isArray(data.options.slaStatuses) && data.options.slaStatuses.length > 0 ? data.options.slaStatuses : (Array.isArray(data.sla_statuses) ? data.sla_statuses : initialSystemOptions.slaStatuses),
+      };
     }
 
     return {
@@ -639,10 +654,22 @@ export async function saveSupabaseSystemOptions(options: SystemOptions): Promise
       options: options,
       updated_at: new Date().toISOString(),
     };
-    const { error } = await supabase.from('system_options').upsert([row]);
+    
+    // First attempt full upsert
+    const { error } = await supabase.from('system_options').upsert([row], { onConflict: 'id' });
     if (error) {
-      console.warn('Supabase saveSystemOptions error:', error.message);
-      return false;
+      console.warn('Supabase saveSystemOptions initial attempt warning:', error.message);
+      // Fallback: try upserting with only basic/JSON structure if specific columns are absent in older schema
+      const fallbackRow = {
+        id: 'default',
+        options: options,
+        updated_at: new Date().toISOString(),
+      };
+      const { error: fallbackErr } = await supabase.from('system_options').upsert([fallbackRow], { onConflict: 'id' });
+      if (fallbackErr) {
+        console.warn('Supabase saveSystemOptions fallback error:', fallbackErr.message);
+        return false;
+      }
     }
     return true;
   } catch (err) {

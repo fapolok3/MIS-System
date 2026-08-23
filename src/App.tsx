@@ -247,7 +247,25 @@ export default function App() {
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('systemOptions');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') {
+            return {
+              deviceStatuses: Array.isArray(parsed.deviceStatuses) && parsed.deviceStatuses.length > 0 ? parsed.deviceStatuses : initialSystemOptions.deviceStatuses,
+              simOperators: Array.isArray(parsed.simOperators) && parsed.simOperators.length > 0 ? parsed.simOperators : initialSystemOptions.simOperators,
+              accessTypes: Array.isArray(parsed.accessTypes) && parsed.accessTypes.length > 0 ? parsed.accessTypes : initialSystemOptions.accessTypes,
+              locationTypes: Array.isArray(parsed.locationTypes) && parsed.locationTypes.length > 0 ? parsed.locationTypes : initialSystemOptions.locationTypes,
+              issueTypes: Array.isArray(parsed.issueTypes) && parsed.issueTypes.length > 0 ? parsed.issueTypes : initialSystemOptions.issueTypes,
+              ticketPriorities: Array.isArray(parsed.ticketPriorities) && parsed.ticketPriorities.length > 0 ? parsed.ticketPriorities : initialSystemOptions.ticketPriorities,
+              ticketStatuses: Array.isArray(parsed.ticketStatuses) && parsed.ticketStatuses.length > 0 ? parsed.ticketStatuses : initialSystemOptions.ticketStatuses,
+              vendors: Array.isArray(parsed.vendors) && parsed.vendors.length > 0 ? parsed.vendors : initialSystemOptions.vendors,
+              poStatuses: Array.isArray(parsed.poStatuses) && parsed.poStatuses.length > 0 ? parsed.poStatuses : initialSystemOptions.poStatuses,
+              simStatuses: Array.isArray(parsed.simStatuses) && parsed.simStatuses.length > 0 ? parsed.simStatuses : initialSystemOptions.simStatuses,
+              technicians: Array.isArray(parsed.technicians) && parsed.technicians.length > 0 ? parsed.technicians : initialSystemOptions.technicians,
+              slaStatuses: Array.isArray(parsed.slaStatuses) && parsed.slaStatuses.length > 0 ? parsed.slaStatuses : initialSystemOptions.slaStatuses,
+            };
+          }
+        }
       } catch (e) {
         console.warn('localStorage parse error', e);
       }
@@ -476,6 +494,15 @@ export default function App() {
       console.warn('localStorage save error', e);
     }
   }, [categoryGroups]);
+
+  // Persist systemOptions changes to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('systemOptions', JSON.stringify(systemOptions));
+    } catch (e) {
+      console.warn('localStorage save error', e);
+    }
+  }, [systemOptions]);
 
   // Dynamically update document title and browser favicon based on app branding & uploaded logo
   useEffect(() => {
