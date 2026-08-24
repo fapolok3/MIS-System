@@ -326,7 +326,6 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
       'SL',
       'Odoo Ticket ID',
       'Branch Name',
-      'Specific Location',
       'Issue Type',
       'Category',
       'Priority',
@@ -344,6 +343,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
       'Resolution Time',
       'Response TAT',
       'Resolution TAT',
+      'Specific Location',
       'Details',
     ];
 
@@ -367,7 +367,6 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
         index + 1,
         i.odooTicketId || '-',
         i.branchName || '-',
-        i.location || '-',
         i.issueType || '-',
         i.category || '-',
         i.priority || 'MEDIUM',
@@ -385,6 +384,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
         format12HourTime(i.resolutionTime) || '-',
         responseTAT,
         resolutionTAT,
+        i.location || '-',
         (i.details || '').replace(/\n/g, ' '),
       ];
     });
@@ -861,7 +861,6 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                       <th className="p-3 w-10 text-center font-bold">#</th>
                       <th className="p-3 font-bold whitespace-nowrap">Odoo Ticket ID</th>
                       <th className="p-3 font-bold whitespace-nowrap">Branch Name</th>
-                      <th className="p-3 font-bold whitespace-nowrap">Specific Location</th>
                       <th className="p-3 font-bold whitespace-nowrap">Issue Type</th>
                       <th className="p-3 font-bold whitespace-nowrap text-center">Priority</th>
                       <th className="p-3 font-bold whitespace-nowrap text-center">Device Swap</th>
@@ -875,6 +874,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                       <th className="p-3 font-bold whitespace-nowrap">Resolution (Date & Time)</th>
                       <th className="p-3 font-bold whitespace-nowrap text-center">Response TAT</th>
                       <th className="p-3 font-bold whitespace-nowrap text-center">Resolution TAT</th>
+                      <th className="p-3 font-bold whitespace-nowrap">Specific Location</th>
                       <th className="p-3 font-bold min-w-[250px]">Incident Details / Notes</th>
                       <th className="p-3 font-bold text-right sticky right-0 bg-slate-100 dark:bg-slate-950 shadow-l z-10">Actions</th>
                     </tr>
@@ -934,18 +934,6 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                             <span className="font-semibold text-slate-900 dark:text-white">
                               {item.branchName || '-'}
                             </span>
-                          </td>
-
-                          {/* 6. Specific Location */}
-                          <td className="p-3 whitespace-nowrap text-slate-700 dark:text-slate-300">
-                            {item.location ? (
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" />
-                                <span>{item.location}</span>
-                              </span>
-                            ) : (
-                              <span className="text-slate-400 dark:text-slate-500">-</span>
-                            )}
                           </td>
 
                           {/* 7. Issue Type */}
@@ -1117,7 +1105,19 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                             )}
                           </td>
 
-                          {/* 20. Incident Details / Notes */}
+                          {/* 20. Specific Location */}
+                          <td className="p-3 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                            {item.location ? (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" />
+                                <span>{item.location}</span>
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 dark:text-slate-500">-</span>
+                            )}
+                          </td>
+
+                          {/* 21. Incident Details / Notes */}
                           <td className="p-3 min-w-[250px] max-w-[380px]">
                             {item.details ? (
                               <div className="space-y-1">
