@@ -556,16 +556,16 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       )}
 
       {/* Header Banner */}
-      <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-lg">
+      <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xs">
         <div className="flex items-center space-x-3">
-          <div className="p-3 bg-indigo-950 border border-indigo-800/80 rounded-xl text-indigo-400">
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800/80 rounded-xl text-indigo-600 dark:text-indigo-400">
             <Settings className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
               System Settings & Brand Configuration
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Manage System Logo, Brand Identity, MIS Tree Categories, and Custom System Dropdown Options.
             </p>
           </div>
@@ -573,25 +573,25 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       </div>
 
       {/* SECTION 0: BRAND IDENTITY & SYSTEM LOGO CONFIGURATION */}
-      <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-6 shadow-md">
-        <div className="border-b border-slate-800/80 pb-3 flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-6 shadow-xs">
+        <div className="border-b border-slate-200 dark:border-slate-800/80 pb-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Sparkles className="w-5 h-5 text-amber-400" />
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+            <Sparkles className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
               Brand Identity & Logo Configuration (BBL DM System)
             </h3>
           </div>
-          <span className="text-[11px] text-amber-400 font-bold bg-amber-950/80 px-2.5 py-1 rounded border border-amber-800">
+          <span className="text-[11px] text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/80 px-2.5 py-1 rounded border border-amber-200 dark:border-amber-800">
             Logo & Branding Sync
           </span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs">
           {/* Left Column: Form Controls */}
-          <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-lg p-5 space-y-5">
+          <div className="lg:col-span-7 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 space-y-5">
             <form onSubmit={handleSaveBrandSettings} className="space-y-4">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                   System / Application Name
                 </label>
                 <input
@@ -600,15 +600,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   onChange={(e) => setAppNameInput(e.target.value)}
                   placeholder="e.g. BBL DM System"
                   required
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-medium focus:outline-none focus:border-indigo-500 transition"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-indigo-500 transition"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                   Appears in Header navigation, Login Modal, and window title bar.
                 </p>
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                   Tagline / Subtitle
                 </label>
                 <input
@@ -616,14 +616,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   value={taglineInput}
                   onChange={(e) => setTaglineInput(e.target.value)}
                   placeholder="e.g. Enterprise Management Suite"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition"
                 />
               </div>
 
               {/* Logo Upload / URL Switch */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-slate-300 font-semibold">
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold">
                     System Logo
                   </label>
                   <div className="flex items-center gap-2">
@@ -633,7 +633,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       className={`text-[11px] px-2 py-0.5 rounded transition cursor-pointer font-medium ${
                         !urlInputMode
                           ? 'bg-indigo-600 text-white'
-                          : 'bg-slate-800 text-slate-400 hover:text-white'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       File Upload
@@ -644,7 +644,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       className={`text-[11px] px-2 py-0.5 rounded transition cursor-pointer font-medium ${
                         urlInputMode
                           ? 'bg-indigo-600 text-white'
-                          : 'bg-slate-800 text-slate-400 hover:text-white'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       Image URL
@@ -664,16 +664,16 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     />
                     <label
                       htmlFor="logo-file-input"
-                      className="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-lg p-4 flex flex-col items-center justify-center gap-2 cursor-pointer bg-slate-950/60 hover:bg-slate-950 transition text-center"
+                      className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-500 rounded-lg p-4 flex flex-col items-center justify-center gap-2 cursor-pointer bg-white dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-950 transition text-center"
                     >
-                      <Upload className="w-6 h-6 text-indigo-400" />
+                      <Upload className="w-6 h-6 text-indigo-500 dark:text-indigo-400" />
                       <div>
-                        <span className="text-indigo-400 font-semibold">
+                        <span className="text-indigo-600 dark:text-indigo-400 font-semibold">
                           Click to upload logo
                         </span>{' '}
-                        <span className="text-slate-400">or drag and drop</span>
+                        <span className="text-slate-500 dark:text-slate-400">or drag and drop</span>
                       </div>
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">
                         PNG, JPG, SVG, WebP (Square or Horizontal recommended)
                       </span>
                     </label>
@@ -685,9 +685,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       value={logoInput}
                       onChange={(e) => setLogoInput(e.target.value)}
                       placeholder="https://example.com/logo.png"
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition"
                     />
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
                       Enter a direct image link or Supabase Storage public URL.
                     </p>
                   </div>
@@ -695,7 +695,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-800">
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="submit"
                   disabled={isSavingBrand}
@@ -711,7 +711,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   <button
                     type="button"
                     onClick={handleRemoveLogo}
-                    className="px-3.5 py-2.5 bg-slate-800 hover:bg-rose-950/80 text-rose-300 border border-rose-900/60 rounded-lg cursor-pointer flex items-center gap-1.5 transition font-medium"
+                    className="px-3.5 py-2.5 bg-rose-50 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 rounded-lg cursor-pointer flex items-center gap-1.5 transition font-medium"
                     title="Remove custom logo and restore default icon"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -722,7 +722,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 <button
                   type="button"
                   onClick={handleResetBrandDefaults}
-                  className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg cursor-pointer flex items-center gap-1.5 transition font-medium"
+                  className="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent rounded-lg cursor-pointer flex items-center gap-1.5 transition font-medium"
                   title="Reset all branding values to default"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -733,9 +733,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </div>
 
           {/* Right Column: Live Previews */}
-          <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-lg p-5 space-y-4 flex flex-col justify-between">
+          <div className="lg:col-span-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 space-y-4 flex flex-col justify-between">
             <div>
-              <h4 className="font-bold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5 mb-3 text-indigo-400">
+              <h4 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5 mb-3 text-indigo-600 dark:text-indigo-400">
                 <ImageIcon className="w-4 h-4" />
                 Live Branding Previews
               </h4>
@@ -743,28 +743,28 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               <div className="space-y-4">
                 {/* 1. Header Preview */}
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     1. Header Navigation Bar Preview:
                   </span>
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 flex items-center justify-between shadow-inner">
+                  <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 flex items-center justify-between shadow-xs">
                     <div className="flex items-center space-x-2.5">
                       {logoInput ? (
                         <img
                           src={logoInput}
                           alt="Logo Preview"
-                          className="w-7 h-7 rounded-md object-contain bg-slate-900 border border-slate-700/80 p-0.5 shrink-0"
+                          className="w-7 h-7 rounded-md object-contain bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 p-0.5 shrink-0"
                           referrerPolicy="no-referrer"
                         />
                       ) : (
                         <Box className="text-indigo-500 w-6 h-6 shrink-0" />
                       )}
                       <div>
-                        <span className="text-xs font-bold text-white tracking-wide block leading-tight">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white tracking-wide block leading-tight">
                           {appNameInput || 'BBL DM System'}
                         </span>
                       </div>
                     </div>
-                    <span className="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded">
+                    <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-2 py-0.5 rounded font-medium">
                       Header Bar
                     </span>
                   </div>
@@ -772,37 +772,37 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
                 {/* 2. Login Card Preview */}
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     2. Login Screen Card Preview:
                   </span>
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-4 flex flex-col items-center text-center shadow-inner">
+                  <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4 flex flex-col items-center text-center shadow-xs">
                     {logoInput ? (
                       <img
                         src={logoInput}
                         alt="Logo Preview"
-                        className="w-12 h-12 rounded-xl object-contain bg-slate-900 border border-slate-700/80 p-1 mb-2 shadow-sm"
+                        className="w-12 h-12 rounded-xl object-contain bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 p-1 mb-2 shadow-xs"
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center mb-2">
+                      <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-2">
                         <Server className="w-5 h-5" />
                       </div>
                     )}
-                    <span className="text-sm font-bold text-white leading-tight">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
                       {appNameInput || 'BBL DM System'}
                     </span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                       {taglineInput || 'Enterprise Management Suite'}
                     </span>
                   </div>
                 </div>
                 {/* 3. Browser Tab & Favicon Preview */}
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     3. Browser Tab & Favicon Preview:
                   </span>
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-2.5 flex items-center shadow-inner">
-                    <div className="bg-slate-900 border border-slate-700/80 rounded-t-md px-3 py-1.5 flex items-center space-x-2 max-w-[200px] border-b-2 border-indigo-500">
+                  <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 flex items-center shadow-xs">
+                    <div className="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-t-md px-3 py-1.5 flex items-center space-x-2 max-w-[200px] border-b-2 border-indigo-500">
                       {logoInput ? (
                         <img
                           src={logoInput}
@@ -811,9 +811,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <Box className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <Box className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
                       )}
-                      <span className="text-[11px] font-medium text-slate-200 truncate">
+                      <span className="text-[11px] font-medium text-slate-700 dark:text-slate-200 truncate">
                         {appNameInput || 'BBL DM System'}
                       </span>
                     </div>
@@ -822,7 +822,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               </div>
             </div>
 
-            <div className="p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-900/60 text-[11px] text-indigo-200">
+            <div className="p-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 text-[11px] text-indigo-800 dark:text-indigo-200">
               Logo is instantly set as the browser tab Favicon and synced with Supabase!
             </div>
           </div>
@@ -830,39 +830,39 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       </div>
 
       {/* SECTION 1: MIS TREE & CATEGORIES MANAGER (+ Category) */}
-      <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-6 shadow-md">
-        <div className="border-b border-slate-800/80 pb-3 flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-6 shadow-xs">
+        <div className="border-b border-slate-200 dark:border-slate-800/80 pb-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <FolderPlus className="w-5 h-5 text-emerald-400" />
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+            <FolderPlus className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
               Category Tree & MIS Group Manager
             </h3>
           </div>
-          <span className="text-[11px] text-emerald-400 font-bold bg-emerald-950/80 px-2.5 py-1 rounded border border-emerald-800">
+          <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/80 px-2.5 py-1 rounded border border-emerald-200 dark:border-emerald-800">
             + Category Creation Hub
           </span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs">
           {/* Form 1: Add New Category Item under Group */}
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-4">
-            <h4 className="font-bold text-white flex items-center gap-1.5 text-xs">
-              <Plus className="w-4 h-4 text-emerald-400" />
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 space-y-4">
+            <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 text-xs">
+              <Plus className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
               Add New Category Item (+ Category)
             </h4>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
               Items added here will immediately appear under the chosen group in the Sidebar MIS Tree and in Category selection dropdowns.
             </p>
 
             <form onSubmit={handleAddCategoryItem} className="space-y-3">
               <div>
-                <label className="block text-slate-300 font-medium mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
                   Select MIS Category Group
                 </label>
                 <select
                   value={selectedGroupId}
                   onChange={(e) => setSelectedGroupId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                 >
                   {categoryGroups.map((group) => (
                     <option key={group.id} value={group.id}>
@@ -873,7 +873,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
                   New Category Name
                 </label>
                 <div className="flex gap-2">
@@ -883,7 +883,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="e.g. Gouripur Sub-Branch / ATM Enclosure"
                     required
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500"
+                    className="flex-1 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                   />
                   <button
                     type="submit"
@@ -897,18 +897,18 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </div>
 
           {/* Form 2: Add New Category Group */}
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-4">
-            <h4 className="font-bold text-white flex items-center gap-1.5 text-xs">
-              <FolderPlus className="w-4 h-4 text-indigo-400" />
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 space-y-4">
+            <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 text-xs">
+              <FolderPlus className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
               Create New Category Group
             </h4>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
               Create a new top-level tree header in the sidebar (e.g. Regional Offices, ATM Networks, Security Doors).
             </p>
 
             <form onSubmit={handleAddGroup} className="space-y-3">
               <div>
-                <label className="block text-slate-300 font-medium mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
                   Group Title
                 </label>
                 <input
@@ -917,18 +917,18 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   onChange={(e) => setNewGroupTitle(e.target.value)}
                   placeholder="e.g. Regional Data Centres"
                   required
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
                   Icon Type
                 </label>
                 <select
                   value={newGroupIcon}
                   onChange={(e) => setNewGroupIcon(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none"
                 >
                   <option value="branch">Branch (Building Icon)</option>
                   <option value="security">Info Security (Shield Icon)</option>
@@ -949,7 +949,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
         {/* Existing Category Groups List Display */}
         <div className="pt-2">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
             Current Category Tree Structure
           </h4>
 
@@ -957,10 +957,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             {categoryGroups.map((group) => (
               <div
                 key={group.id}
-                className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-3"
+                className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 space-y-3"
               >
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <span className="font-bold text-indigo-400 text-xs flex items-center gap-2">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400 text-xs flex items-center gap-2">
                     <Building className="w-4 h-4" />
                     {group.title}
                   </span>
@@ -971,24 +971,24 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       e.stopPropagation();
                       handleDeleteGroup(group.id, group.title);
                     }}
-                    className="p-1.5 rounded-md bg-slate-800/80 hover:bg-rose-900/60 text-slate-400 hover:text-rose-200 border border-slate-700/60 hover:border-rose-600 transition cursor-pointer flex items-center justify-center gap-1 text-[11px] font-bold"
+                    className="p-1.5 rounded-md bg-white dark:bg-slate-800/80 hover:bg-rose-50 dark:hover:bg-rose-900/60 text-slate-600 dark:text-slate-400 hover:text-rose-700 dark:hover:text-rose-200 border border-slate-200 dark:border-slate-700/60 hover:border-rose-400 dark:hover:border-rose-600 transition cursor-pointer flex items-center justify-center gap-1 text-[11px] font-bold"
                     title={`Delete Category Group "${group.title}"`}
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
                     <span>Delete</span>
                   </button>
                 </div>
 
                 <div className="flex flex-wrap gap-1.5">
                   {group.items.length === 0 ? (
-                    <span className="text-[11px] text-slate-500 italic">
+                    <span className="text-[11px] text-slate-400 italic">
                       No categories yet. Add one above!
                     </span>
                   ) : (
                     group.items.map((item) => (
                       <span
                         key={item}
-                        className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-slate-950 text-slate-200 border border-slate-800 text-[11px] hover:border-slate-700 transition"
+                        className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition shadow-2xs"
                       >
                         <span className="font-medium">{item}</span>
                         <button
@@ -998,10 +998,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             e.stopPropagation();
                             handleDeleteCategoryItem(group.id, item);
                           }}
-                          className="p-0.5 rounded hover:bg-rose-900/80 text-slate-400 hover:text-rose-200 transition cursor-pointer flex items-center justify-center"
+                          className="p-0.5 hover:bg-rose-100 dark:hover:bg-rose-900/80 text-slate-400 hover:text-rose-600 dark:hover:text-rose-200 rounded transition cursor-pointer flex items-center justify-center"
                           title={`Remove "${item}" category`}
                         >
-                          <Trash2 className="w-3 h-3 text-rose-400" />
+                          <Trash2 className="w-3 h-3 text-rose-500 dark:text-rose-400" />
                         </button>
                       </span>
                     ))
@@ -1014,35 +1014,35 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       </div>
 
       {/* SECTION 2: SYSTEM DROPDOWN OPTIONS MANAGER */}
-      <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 space-y-6 shadow-md">
-        <div className="border-b border-slate-800/80 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-6 shadow-xs">
+        <div className="border-b border-slate-200 dark:border-slate-800/80 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-lg">
+            <div className="p-2 bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 rounded-lg">
               <Sliders className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                 System Dropdown Options Configurator
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Configure dynamic dropdown options for all modules. Add custom options that immediately flow into forms!
               </p>
             </div>
           </div>
-          <span className="text-[11px] text-indigo-400 font-bold bg-indigo-950/80 px-3 py-1 rounded border border-indigo-800 self-start md:self-auto">
+          <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/80 px-3 py-1 rounded border border-indigo-200 dark:border-indigo-800 self-start md:self-auto">
             Dynamic Form Options
           </span>
         </div>
 
         {/* Quick Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-800/80 pb-3 text-xs font-semibold">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800/80 pb-3 text-xs font-semibold">
           <button
             type="button"
             onClick={() => setOptionFilterTab('ALL')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
               optionFilterTab === 'ALL'
-                ? 'bg-indigo-600 text-white font-bold shadow-sm'
-                : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
+                ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
             }`}
           >
             <Filter className="w-3.5 h-3.5" />
@@ -1054,11 +1054,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             onClick={() => setOptionFilterTab('SERVICE')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
               optionFilterTab === 'SERVICE'
-                ? 'bg-cyan-600 text-white font-bold shadow-sm ring-2 ring-cyan-400/40'
-                : 'bg-slate-900 text-cyan-300 hover:text-white hover:bg-slate-800 border border-cyan-900/60'
+                ? 'bg-cyan-600 text-white font-bold shadow-xs ring-2 ring-cyan-400/40'
+                : 'bg-cyan-50 dark:bg-slate-900 text-cyan-700 dark:text-cyan-300 hover:text-cyan-900 dark:hover:text-white hover:bg-cyan-100 dark:hover:bg-slate-800 border border-cyan-200 dark:border-cyan-900/60'
             }`}
           >
-            <Headphones className="w-3.5 h-3.5 text-cyan-400" />
+            <Headphones className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
             <span>Service Ticket & SLA ({optionSections.filter((s) => s.groups.includes('SERVICE')).length})</span>
           </button>
 
@@ -1067,11 +1067,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             onClick={() => setOptionFilterTab('ISSUE_TRACKER')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
               optionFilterTab === 'ISSUE_TRACKER'
-                ? 'bg-rose-600 text-white font-bold shadow-sm ring-2 ring-rose-400/40'
-                : 'bg-slate-900 text-rose-300 hover:text-white hover:bg-slate-800 border border-rose-900/60'
+                ? 'bg-rose-600 text-white font-bold shadow-xs ring-2 ring-rose-400/40'
+                : 'bg-rose-50 dark:bg-slate-900 text-rose-700 dark:text-rose-300 hover:text-rose-900 dark:hover:text-white hover:bg-rose-100 dark:hover:bg-slate-800 border border-rose-200 dark:border-rose-900/60'
             }`}
           >
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
             <span>Issue Tracker ({optionSections.filter((s) => s.groups.includes('ISSUE_TRACKER')).length})</span>
           </button>
 
@@ -1080,11 +1080,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             onClick={() => setOptionFilterTab('DEVICES')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
               optionFilterTab === 'DEVICES'
-                ? 'bg-emerald-600 text-white font-bold shadow-sm'
-                : 'bg-slate-900 text-emerald-300 hover:text-white hover:bg-slate-800 border border-emerald-900/60'
+                ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                : 'bg-emerald-50 dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-white hover:bg-emerald-100 dark:hover:bg-slate-800 border border-emerald-200 dark:border-emerald-900/60'
             }`}
           >
-            <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+            <Cpu className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
             <span>Devices & SIM ({optionSections.filter((s) => s.groups.includes('DEVICES')).length})</span>
           </button>
 
@@ -1093,24 +1093,24 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             onClick={() => setOptionFilterTab('PO')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
               optionFilterTab === 'PO'
-                ? 'bg-teal-600 text-white font-bold shadow-sm'
-                : 'bg-slate-900 text-teal-300 hover:text-white hover:bg-slate-800 border border-teal-900/60'
+                ? 'bg-teal-600 text-white font-bold shadow-xs'
+                : 'bg-teal-50 dark:bg-slate-900 text-teal-700 dark:text-teal-300 hover:text-teal-900 dark:hover:text-white hover:bg-teal-100 dark:hover:bg-slate-800 border border-teal-200 dark:border-teal-900/60'
             }`}
           >
-            <ShoppingBag className="w-3.5 h-3.5 text-teal-400" />
+            <ShoppingBag className="w-3.5 h-3.5 text-teal-500 dark:text-teal-400" />
             <span>Procurement & PO ({optionSections.filter((s) => s.groups.includes('PO')).length})</span>
           </button>
         </div>
 
         {/* Service Ticket & SLA Highlight Notice */}
         {optionFilterTab === 'SERVICE' && (
-          <div className="bg-cyan-950/30 border border-cyan-800/60 rounded-xl p-4 flex items-start gap-3 text-xs">
-            <Headphones className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+          <div className="bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800/60 rounded-xl p-4 flex items-start gap-3 text-xs">
+            <Headphones className="w-5 h-5 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="font-bold text-cyan-200">
+              <h4 className="font-bold text-cyan-800 dark:text-cyan-200">
                 Service Ticket & SLA Tracker Dropdown Synchronization
               </h4>
-              <p className="text-slate-300 leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                 The 3 dropdown options configured below (<strong>Issue Types</strong>, <strong>Issue Priority</strong>, and <strong>Current Status</strong>) directly update the dynamic dropdown options across the <strong>Service Ticket & SLA Tracker</strong> module.
               </p>
             </div>
@@ -1119,13 +1119,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
         {/* Issue Tracker Highlight Notice */}
         {(optionFilterTab === 'ALL' || optionFilterTab === 'ISSUE_TRACKER') && (
-          <div className="bg-rose-950/30 border border-rose-800/60 rounded-xl p-4 flex items-start gap-3 text-xs">
-            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+          <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60 rounded-xl p-4 flex items-start gap-3 text-xs">
+            <AlertCircle className="w-5 h-5 text-rose-500 dark:text-rose-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="font-bold text-rose-200">
+              <h4 className="font-bold text-rose-800 dark:text-rose-200">
                 Issue Tracker Dropdown Synchronization
               </h4>
-              <p className="text-slate-300 leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                 Options created or deleted below (<strong>Issue Types</strong>, <strong>Priority Levels</strong>, <strong>Issue Statuses</strong>, and <strong>Assign Person / Technicians</strong>) directly update the dropdown menus in the <strong>Issue Tracker</strong> and <strong>Issue Reports</strong> tabs. Category options are managed hierarchically in the Category Tree Manager above.
               </p>
             </div>
@@ -1142,36 +1142,36 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               return (
                 <div
                   key={section.key}
-                  className={`bg-slate-900 border rounded-xl p-4 flex flex-col justify-between space-y-4 transition ${
+                  className={`bg-slate-50 dark:bg-slate-900 border rounded-xl p-4 flex flex-col justify-between space-y-4 transition ${
                     section.groups.includes('SERVICE') && optionFilterTab === 'SERVICE'
-                      ? 'border-cyan-900/60 hover:border-cyan-700/80'
+                      ? 'border-cyan-300 dark:border-cyan-900/60 hover:border-cyan-400 dark:hover:border-cyan-700/80'
                       : section.groups.includes('ISSUE_TRACKER') && optionFilterTab === 'ISSUE_TRACKER'
-                      ? 'border-rose-900/50 hover:border-rose-700/80'
-                      : 'border-slate-800/90 hover:border-slate-700'
+                      ? 'border-rose-300 dark:border-rose-900/50 hover:border-rose-400 dark:hover:border-rose-700/80'
+                      : 'border-slate-200 dark:border-slate-800/90 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
                   <div className="space-y-2.5">
-                    <div className="flex items-start justify-between border-b border-slate-800 pb-2.5 gap-2">
+                    <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5 gap-2">
                       <div className="flex items-center space-x-2">
                         {section.icon}
                         <div>
-                          <h4 className="text-xs font-bold text-white">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                             {section.title}
                           </h4>
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
                             {section.description}
                           </p>
                         </div>
                       </div>
-                      <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-950 text-indigo-300 border border-slate-800 shrink-0">
+                      <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-white dark:bg-slate-950 text-indigo-700 dark:text-indigo-300 border border-slate-200 dark:border-slate-800 shrink-0">
                         {section.feedTag}
                       </span>
                     </div>
 
                     {/* Badges List */}
-                    <div className="flex flex-wrap gap-1.5 min-h-[60px] max-h-[120px] overflow-y-auto p-1.5 bg-slate-950/70 rounded-lg border border-slate-800/60">
+                    <div className="flex flex-wrap gap-1.5 min-h-[60px] max-h-[120px] overflow-y-auto p-1.5 bg-white dark:bg-slate-950/70 rounded-lg border border-slate-200 dark:border-slate-800/60">
                       {list.length === 0 ? (
-                        <span className="text-[11px] text-slate-500 p-1">
+                        <span className="text-[11px] text-slate-400 p-1">
                           No options available.
                         </span>
                       ) : (
@@ -1188,7 +1188,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 e.stopPropagation();
                                 handleRemoveOption(section.key, item);
                               }}
-                              className="p-0.5 hover:bg-rose-900/80 text-slate-300 hover:text-rose-200 rounded transition cursor-pointer flex items-center justify-center ml-0.5"
+                              className="p-0.5 hover:bg-rose-100 dark:hover:bg-rose-900/80 text-slate-500 dark:text-slate-300 hover:text-rose-700 dark:hover:text-rose-200 rounded transition cursor-pointer flex items-center justify-center ml-0.5"
                               title={`Remove "${item}"`}
                             >
                               <Trash2 className="w-2.5 h-2.5" />
@@ -1200,7 +1200,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   </div>
 
                   {/* Add Option Form */}
-                  <div className="pt-2 border-t border-slate-800">
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
                     <div className="flex gap-1.5">
                       <input
                         type="text"
@@ -1218,7 +1218,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                           }
                         }}
                         placeholder={`Add new ${section.title.toLowerCase()}...`}
-                        className="flex-1 bg-slate-950 border border-slate-700/80 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        className="flex-1 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700/80 rounded px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                       />
                       <button
                         type="button"

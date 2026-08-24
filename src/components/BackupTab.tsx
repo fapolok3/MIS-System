@@ -67,12 +67,12 @@ export const BackupTab: React.FC<BackupTabProps> = ({ data, onRestoreData }) => 
 
   return (
     <div className="space-y-4">
-      <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-lg">
-        <h2 className="text-sm font-bold text-white uppercase flex items-center">
-          <Database className="w-4 h-4 text-indigo-400 mr-2" />
+      <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-4 rounded-lg shadow-xs">
+        <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase flex items-center">
+          <Database className="w-4 h-4 text-indigo-500 dark:text-indigo-400 mr-2" />
           Offline Local Database Backup & Restore
         </h2>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
           Stores data securely on your local PC drive, USB Drive, or External Storage
           without internet.
         </p>
@@ -80,33 +80,33 @@ export const BackupTab: React.FC<BackupTabProps> = ({ data, onRestoreData }) => 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Create Backup */}
-        <div className="bg-slate-800/50 border border-slate-800 p-5 rounded-lg space-y-4">
+        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 p-5 rounded-lg space-y-4 shadow-xs">
           <div className="flex items-center space-x-3">
-            <Download className="w-8 h-8 text-indigo-400" />
+            <Download className="w-8 h-8 text-indigo-500 dark:text-indigo-400" />
             <div>
-              <h3 className="font-bold text-white text-sm">Create Database Backup</h3>
-              <p className="text-xs text-slate-400">
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">Create Database Backup</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Export SQLite database as an encrypted backup file.
               </p>
             </div>
           </div>
           <button
             onClick={handleGenerateBackup}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded text-xs transition cursor-pointer"
+            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded text-xs transition cursor-pointer shadow-xs"
           >
             Generate Instant Backup
           </button>
         </div>
 
         {/* Restore Backup */}
-        <div className="bg-slate-800/50 border border-slate-800 p-5 rounded-lg space-y-4">
+        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 p-5 rounded-lg space-y-4 shadow-xs">
           <div className="flex items-center space-x-3">
-            <Upload className="w-8 h-8 text-emerald-400" />
+            <Upload className="w-8 h-8 text-emerald-500 dark:text-emerald-400" />
             <div>
-              <h3 className="font-bold text-white text-sm">
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">
                 Restore From Backup File
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Select backup file from USB drive or local disk.
               </p>
             </div>
@@ -115,7 +115,7 @@ export const BackupTab: React.FC<BackupTabProps> = ({ data, onRestoreData }) => 
             type="file"
             accept=".json, .sqlite, .zip"
             onChange={handleFileUpload}
-            className="block w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-slate-700 file:text-slate-200 cursor-pointer"
+            className="block w-full text-xs text-slate-600 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-slate-100 hover:file:bg-slate-200 dark:file:bg-slate-700 dark:hover:file:bg-slate-600 file:text-slate-800 dark:file:text-slate-200 cursor-pointer"
           />
         </div>
       </div>

@@ -64,6 +64,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
   const [activeSubView, setActiveSubView] = useState<'table' | 'analytics'>('table');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBranch, setFilterBranch] = useState('ALL');
+  const [filterLocation, setFilterLocation] = useState('ALL');
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [filterIssueType, setFilterIssueType] = useState('ALL');
   const [filterPriority, setFilterPriority] = useState('ALL');
@@ -111,6 +112,10 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
   // Extract unique filter lists
   const allBranches = useMemo(() => {
     return Array.from(new Set(issues.map((i) => i.branchName).filter(Boolean))).sort();
+  }, [issues]);
+
+  const allLocations = useMemo(() => {
+    return Array.from(new Set(issues.map((i) => i.location).filter(Boolean))).sort();
   }, [issues]);
 
   const allCategories = useMemo(() => {
@@ -167,6 +172,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
       // Dropdown filters
       if (filterBranch !== 'ALL' && item.branchName !== filterBranch) return false;
+      if (filterLocation !== 'ALL' && item.location !== filterLocation) return false;
       if (filterCategory !== 'ALL' && item.category !== filterCategory) return false;
       if (filterIssueType !== 'ALL' && item.issueType !== filterIssueType) return false;
       if (filterPriority !== 'ALL' && item.priority !== filterPriority) return false;
@@ -183,6 +189,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
     issues,
     searchQuery,
     filterBranch,
+    filterLocation,
     filterCategory,
     filterIssueType,
     filterPriority,
@@ -198,6 +205,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
   }, [
     searchQuery,
     filterBranch,
+    filterLocation,
     filterCategory,
     filterIssueType,
     filterPriority,
@@ -318,13 +326,13 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
       'SL',
       'Odoo Ticket ID',
       'Branch Name',
+      'Specific Location',
       'Issue Type',
       'Category',
       'Priority',
       'Device Replace',
       'Old Device ID',
       'Replace Device ID',
-      'Location',
       'Assign Person',
       'Status',
       'Date',
@@ -359,13 +367,13 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
         index + 1,
         i.odooTicketId || '-',
         i.branchName || '-',
+        i.location || '-',
         i.issueType || '-',
         i.category || '-',
         i.priority || 'MEDIUM',
         i.deviceReplace || 'NO',
         i.oldDeviceId || '-',
         i.replaceDeviceId || '-',
-        i.location || '-',
         i.assignPerson || 'Unassigned',
         i.status || 'OPEN',
         i.date || '-',
@@ -472,19 +480,19 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
       )}
 
       {/* Header Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center space-x-3.5">
-          <div className="p-3 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-xl">
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 rounded-xl">
             <FileText className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
               Issue Report & Incident Analytics
-              <span className="text-xs bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded font-mono">
+              <span className="text-xs bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-2 py-0.5 rounded font-mono">
                 {filteredIssues.length} Records
               </span>
             </h1>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Complete incident register, resolution turnaround SLAs, device replacement tracking, and visual analytics.
             </p>
           </div>
@@ -492,13 +500,13 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
         <div className="flex flex-wrap items-center gap-2 self-stretch md:self-auto">
           {/* Sub-view Switcher */}
-          <div className="bg-slate-950 p-1 rounded-lg border border-slate-800 flex items-center">
+          <div className="bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center">
             <button
               onClick={() => setActiveSubView('table')}
               className={`px-3 py-1.5 rounded-md text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                 activeSubView === 'table'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
@@ -508,8 +516,8 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
               onClick={() => setActiveSubView('analytics')}
               className={`px-3 py-1.5 rounded-md text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                 activeSubView === 'analytics'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5" />
@@ -519,7 +527,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
           <button
             onClick={onNavigateToTracker}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Issue Entry</span>
@@ -527,7 +535,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
           <button
             onClick={handleExportExcel}
-            className="px-3.5 py-2 bg-emerald-700/80 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition cursor-pointer flex items-center gap-1.5 border border-emerald-600 shadow-sm"
+            className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition cursor-pointer flex items-center gap-1.5 border border-emerald-600 shadow-xs"
             title="Download Excel Report (.xls)"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-200" />
@@ -536,10 +544,10 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
           <button
             onClick={handlePrint}
-            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition cursor-pointer flex items-center gap-1.5 border border-slate-700"
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg transition cursor-pointer flex items-center gap-1.5 border border-slate-300 dark:border-slate-700"
             title="Print Report"
           >
-            <Printer className="w-3.5 h-3.5 text-slate-400" />
+            <Printer className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <span className="hidden sm:inline">Print</span>
           </button>
         </div>
@@ -547,50 +555,50 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
       {/* KPI Cards Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
-          <span className="text-[11px] text-slate-400 uppercase font-semibold">Total Issues</span>
-          <div className="text-xl font-bold text-white font-mono">{analytics.total}</div>
-          <div className="text-[10px] text-slate-500">All registered incidents</div>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-1 shadow-xs">
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Total Issues</span>
+          <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">{analytics.total}</div>
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">All registered incidents</div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
-          <span className="text-[11px] text-amber-400 uppercase font-semibold">Open / Active</span>
-          <div className="text-xl font-bold text-amber-300 font-mono">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-1 shadow-xs">
+          <span className="text-[11px] text-amber-600 dark:text-amber-400 uppercase font-semibold">Open / Active</span>
+          <div className="text-xl font-bold text-amber-600 dark:text-amber-300 font-mono">
             {analytics.open + analytics.inProgress}
           </div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">
             {analytics.open} Open, {analytics.inProgress} In-Progress
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
-          <span className="text-[11px] text-emerald-400 uppercase font-semibold">Resolved</span>
-          <div className="text-xl font-bold text-emerald-300 font-mono">{analytics.resolved}</div>
-          <div className="text-[10px] text-emerald-400/80 font-bold">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-1 shadow-xs">
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 uppercase font-semibold">Resolved</span>
+          <div className="text-xl font-bold text-emerald-600 dark:text-emerald-300 font-mono">{analytics.resolved}</div>
+          <div className="text-[10px] text-emerald-600 dark:text-emerald-400/80 font-bold">
             {analytics.resolutionRate}% Resolution Rate
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
-          <span className="text-[11px] text-rose-400 uppercase font-semibold">Critical / High</span>
-          <div className="text-xl font-bold text-rose-300 font-mono">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-1 shadow-xs">
+          <span className="text-[11px] text-rose-600 dark:text-rose-400 uppercase font-semibold">Critical / High</span>
+          <div className="text-xl font-bold text-rose-600 dark:text-rose-300 font-mono">
             {analytics.critical + analytics.high}
           </div>
-          <div className="text-[10px] text-slate-500">{analytics.critical} Critical Priority</div>
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">{analytics.critical} Critical Priority</div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
-          <span className="text-[11px] text-indigo-400 uppercase font-semibold">Device Replaced</span>
-          <div className="text-xl font-bold text-indigo-300 font-mono">{analytics.replaced}</div>
-          <div className="text-[10px] text-slate-500">Hardware swap incidents</div>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-1 shadow-xs">
+          <span className="text-[11px] text-indigo-600 dark:text-indigo-400 uppercase font-semibold">Device Replaced</span>
+          <div className="text-xl font-bold text-indigo-600 dark:text-indigo-300 font-mono">{analytics.replaced}</div>
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">Hardware swap incidents</div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
-          <span className="text-[11px] text-purple-400 uppercase font-semibold">Avg Resolution</span>
-          <div className="text-xl font-bold text-purple-300 font-mono">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-1 shadow-xs">
+          <span className="text-[11px] text-purple-600 dark:text-purple-400 uppercase font-semibold">Avg Resolution</span>
+          <div className="text-xl font-bold text-purple-600 dark:text-purple-300 font-mono">
             {analytics.avgResolutionHours} {analytics.avgResolutionHours !== 'N/A' ? 'hrs' : ''}
           </div>
-          <div className="text-[10px] text-slate-500">Mean time to resolve (MTTR)</div>
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">Mean time to resolve (MTTR)</div>
         </div>
       </div>
 
@@ -598,11 +606,11 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
       {activeSubView === 'table' && (
         <div className="space-y-4">
           {/* Multi-Filter Bar Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3 shadow-xs">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 pb-2.5">
               <div className="flex items-center space-x-2">
-                <Filter className="w-4 h-4 text-indigo-400" />
-                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                <Filter className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Filter & Search Incident Register
                 </span>
               </div>
@@ -620,6 +628,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                   onClick={() => {
                     setSearchQuery('');
                     setFilterBranch('ALL');
+                    setFilterLocation('ALL');
                     setFilterCategory('ALL');
                     setFilterIssueType('ALL');
                     setFilterPriority('ALL');
@@ -628,7 +637,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                     setFilterDateFrom('');
                     setFilterDateTo('');
                   }}
-                  className="text-[11px] text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1 cursor-pointer"
+                  className="text-[11px] text-rose-500 dark:text-rose-400 hover:text-rose-600 dark:hover:text-rose-300 font-semibold flex items-center gap-1 cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />
                   <span>Reset All Filters</span>
@@ -637,16 +646,16 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
             </div>
 
             {/* Filter Dropdowns Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2.5 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
               {/* Search Bar */}
-              <div className="sm:col-span-2 relative">
+              <div className="sm:col-span-2 md:col-span-1 lg:col-span-2 relative">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by ID, Branch, Odoo, Device, Tech..."
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
+                  placeholder="Search by ID, Branch, Location, Odoo, Device..."
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg pl-8 pr-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-xs"
                 />
               </div>
 
@@ -655,7 +664,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                 <select
                   value={filterBranch}
                   onChange={(e) => setFilterBranch(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs"
                 >
                   <option value="ALL">All Branches</option>
                   {allBranches.map((b) => (
@@ -666,12 +675,28 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                 </select>
               </div>
 
+              {/* Specific Location Filter */}
+              <div>
+                <select
+                  value={filterLocation}
+                  onChange={(e) => setFilterLocation(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs font-medium"
+                >
+                  <option value="ALL">All Specific Locations</option>
+                  {allLocations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      📍 {loc}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Priority Filter */}
               <div>
                 <select
                   value={filterPriority}
                   onChange={(e) => setFilterPriority(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs"
                 >
                   <option value="ALL">All Priorities</option>
                   {allPriorities.map((p) => (
@@ -695,7 +720,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs"
                 >
                   <option value="ALL">All Statuses</option>
                   {allStatuses.map((st) => (
@@ -721,7 +746,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                 <select
                   value={filterDeviceReplace}
                   onChange={(e) => setFilterDeviceReplace(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-indigo-500 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs"
                 >
                   <option value="ALL">All Device Actions</option>
                   <option value="YES">⚡ Replaced Only</option>
@@ -736,7 +761,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                 <select
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs"
                 >
                   <option value="ALL">All Categories</option>
                   {allCategories.map((c) => (
@@ -751,7 +776,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                 <select
                   value={filterIssueType}
                   onChange={(e) => setFilterIssueType(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500 text-xs"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs"
                 >
                   <option value="ALL">All Issue Types</option>
                   {allIssueTypes.map((t) => (
@@ -763,22 +788,22 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-slate-400 shrink-0">From:</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 shrink-0">From:</span>
                 <input
                   type="date"
                   value={filterDateFrom}
                   onChange={(e) => setFilterDateFrom(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-slate-400 shrink-0">To:</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 shrink-0">To:</span>
                 <input
                   type="date"
                   value={filterDateTo}
                   onChange={(e) => setFilterDateTo(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-white text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -786,8 +811,8 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
           {/* Bulk Action Bar */}
           {selectedIds.length > 0 && (
-            <div className="bg-indigo-950/80 border border-indigo-800 rounded-xl p-3 flex items-center justify-between text-xs animate-fade-in">
-              <span className="text-indigo-200 font-bold">
+            <div className="bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 rounded-xl p-3 flex items-center justify-between text-xs animate-fade-in shadow-xs">
+              <span className="text-indigo-900 dark:text-indigo-200 font-bold">
                 {selectedIds.length} incident(s) selected
               </span>
               <div className="flex items-center gap-2">
@@ -804,11 +829,11 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
           )}
 
           {/* Issue Data Table with ALL Fields Visible */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-md overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs overflow-hidden">
             {filteredIssues.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 text-xs space-y-3">
-                <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto" />
-                <p className="font-semibold text-slate-300">No issue records matched your criteria.</p>
+              <div className="p-12 text-center text-slate-500 dark:text-slate-400 text-xs space-y-3">
+                <AlertTriangle className="w-8 h-8 text-amber-500 dark:text-amber-400 mx-auto" />
+                <p className="font-semibold text-slate-700 dark:text-slate-300">No issue records matched your criteria.</p>
                 <button
                   onClick={onNavigateToTracker}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1.5"
@@ -821,7 +846,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse min-w-[2000px]">
                   <thead>
-                    <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 uppercase tracking-wider text-[10px] sticky top-0 z-10">
+                    <tr className="bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider text-[10px] sticky top-0 z-10">
                       <th className="p-3 w-8 text-center">
                         <input
                           type="checkbox"
@@ -830,7 +855,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                             selectedIds.length === filteredIssues.length
                           }
                           onChange={handleSelectAll}
-                          className="rounded bg-slate-900 border-slate-700 text-indigo-600 cursor-pointer"
+                          className="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-indigo-600 cursor-pointer"
                         />
                       </th>
                       <th className="p-3 w-10 text-center font-bold">#</th>
@@ -851,10 +876,10 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                       <th className="p-3 font-bold whitespace-nowrap text-center">Response TAT</th>
                       <th className="p-3 font-bold whitespace-nowrap text-center">Resolution TAT</th>
                       <th className="p-3 font-bold min-w-[250px]">Incident Details / Notes</th>
-                      <th className="p-3 font-bold text-right sticky right-0 bg-slate-950 shadow-l z-10">Actions</th>
+                      <th className="p-3 font-bold text-right sticky right-0 bg-slate-100 dark:bg-slate-950 shadow-l z-10">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/80">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80">
                     {paginatedIssues.map((item, idx) => {
                       const responseTAT = calculateTAT(
                         item.clientReportingDate,
@@ -874,8 +899,8 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                       return (
                         <tr
                           key={item.id}
-                          className={`hover:bg-slate-800/60 transition group ${
-                            selectedIds.includes(item.id) ? 'bg-indigo-950/30' : ''
+                          className={`hover:bg-slate-50 dark:hover:bg-slate-800/60 transition group ${
+                            selectedIds.includes(item.id) ? 'bg-indigo-50/70 dark:bg-indigo-950/30' : ''
                           }`}
                         >
                           {/* 1. Checkbox */}
@@ -884,48 +909,48 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                               type="checkbox"
                               checked={selectedIds.includes(item.id)}
                               onChange={() => handleToggleSelect(item.id)}
-                              className="rounded bg-slate-900 border-slate-700 text-indigo-600 cursor-pointer"
+                              className="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-indigo-600 cursor-pointer"
                             />
                           </td>
 
                           {/* 2. SL Number */}
-                          <td className="p-3 text-center text-slate-500 font-mono text-[11px]">
+                          <td className="p-3 text-center text-slate-500 dark:text-slate-400 font-mono text-[11px]">
                             {slNumber}
                           </td>
 
                           {/* 3. Odoo Ticket ID */}
                           <td className="p-3 whitespace-nowrap font-mono">
                             {item.odooTicketId ? (
-                              <span className="text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/60">
+                              <span className="text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900/60">
                                 {item.odooTicketId}
                               </span>
                             ) : (
-                              <span className="text-slate-500">-</span>
+                              <span className="text-slate-400 dark:text-slate-500">-</span>
                             )}
                           </td>
 
                           {/* 5. Branch Name */}
                           <td className="p-3 whitespace-nowrap">
-                            <span className="font-semibold text-white">
+                            <span className="font-semibold text-slate-900 dark:text-white">
                               {item.branchName || '-'}
                             </span>
                           </td>
 
                           {/* 6. Specific Location */}
-                          <td className="p-3 whitespace-nowrap text-slate-300">
+                          <td className="p-3 whitespace-nowrap text-slate-700 dark:text-slate-300">
                             {item.location ? (
                               <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                                <MapPin className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" />
                                 <span>{item.location}</span>
                               </span>
                             ) : (
-                              <span className="text-slate-500">-</span>
+                              <span className="text-slate-400 dark:text-slate-500">-</span>
                             )}
                           </td>
 
                           {/* 7. Issue Type */}
                           <td className="p-3 whitespace-nowrap">
-                            <span className="text-slate-200 font-medium bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+                            <span className="text-slate-800 dark:text-slate-200 font-medium bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                               {item.issueType || '-'}
                             </span>
                           </td>
@@ -935,12 +960,12 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                             <span
                               className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border inline-block ${
                                 item.priority === 'CRITICAL'
-                                  ? 'bg-rose-950/90 text-rose-300 border-rose-800'
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/90 dark:text-rose-300 dark:border-rose-800'
                                   : item.priority === 'HIGH'
-                                  ? 'bg-orange-950/90 text-orange-300 border-orange-800'
+                                  ? 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/90 dark:text-orange-300 dark:border-orange-800'
                                   : item.priority === 'MEDIUM'
-                                  ? 'bg-amber-950/90 text-amber-300 border-amber-800'
-                                  : 'bg-emerald-950/90 text-emerald-300 border-emerald-800'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/90 dark:text-amber-300 dark:border-amber-800'
+                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/90 dark:text-emerald-300 dark:border-emerald-800'
                               }`}
                             >
                               {item.priority || 'MEDIUM'}
@@ -950,47 +975,47 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                           {/* 9. Device Swap */}
                           <td className="p-3 whitespace-nowrap text-center">
                             {item.deviceReplace === 'YES' ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800 inline-flex items-center gap-1">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 inline-flex items-center gap-1">
                                 <Repeat className="w-3 h-3" /> Replaced
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800/60 text-slate-400 border border-slate-700">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800/60 dark:text-slate-400 dark:border-slate-700">
                                 No Swap
                               </span>
                             )}
                           </td>
 
                           {/* 10. Old Device ID */}
-                          <td className="p-3 whitespace-nowrap font-mono text-slate-300">
+                          <td className="p-3 whitespace-nowrap font-mono text-slate-800 dark:text-slate-300">
                             {item.oldDeviceId ? (
-                              <span className="bg-rose-950/30 text-rose-300 px-2 py-0.5 rounded border border-rose-900/60">
+                              <span className="bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 px-2 py-0.5 rounded dark:border-rose-900/60">
                                 {item.oldDeviceId}
                               </span>
                             ) : (
-                              <span className="text-slate-500">-</span>
+                              <span className="text-slate-400 dark:text-slate-500">-</span>
                             )}
                           </td>
 
                           {/* 11. Replacement Device ID */}
-                          <td className="p-3 whitespace-nowrap font-mono text-slate-300">
+                          <td className="p-3 whitespace-nowrap font-mono text-slate-800 dark:text-slate-300">
                             {item.replaceDeviceId ? (
-                              <span className="bg-emerald-950/30 text-emerald-300 px-2 py-0.5 rounded border border-emerald-900/60">
+                              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 px-2 py-0.5 rounded dark:border-emerald-900/60">
                                 {item.replaceDeviceId}
                               </span>
                             ) : (
-                              <span className="text-slate-500">-</span>
+                              <span className="text-slate-400 dark:text-slate-500">-</span>
                             )}
                           </td>
 
                           {/* 12. Assigned Person */}
-                          <td className="p-3 whitespace-nowrap text-slate-200 font-medium">
+                          <td className="p-3 whitespace-nowrap text-slate-800 dark:text-slate-200 font-medium">
                             {item.assignPerson ? (
                               <span className="flex items-center gap-1.5">
-                                <User className="w-3 h-3 text-indigo-400" />
+                                <User className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />
                                 <span>{item.assignPerson}</span>
                               </span>
                             ) : (
-                              <span className="text-slate-500 italic">Unassigned</span>
+                              <span className="text-slate-400 dark:text-slate-500 italic">Unassigned</span>
                             )}
                           </td>
 
@@ -1001,12 +1026,12 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                               onChange={(e) => handleQuickStatusChange(item, e.target.value)}
                               className={`text-[10px] font-bold px-2 py-1 rounded-lg border cursor-pointer transition focus:outline-none ${
                                 item.status === 'RESOLVED' || item.status === 'CLOSED'
-                                  ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
                                   : item.status === 'IN_PROGRESS'
-                                  ? 'bg-blue-950 text-blue-300 border-blue-800'
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800'
                                   : item.status === 'PENDING_CLIENT'
-                                  ? 'bg-purple-950 text-purple-300 border-purple-800'
-                                  : 'bg-amber-950 text-amber-300 border-amber-800'
+                                  ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
                               }`}
                             >
                               <option value="OPEN">OPEN</option>
@@ -1018,7 +1043,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                           </td>
 
                           {/* 14. Entry Date */}
-                          <td className="p-3 whitespace-nowrap font-mono text-slate-300">
+                          <td className="p-3 whitespace-nowrap font-mono text-slate-700 dark:text-slate-300">
                             {item.date || '-'}
                           </td>
 
@@ -1026,15 +1051,15 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                           <td className="p-3 whitespace-nowrap font-mono">
                             {item.clientReportingDate ? (
                               <div className="space-y-0.5">
-                                <span className="text-slate-200 block">{item.clientReportingDate}</span>
+                                <span className="text-slate-800 dark:text-slate-200 block">{item.clientReportingDate}</span>
                                 {item.clientReportingTime && (
-                                  <span className="text-[10px] text-slate-400 block font-semibold">
+                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">
                                     🕒 {format12HourTime(item.clientReportingTime)}
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              <span className="text-slate-500">-</span>
+                              <span className="text-slate-400 dark:text-slate-500">-</span>
                             )}
                           </td>
 
@@ -1042,15 +1067,15 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                           <td className="p-3 whitespace-nowrap font-mono">
                             {item.clientResponseDate ? (
                               <div className="space-y-0.5">
-                                <span className="text-amber-300/90 block">{item.clientResponseDate}</span>
+                                <span className="text-amber-700 dark:text-amber-300/90 block">{item.clientResponseDate}</span>
                                 {item.clientResponseTime && (
-                                  <span className="text-[10px] text-amber-400/80 block font-semibold">
+                                  <span className="text-[10px] text-amber-600 dark:text-amber-400/80 block font-semibold">
                                     🕒 {format12HourTime(item.clientResponseTime)}
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              <span className="text-slate-500 italic text-[11px]">Pending Resp</span>
+                              <span className="text-slate-400 dark:text-slate-500 italic text-[11px]">Pending Resp</span>
                             )}
                           </td>
 
@@ -1058,37 +1083,37 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                           <td className="p-3 whitespace-nowrap font-mono">
                             {item.resolutionDate ? (
                               <div className="space-y-0.5">
-                                <span className="text-emerald-300 block">{item.resolutionDate}</span>
+                                <span className="text-emerald-700 dark:text-emerald-300 block">{item.resolutionDate}</span>
                                 {item.resolutionTime && (
-                                  <span className="text-[10px] text-emerald-400/80 block font-semibold">
+                                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400/80 block font-semibold">
                                     🕒 {format12HourTime(item.resolutionTime)}
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              <span className="text-slate-500 italic text-[11px]">In Progress</span>
+                              <span className="text-slate-400 dark:text-slate-500 italic text-[11px]">In Progress</span>
                             )}
                           </td>
 
                           {/* 18. Response TAT */}
                           <td className="p-3 whitespace-nowrap text-center font-mono">
                             {responseTAT ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800">
                                 {responseTAT}
                               </span>
                             ) : (
-                              <span className="text-slate-500 text-[10px]">-</span>
+                              <span className="text-slate-400 dark:text-slate-500 text-[10px]">-</span>
                             )}
                           </td>
 
                           {/* 19. Resolution TAT */}
                           <td className="p-3 whitespace-nowrap text-center font-mono">
                             {resolutionTAT ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800">
                                 {resolutionTAT}
                               </span>
                             ) : (
-                              <span className="text-slate-500 text-[10px]">-</span>
+                              <span className="text-slate-400 dark:text-slate-500 text-[10px]">-</span>
                             )}
                           </td>
 
@@ -1097,7 +1122,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                             {item.details ? (
                               <div className="space-y-1">
                                 <div
-                                  className={`text-slate-300 text-[11px] leading-relaxed ${
+                                  className={`text-slate-700 dark:text-slate-300 text-[11px] leading-relaxed ${
                                     isExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'
                                   }`}
                                 >
@@ -1107,7 +1132,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => toggleExpandDetails(item.id)}
-                                    className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer flex items-center gap-0.5"
+                                    className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold cursor-pointer flex items-center gap-0.5"
                                   >
                                     {isExpanded ? (
                                       <>
@@ -1124,17 +1149,17 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                                 )}
                               </div>
                             ) : (
-                              <span className="text-slate-500 italic text-[11px]">No notes</span>
+                              <span className="text-slate-400 dark:text-slate-500 italic text-[11px]">No notes</span>
                             )}
                           </td>
 
                           {/* 21. Actions */}
-                          <td className="p-3 text-right sticky right-0 bg-slate-900 group-hover:bg-slate-800 transition shadow-l z-10">
+                          <td className="p-3 text-right sticky right-0 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition shadow-l z-10">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => setViewingIssue(item)}
-                                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded cursor-pointer transition"
+                                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded cursor-pointer transition border border-slate-200 dark:border-transparent"
                                 title="View Complete Report Card"
                               >
                                 <Eye className="w-3.5 h-3.5" />
@@ -1142,7 +1167,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                               <button
                                 type="button"
                                 onClick={() => setEditingIssue(item)}
-                                className="p-1.5 bg-slate-800 hover:bg-indigo-900 text-indigo-300 rounded cursor-pointer transition"
+                                className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-slate-800 dark:hover:bg-indigo-900 dark:text-indigo-300 rounded cursor-pointer transition border border-indigo-100 dark:border-transparent"
                                 title="Quick Edit"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
@@ -1160,7 +1185,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                                     },
                                   })
                                 }
-                                className="p-1.5 bg-slate-800 hover:bg-rose-950 text-rose-400 rounded cursor-pointer transition"
+                                className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-slate-800 dark:hover:bg-rose-950 dark:text-rose-400 rounded cursor-pointer transition border border-rose-100 dark:border-transparent"
                                 title="Delete Record"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1177,7 +1202,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
             {/* Pagination Bar */}
             {filteredIssues.length > 0 && (
-              <div className="px-4 pb-3 bg-slate-900/60 border-t border-slate-800">
+              <div className="px-4 pb-3 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800">
                 <Pagination
                   totalItems={filteredIssues.length}
                   itemsPerPage={itemsPerPage}
@@ -1198,29 +1223,29 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
           {/* Row 1: Priority Breakdown & Status Distribution */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
             {/* Priority Distribution */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5">
                 <div className="flex items-center space-x-2">
-                  <ShieldAlert className="w-4 h-4 text-rose-400" />
-                  <h3 className="font-bold text-white uppercase tracking-wider">
+                  <ShieldAlert className="w-4 h-4 text-rose-500 dark:text-rose-400" />
+                  <h3 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                     Incidents by Priority Severity
                   </h3>
                 </div>
-                <span className="text-[11px] text-slate-400">Total: {analytics.total}</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">Total: {analytics.total}</span>
               </div>
 
               <div className="space-y-3">
                 {/* Critical */}
                 <div className="space-y-1">
-                  <div className="flex justify-between text-slate-300">
-                    <span className="font-semibold text-rose-400 flex items-center gap-1.5">
+                  <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                    <span className="font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-rose-500"></span> Critical Severity
                     </span>
-                    <span className="font-mono font-bold text-white">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
                       {analytics.critical} ({analytics.total > 0 ? Math.round((analytics.critical / analytics.total) * 100) : 0}%)
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-rose-500 transition-all duration-500"
                       style={{
@@ -1232,15 +1257,15 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
                 {/* High */}
                 <div className="space-y-1">
-                  <div className="flex justify-between text-slate-300">
-                    <span className="font-semibold text-orange-400 flex items-center gap-1.5">
+                  <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                    <span className="font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-orange-500"></span> High Priority
                     </span>
-                    <span className="font-mono font-bold text-white">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
                       {analytics.high} ({analytics.total > 0 ? Math.round((analytics.high / analytics.total) * 100) : 0}%)
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-orange-500 transition-all duration-500"
                       style={{
@@ -1252,15 +1277,15 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
                 {/* Medium */}
                 <div className="space-y-1">
-                  <div className="flex justify-between text-slate-300">
-                    <span className="font-semibold text-amber-400 flex items-center gap-1.5">
+                  <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                    <span className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-amber-500"></span> Medium Priority
                     </span>
-                    <span className="font-mono font-bold text-white">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
                       {analytics.medium} ({analytics.total > 0 ? Math.round((analytics.medium / analytics.total) * 100) : 0}%)
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-amber-500 transition-all duration-500"
                       style={{
@@ -1272,15 +1297,15 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
                 {/* Low */}
                 <div className="space-y-1">
-                  <div className="flex justify-between text-slate-300">
-                    <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
+                  <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Low Priority
                     </span>
-                    <span className="font-mono font-bold text-white">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
                       {analytics.low} ({analytics.total > 0 ? Math.round((analytics.low / analytics.total) * 100) : 0}%)
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-emerald-500 transition-all duration-500"
                       style={{
@@ -1293,50 +1318,50 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
             </div>
 
             {/* Status Distribution */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5">
                 <div className="flex items-center space-x-2">
-                  <PieChart className="w-4 h-4 text-indigo-400" />
-                  <h3 className="font-bold text-white uppercase tracking-wider">
+                  <PieChart className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                  <h3 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                     Incident Lifecycle Status
                   </h3>
                 </div>
-                <span className="text-[11px] text-emerald-400 font-bold">
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
                   {analytics.resolutionRate}% Resolved
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 flex flex-col justify-between">
-                  <span className="text-slate-400 text-[11px]">Open & Pending</span>
-                  <div className="text-2xl font-bold text-amber-400 font-mono mt-1">
+                <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+                  <span className="text-slate-600 dark:text-slate-400 text-[11px]">Open & Pending</span>
+                  <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono mt-1">
                     {analytics.open}
                   </div>
-                  <span className="text-[10px] text-slate-500">Awaiting engineering response</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-500">Awaiting engineering response</span>
                 </div>
 
-                <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 flex flex-col justify-between">
-                  <span className="text-slate-400 text-[11px]">In Progress / Client</span>
-                  <div className="text-2xl font-bold text-blue-400 font-mono mt-1">
+                <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+                  <span className="text-slate-600 dark:text-slate-400 text-[11px]">In Progress / Client</span>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono mt-1">
                     {analytics.inProgress}
                   </div>
-                  <span className="text-[10px] text-slate-500">Under active troubleshooting</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-500">Under active troubleshooting</span>
                 </div>
 
-                <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 flex flex-col justify-between">
-                  <span className="text-slate-400 text-[11px]">Resolved / Closed</span>
-                  <div className="text-2xl font-bold text-emerald-400 font-mono mt-1">
+                <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+                  <span className="text-slate-600 dark:text-slate-400 text-[11px]">Resolved / Closed</span>
+                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-1">
                     {analytics.resolved}
                   </div>
-                  <span className="text-[10px] text-slate-500">Service restored & verified</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-500">Service restored & verified</span>
                 </div>
 
-                <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 flex flex-col justify-between">
-                  <span className="text-slate-400 text-[11px]">Hardware Replaced</span>
-                  <div className="text-2xl font-bold text-indigo-400 font-mono mt-1">
+                <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+                  <span className="text-slate-600 dark:text-slate-400 text-[11px]">Hardware Replaced</span>
+                  <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 font-mono mt-1">
                     {analytics.replaced}
                   </div>
-                  <span className="text-[10px] text-slate-500">Device swaps completed</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-500">Device swaps completed</span>
                 </div>
               </div>
             </div>
@@ -1345,10 +1370,10 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
           {/* Row 2: Issues by Category/Type & Top Branches */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
             {/* Top Issue Types */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-sm">
-              <div className="flex items-center space-x-2 border-b border-slate-800 pb-2.5">
-                <Tag className="w-4 h-4 text-indigo-400" />
-                <h3 className="font-bold text-white uppercase tracking-wider">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-xs">
+              <div className="flex items-center space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2.5">
+                <Tag className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                <h3 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Issue Types Breakdown
                 </h3>
               </div>
@@ -1359,13 +1384,13 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                   const pct = analytics.total > 0 ? Math.round((count / analytics.total) * 100) : 0;
                   return (
                     <div key={type} className="space-y-1">
-                      <div className="flex justify-between text-slate-300">
-                        <span className="font-medium text-slate-200">{type}</span>
-                        <span className="font-mono text-slate-400">
+                      <div className="flex justify-between text-slate-700 dark:text-slate-300">
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{type}</span>
+                        <span className="font-mono text-slate-500 dark:text-slate-400">
                           {count} ({pct}%)
                         </span>
                       </div>
-                      <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                      <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-indigo-500 rounded-full"
                           style={{ width: `${pct}%` }}
@@ -1378,10 +1403,10 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
             </div>
 
             {/* Top Incident Branches */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-sm">
-              <div className="flex items-center space-x-2 border-b border-slate-800 pb-2.5">
-                <Building2 className="w-4 h-4 text-indigo-400" />
-                <h3 className="font-bold text-white uppercase tracking-wider">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-xs">
+              <div className="flex items-center space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2.5">
+                <Building2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                <h3 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Top Branches with Incidents
                 </h3>
               </div>
@@ -1396,18 +1421,18 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                     return (
                       <div
                         key={branch}
-                        className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between"
+                        className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between"
                       >
                         <div className="flex items-center space-x-3">
-                          <span className="w-5 h-5 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center font-bold text-[10px]">
+                          <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-600/30 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-[10px]">
                             {idx + 1}
                           </span>
                           <div>
-                            <span className="font-bold text-white block">{branch}</span>
-                            <span className="text-[10px] text-slate-400">{pct}% of total incidents</span>
+                            <span className="font-bold text-slate-900 dark:text-white block">{branch}</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">{pct}% of total incidents</span>
                           </div>
                         </div>
-                        <span className="font-mono font-bold text-indigo-400 text-sm bg-indigo-950/80 px-2.5 py-1 rounded border border-indigo-800">
+                        <span className="font-mono font-bold text-indigo-700 dark:text-indigo-400 text-sm bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1 rounded border border-indigo-200 dark:border-indigo-800">
                           {count} {count === 1 ? 'Issue' : 'Issues'}
                         </span>
                       </div>
@@ -1422,17 +1447,17 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
       {/* Complete View Issue Modal */}
       {viewingIssue && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div>
-                <span className="text-[10px] text-indigo-400 font-mono font-bold uppercase tracking-wider">
+                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono font-bold uppercase tracking-wider">
                   Incident Audit Record
                 </span>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   {viewingIssue.id}
                   {viewingIssue.odooTicketId && (
-                    <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
+                    <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded font-mono">
                       Odoo: {viewingIssue.odooTicketId}
                     </span>
                   )}
@@ -1441,95 +1466,102 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
               <button
                 type="button"
                 onClick={() => setViewingIssue(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800 cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg bg-slate-100 dark:bg-slate-800 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Branch</span>
-                <span className="font-bold text-white">{viewingIssue.branchName}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-xs">
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Branch</span>
+                <span className="font-bold text-slate-900 dark:text-white">{viewingIssue.branchName}</span>
               </div>
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Issue Type</span>
-                <span className="font-semibold text-slate-200">{viewingIssue.issueType}</span>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Specific Location</span>
+                <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                  <span>{viewingIssue.location || 'N/A'}</span>
+                </span>
               </div>
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Category</span>
-                <span className="font-semibold text-slate-200">{viewingIssue.category}</span>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Issue Type</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{viewingIssue.issueType}</span>
               </div>
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Priority</span>
-                <span className="font-bold text-amber-400">{viewingIssue.priority}</span>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Category</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{viewingIssue.category}</span>
               </div>
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Status</span>
-                <span className="font-bold text-emerald-400">{viewingIssue.status}</span>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Priority</span>
+                <span className="font-bold text-amber-600 dark:text-amber-400">{viewingIssue.priority}</span>
               </div>
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Assigned Engineer</span>
-                <span className="font-medium text-slate-200">{viewingIssue.assignPerson || 'None'}</span>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Status</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{viewingIssue.status}</span>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Assigned Engineer</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">{viewingIssue.assignPerson || 'None'}</span>
               </div>
             </div>
 
             {viewingIssue.deviceReplace === 'YES' && (
-              <div className="p-3.5 bg-amber-950/30 border border-amber-800/80 rounded-lg text-xs grid grid-cols-2 gap-3">
+              <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 rounded-lg text-xs grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-[10px] text-amber-400 font-bold block">Old Device ID (Replaced)</span>
-                  <span className="font-mono font-bold text-white text-sm">{viewingIssue.oldDeviceId || 'N/A'}</span>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold block">Old Device ID (Replaced)</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white text-sm">{viewingIssue.oldDeviceId || 'N/A'}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-amber-400 font-bold block">Replace Device ID (New)</span>
-                  <span className="font-mono font-bold text-white text-sm">{viewingIssue.replaceDeviceId || 'N/A'}</span>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold block">Replace Device ID (New)</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white text-sm">{viewingIssue.replaceDeviceId || 'N/A'}</span>
                 </div>
               </div>
             )}
 
             {/* Timelines and TAT */}
-            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-3 text-xs">
-              <span className="font-bold text-slate-300 block border-b border-slate-800 pb-1 flex items-center justify-between">
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+              <span className="font-bold text-slate-700 dark:text-slate-300 block border-b border-slate-200 dark:border-slate-800 pb-1 flex items-center justify-between">
                 <span>Incident Timeline & Calculated Turnaround Times</span>
-                <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                <Clock className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-slate-900 p-2.5 rounded border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">1. Client Reported</span>
-                  <span className="font-mono text-white font-medium block">
+                <div className="bg-white dark:bg-slate-900 p-2.5 rounded border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">1. Client Reported</span>
+                  <span className="font-mono text-slate-900 dark:text-white font-medium block">
                     {viewingIssue.clientReportingDate || 'N/A'}
                   </span>
-                  <span className="text-[10px] text-indigo-400 font-mono font-semibold">
+                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono font-semibold">
                     Time: {format12HourTime(viewingIssue.clientReportingTime) || 'N/A'}
                   </span>
                 </div>
 
-                <div className="bg-slate-900 p-2.5 rounded border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">2. Client Responded</span>
-                  <span className="font-mono text-white font-medium block">
+                <div className="bg-white dark:bg-slate-900 p-2.5 rounded border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">2. Client Responded</span>
+                  <span className="font-mono text-slate-900 dark:text-white font-medium block">
                     {viewingIssue.clientResponseDate || 'Pending'}
                   </span>
-                  <span className="text-[10px] text-amber-400 font-mono font-semibold">
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono font-semibold">
                     Time: {format12HourTime(viewingIssue.clientResponseTime) || 'N/A'}
                   </span>
                 </div>
 
-                <div className="bg-slate-900 p-2.5 rounded border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">3. Final Resolution</span>
-                  <span className="font-mono text-white font-medium block">
+                <div className="bg-white dark:bg-slate-900 p-2.5 rounded border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">3. Final Resolution</span>
+                  <span className="font-mono text-slate-900 dark:text-white font-medium block">
                     {viewingIssue.resolutionDate || 'In Progress'}
                   </span>
-                  <span className="text-[10px] text-emerald-400 font-mono font-semibold">
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
                     Time: {format12HourTime(viewingIssue.resolutionTime) || 'N/A'}
                   </span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="p-2 bg-slate-900/80 rounded border border-slate-800 text-[11px]">
-                  <span className="text-slate-400">First Response TAT:</span>{' '}
-                  <strong className="text-amber-300 font-mono">
+                <div className="p-2 bg-white dark:bg-slate-900/80 rounded border border-slate-200 dark:border-slate-800 text-[11px]">
+                  <span className="text-slate-500 dark:text-slate-400">First Response TAT:</span>{' '}
+                  <strong className="text-amber-700 dark:text-amber-300 font-mono">
                     {calculateTAT(
                       viewingIssue.clientReportingDate,
                       viewingIssue.clientReportingTime,
@@ -1539,9 +1571,9 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                   </strong>
                 </div>
 
-                <div className="p-2 bg-slate-900/80 rounded border border-slate-800 text-[11px]">
-                  <span className="text-slate-400">Total Resolution TAT:</span>{' '}
-                  <strong className="text-emerald-300 font-mono">
+                <div className="p-2 bg-white dark:bg-slate-900/80 rounded border border-slate-200 dark:border-slate-800 text-[11px]">
+                  <span className="text-slate-500 dark:text-slate-400">Total Resolution TAT:</span>{' '}
+                  <strong className="text-emerald-700 dark:text-emerald-300 font-mono">
                     {calculateTAT(
                       viewingIssue.clientReportingDate,
                       viewingIssue.clientReportingTime,
@@ -1555,14 +1587,14 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
             {viewingIssue.details && (
               <div className="space-y-1 text-xs">
-                <span className="text-slate-400 font-semibold block">Incident Notes & Resolution Details:</span>
-                <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-slate-300 whitespace-pre-wrap leading-relaxed">
+                <span className="text-slate-500 dark:text-slate-400 font-semibold block">Incident Notes & Resolution Details:</span>
+                <div className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
                   {viewingIssue.details}
                 </div>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => {
@@ -1577,7 +1609,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
               <button
                 type="button"
                 onClick={() => setViewingIssue(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs cursor-pointer"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-lg text-xs cursor-pointer"
               >
                 Close
               </button>
@@ -1588,17 +1620,17 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
       {/* Quick Edit Issue Modal */}
       {editingIssue && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-indigo-400" />
+        <div className="fixed inset-0 z-50 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Edit2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                 Edit Incident Record: {editingIssue.id}
               </h3>
               <button
                 type="button"
                 onClick={() => setEditingIssue(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800 cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg bg-slate-100 dark:bg-slate-800 cursor-pointer"
               >
                 ✕
               </button>
@@ -1615,7 +1647,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Branch Name</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">Branch Name</label>
                   <input
                     type="text"
                     value={editingIssue.branchName}
@@ -1623,30 +1655,45 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                       setEditingIssue({ ...editingIssue, branchName: e.target.value })
                     }
                     required
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Odoo Ticket ID</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">
+                    Specific Location / Department
+                  </label>
+                  <input
+                    type="text"
+                    value={editingIssue.location || ''}
+                    onChange={(e) =>
+                      setEditingIssue({ ...editingIssue, location: e.target.value })
+                    }
+                    placeholder="e.g. 2nd Floor Server Room, Cash Counter"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">Odoo Ticket ID</label>
                   <input
                     type="text"
                     value={editingIssue.odooTicketId}
                     onChange={(e) =>
                       setEditingIssue({ ...editingIssue, odooTicketId: e.target.value })
                     }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Issue Type</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">Issue Type</label>
                   <select
                     value={editingIssue.issueType}
                     onChange={(e) =>
                       setEditingIssue({ ...editingIssue, issueType: e.target.value })
                     }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white"
                   >
                     {systemOptions.issueTypes.map((t) => (
                       <option key={t} value={t}>
@@ -1657,13 +1704,13 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Category</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">Category</label>
                   <select
                     value={editingIssue.category}
                     onChange={(e) =>
                       setEditingIssue({ ...editingIssue, category: e.target.value })
                     }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white"
                   >
                     {allCategories.map((c) => (
                       <option key={c} value={c}>
@@ -1674,13 +1721,13 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Assign Person</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">Assign Person</label>
                   <select
                     value={editingIssue.assignPerson || ''}
                     onChange={(e) =>
                       setEditingIssue({ ...editingIssue, assignPerson: e.target.value })
                     }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white"
                   >
                     <option value="">Unassigned</option>
                     {systemOptions.technicians &&
@@ -1698,7 +1745,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Priority</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">Priority</label>
                   <select
                     value={editingIssue.priority}
                     onChange={(e) =>
@@ -1707,7 +1754,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                         priority: e.target.value,
                       })
                     }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white font-bold"
                   >
                     {allPriorities.map((p) => (
                       <option key={p} value={p}>
@@ -1726,7 +1773,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Status</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">Status</label>
                   <select
                     value={editingIssue.status}
                     onChange={(e) =>
@@ -1735,7 +1782,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                         status: e.target.value,
                       })
                     }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white font-bold"
                   >
                     {allStatuses.map((st) => (
                       <option key={st} value={st}>
@@ -1756,7 +1803,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Device Replace</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">Device Replace</label>
                   <select
                     value={editingIssue.deviceReplace}
                     onChange={(e) =>
@@ -1765,7 +1812,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                         deviceReplace: e.target.value as any,
                       })
                     }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white font-bold"
                   >
                     <option value="NO">NO</option>
                     <option value="YES">YES</option>
@@ -1774,49 +1821,49 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
               </div>
 
               {editingIssue.deviceReplace === 'YES' && (
-                <div className="grid grid-cols-2 gap-3 p-3 bg-amber-950/20 border border-amber-800 rounded-lg">
+                <div className="grid grid-cols-2 gap-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                   <div>
-                    <label className="text-amber-300 block mb-1 font-semibold">Old Device ID</label>
+                    <label className="text-amber-800 dark:text-amber-300 block mb-1 font-semibold">Old Device ID</label>
                     <input
                       type="text"
                       value={editingIssue.oldDeviceId || ''}
                       onChange={(e) =>
                         setEditingIssue({ ...editingIssue, oldDeviceId: e.target.value })
                       }
-                      className="w-full bg-slate-950 border border-amber-700/80 rounded p-2 text-white font-mono"
+                      className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/80 rounded p-2 text-slate-900 dark:text-white font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-amber-300 block mb-1 font-semibold">Replace Device ID</label>
+                    <label className="text-amber-800 dark:text-amber-300 block mb-1 font-semibold">Replace Device ID</label>
                     <input
                       type="text"
                       value={editingIssue.replaceDeviceId || ''}
                       onChange={(e) =>
                         setEditingIssue({ ...editingIssue, replaceDeviceId: e.target.value })
                       }
-                      className="w-full bg-slate-950 border border-amber-700/80 rounded p-2 text-white font-mono"
+                      className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/80 rounded p-2 text-slate-900 dark:text-white font-mono"
                     />
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="text-slate-300 font-semibold block mb-1">Details / Notes</label>
+                <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">Details / Notes</label>
                 <textarea
                   value={editingIssue.details}
                   onChange={(e) =>
                     setEditingIssue({ ...editingIssue, details: e.target.value })
                   }
                   rows={3}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setEditingIssue(null)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-lg text-xs cursor-pointer"
                 >
                   Cancel
                 </button>

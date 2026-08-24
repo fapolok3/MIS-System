@@ -351,50 +351,64 @@ export default function App() {
         fetchSupabaseAppSettings(),
       ]);
 
+      // 1. Devices merge
       if (dbDevices && Array.isArray(dbDevices)) {
-        if (dbDevices.length > 0) {
-          setDevices(dbDevices);
-          try {
-            localStorage.setItem('devicesData', JSON.stringify(dbDevices));
-          } catch (e) {
-            console.warn('localStorage save devices error', e);
-          }
-        } else {
-          // If Supabase table is empty but localStorage has data, auto-sync to DB
-          const localSaved = localStorage.getItem('devicesData');
-          if (localSaved) {
-            try {
-              const parsed = JSON.parse(localSaved);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                bulkInsertSupabaseDevices(parsed);
-              }
-            } catch (e) {}
+        const localSaved = localStorage.getItem('devicesData');
+        let localDevs: Device[] = [];
+        if (localSaved) {
+          try { localDevs = JSON.parse(localSaved) || []; } catch (e) {}
+        }
+        const dbMap = new Map(dbDevices.map((d) => [d.sl || d.id, d]));
+        const merged = [...dbDevices];
+        const missing: Device[] = [];
+        for (const ld of localDevs) {
+          if (!dbMap.has(ld.sl || ld.id)) {
+            merged.push(ld);
+            missing.push(ld);
           }
         }
+        setDevices(merged);
+        try { localStorage.setItem('devicesData', JSON.stringify(merged)); } catch (e) {}
+        if (missing.length > 0) {
+          bulkInsertSupabaseDevices(missing);
+        }
+      }
+
+      // 2. Service Tickets & SLA merge
+      const localTicketsSaved = localStorage.getItem('serviceTicketsData');
+      let localTickets: Ticket[] = [];
+      if (localTicketsSaved) {
+        try { localTickets = JSON.parse(localTicketsSaved) || []; } catch (e) {}
       }
 
       if (dbTickets && Array.isArray(dbTickets)) {
-        if (dbTickets.length > 0) {
-          setTickets(dbTickets);
-          try {
-            localStorage.setItem('serviceTicketsData', JSON.stringify(dbTickets));
-          } catch (e) {
-            console.warn('localStorage save tickets error', e);
-          }
-        } else {
-          // If Supabase table is empty but localStorage has data, auto-sync to DB
-          const localSaved = localStorage.getItem('serviceTicketsData');
-          if (localSaved) {
-            try {
-              const parsed = JSON.parse(localSaved);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                bulkInsertSupabaseTickets(parsed);
-              }
-            } catch (e) {}
+        const dbTicketMap = new Map(dbTickets.map((t) => [String(t.id), t]));
+        const mergedTickets = [...dbTickets];
+        const missingInDb: Ticket[] = [];
+
+        for (const lt of localTickets) {
+          if (lt && lt.id && !dbTicketMap.has(String(lt.id))) {
+            mergedTickets.push(lt);
+            missingInDb.push(lt);
           }
         }
+
+        setTickets(mergedTickets);
+        try {
+          localStorage.setItem('serviceTicketsData', JSON.stringify(mergedTickets));
+        } catch (e) {
+          console.warn('localStorage save tickets error', e);
+        }
+
+        if (missingInDb.length > 0) {
+          bulkInsertSupabaseTickets(missingInDb);
+        }
+      } else if (localTickets.length > 0) {
+        setTickets(localTickets);
+        bulkInsertSupabaseTickets(localTickets);
       }
 
+      // 3. Purchase Orders merge
       if (dbPOs && Array.isArray(dbPOs)) {
         if (dbPOs.length > 0) {
           setPos(dbPOs);
@@ -406,6 +420,7 @@ export default function App() {
         }
       }
 
+      // 4. SIMs merge
       if (dbSIMs && Array.isArray(dbSIMs)) {
         if (dbSIMs.length > 0) {
           setSims(dbSIMs);
@@ -417,14 +432,41 @@ export default function App() {
         }
       }
 
-      if (dbIssues && dbIssues.length > 0) {
-        setIssues(dbIssues);
+      // 5. Issues (Issue Tracker) merge
+      const localIssuesSaved = localStorage.getItem('issueTrackerData');
+      let localIssues: IssueTrackerItem[] = [];
+      if (localIssuesSaved) {
+        try { localIssues = JSON.parse(localIssuesSaved) || []; } catch (e) {}
+      }
+
+      if (dbIssues && Array.isArray(dbIssues)) {
+        const dbIssueMap = new Map(dbIssues.map((i) => [String(i.id), i]));
+        const mergedIssues = [...dbIssues];
+        const missingIssues: IssueTrackerItem[] = [];
+
+        for (const li of localIssues) {
+          if (li && li.id && !dbIssueMap.has(String(li.id))) {
+            mergedIssues.push(li);
+            missingIssues.push(li);
+          }
+        }
+
+        setIssues(mergedIssues);
         try {
-          localStorage.setItem('issueTrackerData', JSON.stringify(dbIssues));
+          localStorage.setItem('issueTrackerData', JSON.stringify(mergedIssues));
         } catch (e) {
           console.warn('localStorage save error', e);
         }
+
+        if (missingIssues.length > 0) {
+          bulkInsertSupabaseIssues(missingIssues);
+        }
+      } else if (localIssues.length > 0) {
+        setIssues(localIssues);
+        bulkInsertSupabaseIssues(localIssues);
       }
+
+      // 6. Category Groups merge
       if (dbCategoryGroups && dbCategoryGroups.length > 0) {
         setCategoryGroups(dbCategoryGroups);
         try {
@@ -433,14 +475,53 @@ export default function App() {
           console.warn('localStorage save error', e);
         }
       }
+
+      // 7. System Dropdown Options merge (Union of all option arrays)
+      const localSysSaved = localStorage.getItem('systemOptions');
+      let localSys: SystemOptions | null = null;
+      if (localSysSaved) {
+        try { localSys = JSON.parse(localSysSaved); } catch (e) {}
+      }
+
       if (dbSystemOptions) {
-        setSystemOptions(dbSystemOptions);
+        const unionArray = (dbArr?: string[], locArr?: string[], initArr?: string[]) => {
+          return Array.from(
+            new Set([
+              ...(dbArr || []),
+              ...(locArr || []),
+              ...(initArr || []),
+            ])
+          ).filter(Boolean);
+        };
+
+        const mergedOptions: SystemOptions = {
+          deviceStatuses: unionArray(dbSystemOptions.deviceStatuses, localSys?.deviceStatuses, initialSystemOptions.deviceStatuses),
+          simOperators: unionArray(dbSystemOptions.simOperators, localSys?.simOperators, initialSystemOptions.simOperators),
+          accessTypes: unionArray(dbSystemOptions.accessTypes, localSys?.accessTypes, initialSystemOptions.accessTypes),
+          locationTypes: unionArray(dbSystemOptions.locationTypes, localSys?.locationTypes, initialSystemOptions.locationTypes),
+          issueTypes: unionArray(dbSystemOptions.issueTypes, localSys?.issueTypes, initialSystemOptions.issueTypes),
+          ticketPriorities: unionArray(dbSystemOptions.ticketPriorities, localSys?.ticketPriorities, initialSystemOptions.ticketPriorities),
+          ticketStatuses: unionArray(dbSystemOptions.ticketStatuses, localSys?.ticketStatuses, initialSystemOptions.ticketStatuses),
+          vendors: unionArray(dbSystemOptions.vendors, localSys?.vendors, initialSystemOptions.vendors),
+          poStatuses: unionArray(dbSystemOptions.poStatuses, localSys?.poStatuses, initialSystemOptions.poStatuses),
+          simStatuses: unionArray(dbSystemOptions.simStatuses, localSys?.simStatuses, initialSystemOptions.simStatuses),
+          technicians: unionArray(dbSystemOptions.technicians, localSys?.technicians, initialSystemOptions.technicians),
+          slaStatuses: unionArray(dbSystemOptions.slaStatuses, localSys?.slaStatuses, initialSystemOptions.slaStatuses),
+        };
+
+        setSystemOptions(mergedOptions);
         try {
-          localStorage.setItem('systemOptions', JSON.stringify(dbSystemOptions));
+          localStorage.setItem('systemOptions', JSON.stringify(mergedOptions));
         } catch (e) {
           console.warn('localStorage save error', e);
         }
+        // Save merged options back to Supabase to keep in sync
+        saveSupabaseSystemOptions(mergedOptions);
+      } else if (localSys) {
+        setSystemOptions(localSys);
+        saveSupabaseSystemOptions(localSys);
       }
+
       if (dbAppSettings) {
         setAppSettings(dbAppSettings);
         try {
@@ -1106,7 +1187,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col overflow-hidden">
+    <div className="h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased flex flex-col overflow-hidden transition-colors duration-200">
       {/* Top Header Navigation */}
       <Header
         searchQuery={searchQuery}
@@ -1138,7 +1219,7 @@ export default function App() {
         />
 
         {/* Dynamic Tab Content Area */}
-        <main className="flex-1 min-w-0 p-4 md:p-6 bg-slate-900 overflow-y-auto h-full">
+        <main className="flex-1 min-w-0 p-4 md:p-6 bg-slate-100 dark:bg-slate-900 overflow-y-auto h-full transition-colors duration-200">
           {activeTab === 'dashboard' && (
             <DashboardTab
               tickets={tickets}

@@ -248,11 +248,24 @@ export async function insertSupabaseTicket(ticket: Ticket): Promise<boolean> {
       tech: ticket.tech || '',
       remarks: ticket.remarks || '',
       email_details: ticket.emailDetails || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
-    const { error } = await supabase.from('tickets').upsert([row], { onConflict: 'id' });
+    
+    // First attempt upsert with onConflict
+    let { error } = await supabase.from('tickets').upsert([row], { onConflict: 'id' });
     if (error) {
-      console.warn('Supabase insertTicket error:', error.message);
-      return false;
+      console.warn('Supabase insertTicket initial error (retrying with simple upsert):', error.message);
+      const res = await supabase.from('tickets').upsert([row]);
+      error = res.error;
+    }
+    if (error) {
+      console.warn('Supabase insertTicket fallback error (retrying insert):', error.message);
+      const res = await supabase.from('tickets').insert([row]);
+      if (res.error) {
+        console.warn('Supabase insertTicket final insert error:', res.error.message);
+        return false;
+      }
     }
     return true;
   } catch (err) {
@@ -263,6 +276,7 @@ export async function insertSupabaseTicket(ticket: Ticket): Promise<boolean> {
 
 export async function bulkInsertSupabaseTickets(tickets: Ticket[]): Promise<boolean> {
   try {
+    if (!tickets || tickets.length === 0) return true;
     const rows = tickets.map((ticket) => ({
       id: String(ticket.id),
       subject: ticket.subject || '',
@@ -285,11 +299,17 @@ export async function bulkInsertSupabaseTickets(tickets: Ticket[]): Promise<bool
       tech: ticket.tech || '',
       remarks: ticket.remarks || '',
       email_details: ticket.emailDetails || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }));
-    const { error } = await supabase.from('tickets').upsert(rows, { onConflict: 'id' });
+    let { error } = await supabase.from('tickets').upsert(rows, { onConflict: 'id' });
     if (error) {
-      console.warn('Supabase bulkInsertTickets error:', error.message);
-      return false;
+      console.warn('Supabase bulkInsertTickets onConflict error (retrying upsert):', error.message);
+      const res = await supabase.from('tickets').upsert(rows);
+      if (res.error) {
+        console.warn('Supabase bulkInsertTickets final error:', res.error.message);
+        return false;
+      }
     }
     return true;
   } catch (err) {

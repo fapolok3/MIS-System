@@ -230,26 +230,26 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 animate-fadeIn">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-3xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-slate-950/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl max-w-3xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 rounded-lg">
+            <div className="p-2 bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 rounded-lg">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wide">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wide">
                 Upload Devices from Excel
               </h3>
-              <p className="text-xs text-slate-400">
-                Bulk import device records into <span className="text-emerald-400 font-semibold">{activeCategory}</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Bulk import device records into <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{activeCategory}</span>
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition cursor-pointer"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -258,14 +258,14 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
         {/* Content Body */}
         <div className="space-y-4 overflow-y-auto flex-1 pr-1">
           {/* Action Row: Sample download banner */}
-          <div className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-3 flex flex-wrap justify-between items-center gap-2 text-xs">
-            <div className="flex items-center gap-2 text-slate-300">
-              <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
+          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-lg p-3 flex flex-wrap justify-between items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <FileText className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
               <span>Need a formatted Excel file? Download our standard template.</span>
             </div>
             <button
               onClick={handleDownloadSampleExcel}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm text-xs"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs text-xs"
             >
               <Download className="w-3.5 h-3.5" /> Download Excel Template
             </button>
@@ -280,10 +280,10 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
               dragActive
-                ? 'border-emerald-400 bg-emerald-950/20 text-emerald-300'
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300'
                 : file
-                ? 'border-slate-600 bg-slate-800/40 text-slate-200'
-                : 'border-slate-700 bg-slate-950/50 hover:border-slate-500 text-slate-400'
+                ? 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-200'
+                : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-950/50 hover:border-slate-400 dark:hover:border-slate-500 text-slate-500 dark:text-slate-400'
             }`}
           >
             <input
@@ -293,24 +293,24 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
               onChange={handleFileChange}
               className="hidden"
             />
-            <div className="p-3 rounded-full bg-slate-800 text-emerald-400 border border-slate-700">
+            <div className="p-3 rounded-full bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-slate-700 shadow-xs">
               <Upload className="w-6 h-6" />
             </div>
             {file ? (
               <div>
-                <p className="text-xs font-bold text-emerald-400 flex items-center justify-center gap-1">
+                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1">
                   <CheckCircle className="w-3.5 h-3.5" /> {file.name}
                 </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   {(file.size / 1024).toFixed(1)} KB — Click or drag to replace
                 </p>
               </div>
             ) : (
               <div>
-                <p className="text-xs font-bold text-slate-200">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
                   Click to browse or drag & drop Excel file (.xlsx, .xls, .csv)
                 </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   Supports columns: Category, Status, SOL NO, Location Name, Device ID, SIM No, Operator, Floor, Placement, Access Type, {isHeadOffice ? 'Department' : 'BM'}, Price, {isHeadOffice ? 'Division' : 'District'}, Install Date
                 </p>
               </div>
@@ -319,8 +319,8 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
 
           {/* Error Message */}
           {error && (
-            <div className="p-3 bg-rose-950/80 border border-rose-800/80 text-rose-200 text-xs rounded-lg flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800/80 text-rose-700 dark:text-rose-200 text-xs rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
               <span>{error}</span>
             </div>
           )}
@@ -329,48 +329,48 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
           {parsedData.length > 0 && (
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-slate-200 uppercase tracking-wide">
+                <span className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
                   Preview Data ({parsedData.length} records found)
                 </span>
-                <span className="text-emerald-400 text-[11px] font-mono">
+                <span className="text-emerald-600 dark:text-emerald-400 text-[11px] font-mono">
                   Ready to import
                 </span>
               </div>
 
-              <div className="border border-slate-800 rounded-lg overflow-x-auto max-h-56">
+              <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-x-auto max-h-56">
                 <table className="w-full text-left text-[11px] border-collapse min-w-[900px]">
-                  <thead className="bg-slate-950 text-slate-400 font-bold uppercase sticky top-0 border-b border-slate-800">
+                  <thead className="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 font-bold uppercase sticky top-0 border-b border-slate-200 dark:border-slate-800">
                     <tr>
-                      <th className="p-2 border-r border-slate-800">#</th>
-                      <th className="p-2 border-r border-slate-800">Category</th>
-                      <th className="p-2 border-r border-slate-800">Device ID</th>
-                      <th className="p-2 border-r border-slate-800">SOL</th>
-                      <th className="p-2 border-r border-slate-800">Location</th>
-                      <th className="p-2 border-r border-slate-800">Status</th>
-                      <th className="p-2 border-r border-slate-800">SIM No</th>
-                      <th className="p-2 border-r border-slate-800">Operator</th>
+                      <th className="p-2 border-r border-slate-200 dark:border-slate-800">#</th>
+                      <th className="p-2 border-r border-slate-200 dark:border-slate-800">Category</th>
+                      <th className="p-2 border-r border-slate-200 dark:border-slate-800">Device ID</th>
+                      <th className="p-2 border-r border-slate-200 dark:border-slate-800">SOL</th>
+                      <th className="p-2 border-r border-slate-200 dark:border-slate-800">Location</th>
+                      <th className="p-2 border-r border-slate-200 dark:border-slate-800">Status</th>
+                      <th className="p-2 border-r border-slate-200 dark:border-slate-800">SIM No</th>
+                      <th className="p-2 border-r border-slate-200 dark:border-slate-800">Operator</th>
                       <th className="p-2">{isHeadOffice ? 'Division' : 'District'}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800 text-slate-300 font-mono">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300 font-mono">
                     {parsedData.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-slate-800/50">
-                        <td className="p-2 border-r border-slate-800 text-slate-500">{idx + 1}</td>
-                        <td className="p-2 border-r border-slate-800 text-emerald-400 font-bold">{row.category}</td>
-                        <td className="p-2 border-r border-slate-800 font-bold text-indigo-300">{row.id}</td>
-                        <td className="p-2 border-r border-slate-800">{row.sol}</td>
-                        <td className="p-2 border-r border-slate-800">{row.location}</td>
-                        <td className="p-2 border-r border-slate-800">
+                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td className="p-2 border-r border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500">{idx + 1}</td>
+                        <td className="p-2 border-r border-slate-200 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 font-bold">{row.category}</td>
+                        <td className="p-2 border-r border-slate-200 dark:border-slate-800 font-bold text-indigo-600 dark:text-indigo-300">{row.id}</td>
+                        <td className="p-2 border-r border-slate-200 dark:border-slate-800">{row.sol}</td>
+                        <td className="p-2 border-r border-slate-200 dark:border-slate-800">{row.location}</td>
+                        <td className="p-2 border-r border-slate-200 dark:border-slate-800">
                           <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                             row.status === 'LIVE'
-                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                              : 'bg-rose-950 text-rose-400 border border-rose-800'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800'
+                              : 'bg-rose-50 text-rose-700 border border-rose-300 dark:bg-rose-950 dark:text-rose-400 dark:border-rose-800'
                           }`}>
                             {row.status}
                           </span>
                         </td>
-                        <td className="p-2 border-r border-slate-800">{row.sim}</td>
-                        <td className="p-2 border-r border-slate-800">{row.operator}</td>
+                        <td className="p-2 border-r border-slate-200 dark:border-slate-800">{row.sim}</td>
+                        <td className="p-2 border-r border-slate-200 dark:border-slate-800">{row.operator}</td>
                         <td className="p-2">{row.district}</td>
                       </tr>
                     ))}
@@ -382,11 +382,11 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex justify-end gap-2 border-t border-slate-800 pt-3">
+        <div className="flex justify-end gap-2 border-t border-slate-200 dark:border-slate-800 pt-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition cursor-pointer"
+            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold transition cursor-pointer border border-slate-200 dark:border-transparent"
           >
             Cancel
           </button>
@@ -394,10 +394,10 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
             type="button"
             disabled={parsedData.length === 0}
             onClick={handleImportSubmit}
-            className={`px-5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow ${
+            className={`px-5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs ${
               parsedData.length > 0
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-transparent'
             }`}
           >
             <Upload className="w-3.5 h-3.5" />

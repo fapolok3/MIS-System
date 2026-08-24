@@ -129,27 +129,27 @@ export const POTab: React.FC<POTabProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-lg flex justify-between items-center">
-        <h2 className="text-sm font-bold text-white uppercase flex items-center">
-          <FileText className="w-4 h-4 text-indigo-400 mr-2" />
+      <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-4 rounded-lg flex justify-between items-center shadow-xs">
+        <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase flex items-center">
+          <FileText className="w-4 h-4 text-indigo-500 dark:text-indigo-400 mr-2" />
           Purchase Order (PO) Tracker
         </h2>
 
         <div className="flex items-center space-x-2">
           {/* Realtime Search Input Box */}
           <div className="relative flex items-center">
-            <Search className="w-3.5 h-3.5 text-indigo-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Search POs..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              className="bg-slate-900/90 border border-slate-700/80 focus:border-indigo-500 text-slate-100 placeholder-slate-500 text-xs rounded-lg pl-8 pr-7 py-1.5 outline-none transition-all w-40 sm:w-52 focus:w-60 shadow-inner"
+              className="bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700/80 focus:border-indigo-500 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-xs rounded-lg pl-8 pr-7 py-1.5 outline-none transition-all w-40 sm:w-52 focus:w-60 shadow-xs"
             />
             {localSearch && (
               <button
                 onClick={() => setLocalSearch('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition p-0.5 rounded-full cursor-pointer"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition p-0.5 rounded-full cursor-pointer"
                 title="Clear search"
               >
                 <X className="w-3.5 h-3.5" />
@@ -169,9 +169,9 @@ export const POTab: React.FC<POTabProps> = ({
 
           <button
             onClick={handleExportExcel}
-            className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1 cursor-pointer"
+            className="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-transparent text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1 cursor-pointer"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" /> Export Excel
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> Export Excel
           </button>
           <button
             onClick={onOpenAddPOModal}
@@ -202,10 +202,10 @@ export const POTab: React.FC<POTabProps> = ({
         </div>
       </div>
 
-      <div className="bg-slate-800/50 border border-slate-800 rounded-lg overflow-hidden p-4 space-y-3">
+      <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden p-4 space-y-3 shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950 text-slate-300 uppercase font-bold border-b border-slate-800">
+            <thead className="bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 uppercase font-bold border-b border-slate-200 dark:border-slate-800">
               <tr>
                 <th className="p-3 text-center w-10">
                   <input
@@ -215,7 +215,7 @@ export const POTab: React.FC<POTabProps> = ({
                       if (el) el.indeterminate = isSomeSelected;
                     }}
                     onChange={handleSelectAll}
-                    className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
+                    className="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
                     title="Select or deselect all purchase orders"
                   />
                 </th>
@@ -229,7 +229,7 @@ export const POTab: React.FC<POTabProps> = ({
                 <th className="p-3 text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 font-mono text-slate-300">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-slate-800 dark:text-slate-300">
               {pos.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="p-4 text-center text-slate-500 font-sans">
@@ -244,8 +244,8 @@ export const POTab: React.FC<POTabProps> = ({
                       key={po.id}
                       className={
                         isSelected
-                          ? 'bg-indigo-950/40 hover:bg-indigo-900/50'
-                          : 'hover:bg-slate-800/40'
+                          ? 'bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
+                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
                       }
                     >
                       <td className="p-3 text-center">
@@ -253,26 +253,26 @@ export const POTab: React.FC<POTabProps> = ({
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleSelectOne(po.id)}
-                          className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
+                          className="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
                         />
                       </td>
-                      <td className="p-3 text-indigo-400 font-bold">{po.poNumber}</td>
-                    <td className="p-3 font-sans">{po.vendor}</td>
-                    <td className="p-3 font-sans">{po.category}</td>
-                    <td className="p-3">{po.qty} Devices</td>
-                    <td className="p-3">{po.totalPrice}</td>
-                    <td className="p-3">{po.issueDate}</td>
+                      <td className="p-3 text-indigo-600 dark:text-indigo-400 font-bold">{po.poNumber}</td>
+                    <td className="p-3 font-sans text-slate-800 dark:text-slate-200">{po.vendor}</td>
+                    <td className="p-3 font-sans text-slate-700 dark:text-slate-300">{po.category}</td>
+                    <td className="p-3 text-slate-800 dark:text-slate-200">{po.qty} Devices</td>
+                    <td className="p-3 text-slate-800 dark:text-slate-200">{po.totalPrice}</td>
+                    <td className="p-3 text-slate-700 dark:text-slate-300">{po.issueDate}</td>
                     <td className="p-3">
                       {po.status === 'COMPLETED' ? (
-                        <span className="bg-emerald-900/50 text-emerald-300 px-2 py-0.5 rounded font-sans text-[10px] border border-emerald-700/50">
+                        <span className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded font-sans text-[10px] border border-emerald-300 dark:border-emerald-700/50 font-semibold">
                           COMPLETED
                         </span>
                       ) : po.status === 'ONGOING' ? (
-                        <span className="bg-amber-900/50 text-amber-300 px-2 py-0.5 rounded font-sans text-[10px] border border-amber-700/50">
+                        <span className="bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded font-sans text-[10px] border border-amber-300 dark:border-amber-700/50 font-semibold">
                           ONGOING
                         </span>
                       ) : (
-                        <span className="bg-rose-900/50 text-rose-300 px-2 py-0.5 rounded font-sans text-[10px] border border-rose-700/50">
+                        <span className="bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-300 px-2 py-0.5 rounded font-sans text-[10px] border border-rose-300 dark:border-rose-700/50 font-semibold">
                           PENDING
                         </span>
                       )}
@@ -282,7 +282,7 @@ export const POTab: React.FC<POTabProps> = ({
                         {onOpenEditPOModal && (
                           <button
                             onClick={() => onOpenEditPOModal(po)}
-                            className="bg-indigo-900/50 hover:bg-indigo-800 text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1"
+                            className="bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:hover:bg-indigo-800 text-indigo-700 dark:text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1 border border-indigo-200 dark:border-transparent transition"
                             title="Edit Purchase Order"
                           >
                             <Edit className="w-3 h-3" /> EDIT
@@ -290,7 +290,7 @@ export const POTab: React.FC<POTabProps> = ({
                         )}
                         <button
                           onClick={() => onDeletePO(po.id)}
-                          className="bg-rose-900/50 hover:bg-rose-800 text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1"
+                          className="bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/50 dark:hover:bg-rose-800 text-rose-700 dark:text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1 border border-rose-200 dark:border-transparent transition"
                           title="Delete Purchase Order"
                         >
                           <Trash2 className="w-3 h-3" /> DELETE
@@ -307,7 +307,7 @@ export const POTab: React.FC<POTabProps> = ({
 
         {/* Pagination Bar */}
         {filteredPOs.length > 0 && (
-          <div className="pt-2 border-t border-slate-800">
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
             <Pagination
               totalItems={filteredPOs.length}
               itemsPerPage={itemsPerPage}

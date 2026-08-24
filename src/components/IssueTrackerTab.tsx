@@ -285,21 +285,21 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
       )}
 
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center space-x-3.5">
-          <div className="p-3 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-xl">
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 rounded-xl">
             <AlertCircle className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
               Issue Tracker Entry
               {editingId && (
-                <span className="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-mono">
+                <span className="text-xs bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40 px-2 py-0.5 rounded font-mono">
                   Editing: {editingId}
                 </span>
               )}
             </h1>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Log incident tickets, track client turnaround times (TAT), and manage device replacements.
             </p>
           </div>
@@ -310,7 +310,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
             <button
               type="button"
               onClick={handleResetForm}
-              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg transition cursor-pointer flex items-center gap-1.5 border border-slate-700"
+              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-lg transition cursor-pointer flex items-center gap-1.5 border border-slate-300 dark:border-slate-700"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Cancel Edit</span>
@@ -319,7 +319,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
           <button
             type="button"
             onClick={onNavigateToReport}
-            className="px-4 py-2 bg-indigo-600/90 hover:bg-indigo-600 text-white text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-2 shadow-sm"
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-2 shadow-xs"
           >
             <FileText className="w-4 h-4" />
             <span>View Issue Reports & Analytics</span>
@@ -329,11 +329,11 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
       </div>
 
       {/* Main Entry Form Card */}
-      <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-md space-y-6">
-        <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-indigo-400">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-xs space-y-6">
+        <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400">
             <Sparkles className="w-4 h-4" />
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
               {editingId ? 'Edit Incident Details' : 'New Issue Registration'}
             </h2>
           </div>
@@ -343,8 +343,8 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           {/* 1. Branch Name */}
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold flex items-center gap-1">
-              <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>Branch Name *</span>
             </label>
             <input
@@ -353,20 +353,20 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
               onChange={(e) => setBranchName(e.target.value)}
               placeholder="e.g. Gulshan Branch"
               required
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-medium focus:outline-none focus:border-indigo-500 transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-indigo-500 transition shadow-xs"
             />
           </div>
 
           {/* 2. Issue Type */}
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold flex items-center gap-1">
-              <Tag className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
+              <Tag className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>Issue Type *</span>
             </label>
             <select
               value={issueType}
               onChange={(e) => setIssueType(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition shadow-xs"
             >
               {systemOptions.issueTypes.map((type) => (
                 <option key={type} value={type}>
@@ -378,8 +378,8 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
 
           {/* 3. Odoo Ticket ID */}
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold flex items-center gap-1">
-              <FileText className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
+              <FileText className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>Odoo Ticket ID</span>
             </label>
             <input
@@ -387,7 +387,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
               value={odooTicketId}
               onChange={(e) => setOdooTicketId(e.target.value)}
               placeholder="e.g. OD-94821"
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-indigo-500 transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-indigo-500 transition shadow-xs"
             />
           </div>
         </div>
@@ -396,14 +396,14 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           {/* 5. Priority */}
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold flex items-center gap-1">
-              <ShieldAlert className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
+              <ShieldAlert className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>Priority</span>
             </label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition font-bold"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition font-bold shadow-xs"
             >
               {priorityOptions.map((p) => {
                 const icon =
@@ -427,17 +427,17 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
 
           {/* 6. Device Replace */}
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold flex items-center gap-1">
-              <Repeat className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
+              <Repeat className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>Device Replace</span>
             </label>
             <select
               value={deviceReplace}
               onChange={(e) => setDeviceReplace(e.target.value as 'YES' | 'NO')}
-              className={`w-full bg-slate-950 border rounded-lg p-2.5 font-bold transition focus:outline-none ${
+              className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-lg p-2.5 font-bold transition focus:outline-none shadow-xs ${
                 deviceReplace === 'YES'
-                  ? 'border-amber-500 text-amber-300 bg-amber-950/30'
-                  : 'border-slate-700 text-white'
+                  ? 'border-amber-500 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30'
+                  : 'border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'
               }`}
             >
               <option value="NO">NO - Servicing / Repair</option>
@@ -447,8 +447,8 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
 
           {/* 7. Location */}
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>Location / Department</span>
             </label>
             <input
@@ -456,20 +456,20 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. 2nd Floor Server Room, Cash Counter"
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition shadow-xs"
             />
           </div>
 
           {/* 8. Assign Person (from System Settings Technicians) */}
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold flex items-center gap-1">
-              <User className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
+              <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>Assign Person</span>
             </label>
             <select
               value={assignPerson}
               onChange={(e) => setAssignPerson(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500 transition"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition shadow-xs"
             >
               <option value="">Unassigned / Select Person</option>
               {systemOptions.technicians &&
@@ -489,9 +489,9 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
 
         {/* Conditional Replacement Fields (Highlighted when Device Replace is YES) */}
         {deviceReplace === 'YES' && (
-          <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-800/60 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div className="space-y-1">
-              <label className="text-amber-300 font-semibold flex items-center gap-1">
+              <label className="text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1">
                 <span>Old Device ID (Faulty / Removed)</span>
               </label>
               <input
@@ -499,11 +499,11 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 value={oldDeviceId}
                 onChange={(e) => setOldDeviceId(e.target.value)}
                 placeholder="e.g. RTR-GLS-02 / DVR-104"
-                className="w-full bg-slate-950 border border-amber-700/80 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-amber-400 transition"
+                className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/80 rounded-lg p-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-amber-500 transition"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-amber-300 font-semibold flex items-center gap-1">
+              <label className="text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1">
                 <span>Replace Device ID (New / Installed)</span>
               </label>
               <input
@@ -511,7 +511,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 value={replaceDeviceId}
                 onChange={(e) => setReplaceDeviceId(e.target.value)}
                 placeholder="e.g. RTR-GLS-09 / DVR-208"
-                className="w-full bg-slate-950 border border-amber-700/80 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-amber-400 transition"
+                className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/80 rounded-lg p-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-amber-500 transition"
               />
             </div>
           </div>
@@ -520,14 +520,14 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
         {/* 2-Column Grid: Status & Issue Date */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>Status</span>
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full h-[42px] bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold focus:outline-none focus:border-indigo-500 transition"
+              className="w-full h-[42px] bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 transition shadow-xs"
             >
               {statusOptions.map((st) => {
                 const icon =
@@ -552,43 +552,43 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
           </div>
 
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-white" />
+            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-slate-700 dark:text-white" />
               <span>Issue Log Date</span>
             </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full h-[42px] bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 transition [color-scheme:dark]"
+              className="w-full h-[42px] bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition shadow-xs"
             />
           </div>
         </div>
 
         {/* Section: 3 Time & Date Boxes with "Set Now" Buttons */}
-        <div className="border-t border-slate-800 pt-5 space-y-4">
+        <div className="border-t border-slate-200 dark:border-slate-800 pt-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-indigo-400" />
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               Incident Timeline & SLA Tracking
             </h3>
-            <span className="text-[11px] text-slate-400">
-              Click <strong className="text-indigo-300 font-mono">"Set Now"</strong> to automatically fill current date & live time
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Click <strong className="text-indigo-600 dark:text-indigo-300 font-mono">"Set Now"</strong> to automatically fill current date & live time
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
             {/* Box 1: Client Reporting Time & Date */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5 shadow-inner">
+            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2.5 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
                   Client Reporting Time & Date
                 </span>
                 <button
                   type="button"
                   onClick={handleSetReportingNow}
-                  className="px-2 py-0.5 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 hover:text-white border border-indigo-700/60 rounded text-[10px] font-bold cursor-pointer transition shadow-sm"
+                  className="px-2 py-0.5 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700/60 rounded text-[10px] font-bold cursor-pointer transition shadow-xs"
                   title="Click to set today's date & running time"
                 >
                   ⚡ Set Now
@@ -597,39 +597,39 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Date</label>
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Date</label>
                   <input
                     type="date"
                     value={clientReportingDate}
                     onChange={(e) => setClientReportingDate(e.target.value)}
                     required
-                    className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-white focus:outline-none focus:border-indigo-500 transition text-xs"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Time</label>
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Time</label>
                   <input
                     type="time"
                     value={clientReportingTime}
                     onChange={(e) => setClientReportingTime(e.target.value)}
                     required
-                    className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-white focus:outline-none focus:border-indigo-500 transition text-xs"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
                   />
                 </div>
               </div>
             </div>
 
             {/* Box 2: Client Response Time & Date */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5 shadow-inner">
+            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2.5 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                   Client Response Time & Date
                 </span>
                 <button
                   type="button"
                   onClick={handleSetResponseNow}
-                  className="px-2 py-0.5 bg-amber-950 hover:bg-amber-900 text-amber-300 hover:text-white border border-amber-700/60 rounded text-[10px] font-bold cursor-pointer transition shadow-sm"
+                  className="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 rounded text-[10px] font-bold cursor-pointer transition shadow-xs"
                   title="Click to set today's date & running time"
                 >
                   ⚡ Set Now
@@ -638,37 +638,37 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Date</label>
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Date</label>
                   <input
                     type="date"
                     value={clientResponseDate}
                     onChange={(e) => setClientResponseDate(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-white focus:outline-none focus:border-indigo-500 transition text-xs"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Time</label>
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Time</label>
                   <input
                     type="time"
                     value={clientResponseTime}
                     onChange={(e) => setClientResponseTime(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-white focus:outline-none focus:border-indigo-500 transition text-xs"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
                   />
                 </div>
               </div>
             </div>
 
             {/* Box 3: Resolution Time & Date */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5 shadow-inner">
+            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2.5 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                   Resolution Time & Date
                 </span>
                 <button
                   type="button"
                   onClick={handleSetResolutionNow}
-                  className="px-2 py-0.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 hover:text-white border border-emerald-700/60 rounded text-[10px] font-bold cursor-pointer transition shadow-sm"
+                  className="px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60 rounded text-[10px] font-bold cursor-pointer transition shadow-xs"
                   title="Click to set today's date & running time"
                 >
                   ⚡ Set Now
@@ -677,21 +677,21 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Date</label>
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Date</label>
                   <input
                     type="date"
                     value={resolutionDate}
                     onChange={(e) => setResolutionDate(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-white focus:outline-none focus:border-indigo-500 transition text-xs"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Time</label>
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Time</label>
                   <input
                     type="time"
                     value={resolutionTime}
                     onChange={(e) => setResolutionTime(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-white focus:outline-none focus:border-indigo-500 transition text-xs"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
                   />
                 </div>
               </div>
@@ -701,7 +701,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
 
         {/* Section: Details / Description */}
         <div className="space-y-1.5 text-xs">
-          <label className="text-slate-300 font-semibold block">
+          <label className="text-slate-700 dark:text-slate-300 font-semibold block">
             Details & Incident Notes
           </label>
           <textarea
@@ -709,15 +709,15 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
             onChange={(e) => setDetails(e.target.value)}
             rows={3}
             placeholder="Enter issue description, error logs, root cause analysis, and resolution troubleshooting steps..."
-            className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500 transition text-xs resize-y"
+            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs resize-y shadow-xs"
           />
         </div>
 
         {/* Submit Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
-          <div className="text-[11px] text-slate-400">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
             {editingId && (
-              <span className="text-amber-400 font-semibold">Updating existing incident: {editingId}</span>
+              <span className="text-amber-600 dark:text-amber-400 font-semibold">Updating existing incident: {editingId}</span>
             )}
           </div>
 
@@ -725,7 +725,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
             <button
               type="button"
               onClick={handleResetForm}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold cursor-pointer transition flex items-center gap-1.5"
+              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold cursor-pointer transition flex items-center gap-1.5 border border-slate-200 dark:border-transparent"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Form</span>
@@ -736,7 +736,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-2 shadow-md animate-in fade-in zoom-in-95 duration-200"
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-2 shadow-xs animate-in fade-in zoom-in-95 duration-200"
               >
                 <Check className="w-4 h-4" />
                 <span>{isSubmitting ? 'Saving...' : editingId ? 'Update Issue' : 'Submit Issue'}</span>
@@ -748,17 +748,17 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
 
       {/* View Issue Modal */}
       {viewingIssue && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div>
-                <span className="text-[10px] text-indigo-400 font-mono font-bold uppercase tracking-wider">
+                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono font-bold uppercase tracking-wider">
                   Incident Record Details
                 </span>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   {viewingIssue.id}
                   {viewingIssue.odooTicketId && (
-                    <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
+                    <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded font-mono border border-slate-200 dark:border-transparent">
                       Odoo: {viewingIssue.odooTicketId}
                     </span>
                   )}
@@ -767,76 +767,83 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
               <button
                 type="button"
                 onClick={() => setViewingIssue(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800 cursor-pointer"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg bg-slate-100 dark:bg-slate-800 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Branch</span>
-                <span className="font-bold text-white">{viewingIssue.branchName}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-xs">
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Branch</span>
+                <span className="font-bold text-slate-900 dark:text-white">{viewingIssue.branchName}</span>
               </div>
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Issue Type</span>
-                <span className="font-semibold text-slate-200">{viewingIssue.issueType}</span>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Specific Location</span>
+                <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                  <span>{viewingIssue.location || 'N/A'}</span>
+                </span>
               </div>
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Category</span>
-                <span className="font-semibold text-slate-200">{viewingIssue.category}</span>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Issue Type</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{viewingIssue.issueType}</span>
               </div>
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Priority</span>
-                <span className="font-bold text-amber-400">{viewingIssue.priority}</span>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Category</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{viewingIssue.category}</span>
               </div>
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Status</span>
-                <span className="font-bold text-emerald-400">{viewingIssue.status}</span>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Priority</span>
+                <span className="font-bold text-amber-600 dark:text-amber-400">{viewingIssue.priority}</span>
               </div>
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Assigned Person</span>
-                <span className="font-medium text-slate-200">{viewingIssue.assignPerson || 'None'}</span>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Status</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{viewingIssue.status}</span>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Assigned Person</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">{viewingIssue.assignPerson || 'None'}</span>
               </div>
             </div>
 
             {viewingIssue.deviceReplace === 'YES' && (
-              <div className="p-3 bg-amber-950/30 border border-amber-800/80 rounded-lg text-xs grid grid-cols-2 gap-2">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 rounded-lg text-xs grid grid-cols-2 gap-2">
                 <div>
-                  <span className="text-[10px] text-amber-400 block">Old Device ID (Removed)</span>
-                  <span className="font-mono font-bold text-white">{viewingIssue.oldDeviceId || 'N/A'}</span>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 block">Old Device ID (Removed)</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white">{viewingIssue.oldDeviceId || 'N/A'}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-amber-400 block">Replace Device ID (New)</span>
-                  <span className="font-mono font-bold text-white">{viewingIssue.replaceDeviceId || 'N/A'}</span>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 block">Replace Device ID (New)</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white">{viewingIssue.replaceDeviceId || 'N/A'}</span>
                 </div>
               </div>
             )}
 
             {/* Timelines */}
-            <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2 text-xs">
-              <span className="font-bold text-slate-300 block border-b border-slate-800 pb-1">
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+              <span className="font-bold text-slate-800 dark:text-slate-300 block border-b border-slate-200 dark:border-slate-800 pb-1">
                 SLA & Turnaround Timeline
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Client Reported:</span>
-                  <span className="font-mono text-slate-200">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Client Reported:</span>
+                  <span className="font-mono text-slate-800 dark:text-slate-200">
                     {viewingIssue.clientReportingDate || 'N/A'}{' '}
                     {format12HourTime(viewingIssue.clientReportingTime)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Client Responded:</span>
-                  <span className="font-mono text-slate-200">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Client Responded:</span>
+                  <span className="font-mono text-slate-800 dark:text-slate-200">
                     {viewingIssue.clientResponseDate
                       ? `${viewingIssue.clientResponseDate} ${format12HourTime(viewingIssue.clientResponseTime)}`
                       : 'Pending'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Resolution:</span>
-                  <span className="font-mono text-slate-200">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Resolution:</span>
+                  <span className="font-mono text-slate-800 dark:text-slate-200">
                     {viewingIssue.resolutionDate
                       ? `${viewingIssue.resolutionDate} ${format12HourTime(viewingIssue.resolutionTime)}`
                       : 'In Progress'}
@@ -847,14 +854,14 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
 
             {viewingIssue.details && (
               <div className="space-y-1 text-xs">
-                <span className="text-slate-400 font-semibold block">Incident Notes & Details:</span>
-                <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-slate-300 whitespace-pre-wrap leading-relaxed">
+                <span className="text-slate-600 dark:text-slate-400 font-semibold block">Incident Notes & Details:</span>
+                <div className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
                   {viewingIssue.details}
                 </div>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => {
@@ -869,7 +876,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
               <button
                 type="button"
                 onClick={() => setViewingIssue(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs cursor-pointer"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs cursor-pointer border border-slate-200 dark:border-transparent"
               >
                 Close
               </button>
