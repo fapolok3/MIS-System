@@ -32,7 +32,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   const [reqTime, setReqTime] = useState('10:00');
   const [planDate, setPlanDate] = useState(todayStr);
   const [countDate, setCountDate] = useState(todayStr);
-  const [provDate, setProvDate] = useState('Pending');
+  const [provDate, setProvDate] = useState('');
   const [location, setLocation] = useState('');
   const [deviceId, setDeviceId] = useState('');
   const [locType, setLocType] = useState('Main Branch');
@@ -52,11 +52,19 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const dateParts = reqDate.split('-');
-    const formattedReqDate =
-      dateParts.length === 3
-        ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0].slice(2)}`
-        : `${day}/${month}/${year.toString().slice(-2)}`;
+    const formatDate = (dateStr: string) => {
+      if (!dateStr || dateStr === 'Pending') return dateStr || 'Pending';
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
+      }
+      return dateStr;
+    };
+
+    const formattedReqDate = formatDate(reqDate);
+    const formattedPlanDate = planDate ? formatDate(planDate) : formattedReqDate;
+    const formattedCountDate = countDate ? formatDate(countDate) : formattedReqDate;
+    const formattedProvDate = provDate ? formatDate(provDate) : 'Pending';
 
     const newTicket: Ticket = {
       id: ticketIdInput || defaultTicketId,
@@ -64,9 +72,9 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
       from,
       reqDate: formattedReqDate,
       reqTime: reqTime || '10:00',
-      planDate: planDate || formattedReqDate,
-      countDate: countDate || formattedReqDate,
-      provDate: provDate || 'Pending',
+      planDate: formattedPlanDate,
+      countDate: formattedCountDate,
+      provDate: formattedProvDate,
       location,
       deviceId,
       locType,
@@ -167,13 +175,27 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
             />
           </div>
           <div>
-            <label className="block text-slate-700 dark:text-slate-400 mb-1 font-semibold">Service Provide Date</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-slate-700 dark:text-slate-400 font-semibold">Service Provide Date</label>
+              {provDate ? (
+                <button
+                  type="button"
+                  onClick={() => setProvDate('')}
+                  className="text-[10.5px] text-rose-600 dark:text-rose-400 hover:underline font-medium cursor-pointer"
+                >
+                  Set Pending
+                </button>
+              ) : (
+                <span className="text-[10.5px] text-amber-600 dark:text-amber-400 font-medium">
+                  (Default: Pending)
+                </span>
+              )}
+            </div>
             <input
-              type="text"
+              type="date"
               value={provDate}
               onChange={(e) => setProvDate(e.target.value)}
-              placeholder="e.g. 16/07/26 or Pending"
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
             />
           </div>
           <div>

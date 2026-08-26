@@ -349,13 +349,17 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
 
       {/* 5 Secondary Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-lg shadow-xs">
+        <div
+          onClick={() => onSwitchTab('devices')}
+          className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-lg shadow-xs cursor-pointer hover:border-emerald-500/50 transition"
+          title="View all registered devices"
+        >
           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
             Total Devices
           </span>
           <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">{totalDevices}</div>
           <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5 font-medium">
-            {totalDevices} total
+            {totalDevices} total registered
           </span>
         </div>
         <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-lg shadow-xs">
@@ -376,16 +380,31 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             <AlertTriangle className="w-3 h-3" /> Offline count
           </span>
         </div>
-        <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-lg shadow-xs">
-          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
-            Total SIMs
-          </span>
+        <div
+          onClick={() => onSwitchTab('sim')}
+          className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-lg shadow-xs cursor-pointer hover:border-indigo-500/50 transition"
+          title="View Cellular SIM Inventory & Discrepancy Reconciliation"
+        >
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+              Total SIMs
+            </span>
+            {totalDevices !== totalSimsCount && (
+              <span className="bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 text-[9px] font-bold px-1.5 py-0.2 rounded" title="Count difference with Devices">
+                Diff: {Math.abs(totalDevices - totalSimsCount)}
+              </span>
+            )}
+          </div>
           <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{totalSimsCount}</div>
           <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
             GP: {gpCount} | Robi: {robiCount}
           </span>
         </div>
-        <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-lg shadow-xs">
+        <div
+          onClick={() => onSwitchTab('service')}
+          className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-lg shadow-xs cursor-pointer hover:border-purple-500/50 transition"
+          title="View Service & Maintenance Tickets"
+        >
           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
             Open Tickets
           </span>

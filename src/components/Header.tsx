@@ -468,7 +468,7 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
 
-      <div className="flex items-center space-x-2.5 text-xs">
+      <div className="flex items-center space-x-2 sm:space-x-2.5 text-xs">
         {/* Professional Theme Toggle Dropdown */}
         <div ref={themeMenuRef} className="relative">
           <button

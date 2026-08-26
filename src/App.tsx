@@ -9,6 +9,7 @@ import {
   SystemOptions,
   AppSettings,
   IssueTrackerItem,
+  LiveActiveUser,
 } from './types';
 import {
   initialDevices,
@@ -37,6 +38,7 @@ import {
   bulkDeleteSupabasePOs,
   fetchSupabaseSIMs,
   insertSupabaseSIM,
+  bulkInsertSupabaseSIMs,
   deleteSupabaseSIM,
   bulkDeleteSupabaseSIMs,
   fetchSupabaseCategoryGroups,
@@ -64,8 +66,16 @@ import { ServiceTab } from './components/ServiceTab';
 import { SIMTab } from './components/SIMTab';
 import { BranchReportTab } from './components/BranchReportTab';
 import { BackupTab } from './components/BackupTab';
+import { SupportTicketGeneratorTab } from './components/SupportTicketGeneratorTab';
 import { SettingsTab } from './components/SettingsTab';
 import { LoginModal } from './components/LoginModal';
+import {
+  recordSystemAccessLog,
+  pulseLiveHeartbeat,
+  removeCurrentLiveSession,
+  subscribeToLiveUsers,
+  getLiveActiveUsers,
+} from './utils/systemLogger';
 
 import { AddCategoryModal } from './components/Modals/AddCategoryModal';
 import { AddDeviceModal } from './components/Modals/AddDeviceModal';
@@ -91,6 +101,7 @@ const pathToTab = (path: string): TabType => {
   if (cleanPath === '/sim' || cleanPath === '/sim-management') return 'sim';
   if (cleanPath === '/branch-report' || cleanPath === '/all-branch-report') return 'branch_report';
   if (cleanPath === '/backup') return 'backup';
+  if (cleanPath === '/ticket-generator' || cleanPath === '/support-ticket' || cleanPath === '/ticket') return 'ticket_generator';
   if (cleanPath === '/settings') return 'settings';
   return 'dashboard';
 };
@@ -105,6 +116,7 @@ const tabToPath = (tab: TabType): string => {
     case 'sim': return '/sim';
     case 'branch_report': return '/branch-report';
     case 'backup': return '/backup';
+    case 'ticket_generator': return '/ticket-generator';
     case 'settings': return '/settings';
     case 'dashboard':
     default:
@@ -310,6 +322,59 @@ export default function App() {
     message: '',
     onConfirm: () => {},
   });
+
+  // Real-time Live Online Users State
+  const [liveUsers, setLiveUsers] = useState<LiveActiveUser[]>(() => getLiveActiveUsers());
+
+  // Active tab to readable title converter for presence
+  const getTabReadableTitle = (tab: TabType): string => {
+    switch (tab) {
+      case 'dashboard': return 'Dashboard Overview';
+      case 'issue_tracker': return 'Issue Tracker';
+      case 'issue_report': return 'Issue Analytics';
+      case 'devices': return 'Devices Inventory';
+      case 'po': return 'Purchase Orders';
+      case 'service': return 'Service Tickets SLA';
+      case 'sim': return 'SIM Management';
+      case 'branch_report': return 'Branch MIS Report';
+      case 'backup': return 'Backup & Telemetry';
+      case 'ticket_generator': return 'Ticket Generator';
+      case 'settings': return 'System Settings';
+      default: return 'Online Portal';
+    }
+  };
+
+  // Real-time live presence & heartbeat tracking
+  useEffect(() => {
+    const currentTabName = getTabReadableTitle(activeTab);
+
+    // Initial heartbeat pulse on mount / tab change
+    pulseLiveHeartbeat(currentTabName);
+
+    // Subscribe to live user updates from storage / broadcast channel
+    const unsubscribe = subscribeToLiveUsers((users) => {
+      setLiveUsers(users);
+    });
+
+    // Regular heartbeat interval (every 4 seconds)
+    const interval = setInterval(() => {
+      pulseLiveHeartbeat(currentTabName);
+    }, 4000);
+
+    // Window focus & unload handlers
+    const handleFocus = () => pulseLiveHeartbeat(currentTabName);
+    const handleBeforeUnload = () => removeCurrentLiveSession();
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [activeTab]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({
@@ -681,6 +746,100 @@ export default function App() {
         return [newSim, ...prevSims];
       }
     });
+  };
+
+  // Sync & Reconcile All SIMs from Device Inventory
+  const handleSyncAllSimsFromDevices = () => {
+    if (devices.length === 0) {
+      showToast('No devices available to sync.', 'info');
+      return;
+    }
+
+    const isValidSIM = (num?: string) => {
+      if (!num) return false;
+      const clean = num.trim().toLowerCase();
+      return (
+        clean !== '' &&
+        clean !== '-' &&
+        clean !== 'n/a' &&
+        clean !== 'none' &&
+        clean !== 'null' &&
+        clean !== 'undefined'
+      );
+    };
+
+    const syncedSimsMap = new Map<string, SIMItem>();
+
+    // Seed existing SIMs
+    sims.forEach((s) => {
+      const key = s.simNumber ? s.simNumber.trim() : s.id;
+      syncedSimsMap.set(key, { ...s });
+    });
+
+    let newlyAdded = 0;
+    let updated = 0;
+
+    devices.forEach((dev, idx) => {
+      const hasSim = isValidSIM(dev.sim);
+      const simStatus: 'ACTIVE' | 'INACTIVE' = dev.status === 'LIVE' ? 'ACTIVE' : 'INACTIVE';
+      const simOp = dev.operator || 'GP';
+      const simLoc = dev.location || '-';
+
+      if (hasSim) {
+        const simNum = dev.sim.trim();
+        if (syncedSimsMap.has(simNum)) {
+          const existing = syncedSimsMap.get(simNum)!;
+          syncedSimsMap.set(simNum, {
+            ...existing,
+            simNumber: simNum,
+            operator: simOp,
+            assignedDevice: dev.id || existing.assignedDevice,
+            location: simLoc,
+            status: simStatus,
+          });
+          updated++;
+        } else {
+          // Check by assignedDevice
+          let foundByDev = false;
+          for (const [k, v] of syncedSimsMap.entries()) {
+            if (v.assignedDevice && dev.id && v.assignedDevice.trim().toLowerCase() === dev.id.trim().toLowerCase()) {
+              syncedSimsMap.set(k, {
+                ...v,
+                simNumber: simNum,
+                operator: simOp,
+                location: simLoc,
+                status: simStatus,
+              });
+              foundByDev = true;
+              updated++;
+              break;
+            }
+          }
+          if (!foundByDev) {
+            const newSim: SIMItem = {
+              id: `sim-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
+              simNumber: simNum,
+              operator: simOp,
+              assignedDevice: dev.id || '-',
+              location: simLoc,
+              status: simStatus,
+            };
+            syncedSimsMap.set(simNum, newSim);
+            newlyAdded++;
+          }
+        }
+      }
+    });
+
+    const finalSimsList = Array.from(syncedSimsMap.values());
+    setSims(finalSimsList);
+    try {
+      localStorage.setItem('simsData', JSON.stringify(finalSimsList));
+    } catch (e) {}
+    bulkInsertSupabaseSIMs(finalSimsList);
+
+    const message = `Sync complete: Total SIMs in inventory: ${finalSimsList.length} (Updated: ${updated}, Newly added: ${newlyAdded}).`;
+    showToast(message, 'success');
   };
 
   const handleSaveNewDevice = (deviceData: Omit<Device, 'sl'>) => {
@@ -1092,35 +1251,56 @@ export default function App() {
 
   // Backup Restore Handler
   const handleRestoreData = (restored: {
-    devices: Device[];
-    tickets: Ticket[];
-    pos: PurchaseOrder[];
-    sims: SIMItem[];
+    devices?: Device[];
+    tickets?: Ticket[];
+    pos?: PurchaseOrder[];
+    sims?: SIMItem[];
     issues?: IssueTrackerItem[];
-    categoryGroups: CategoryGroup[];
+    categoryGroups?: CategoryGroup[];
     systemOptions?: SystemOptions;
+    appSettings?: AppSettings;
   }) => {
     askConfirmation(
       'Confirm Restore Backup',
       'Are you sure you want to restore data from backup? This will overwrite existing records with the restored data.',
       () => {
-        if (restored.devices) {
+        if (restored.devices && Array.isArray(restored.devices)) {
           setDevices(restored.devices);
+          try {
+            localStorage.setItem('devicesData', JSON.stringify(restored.devices));
+          } catch (e) {
+            console.warn(e);
+          }
           bulkInsertSupabaseDevices(restored.devices);
         }
-        if (restored.tickets) {
+        if (restored.tickets && Array.isArray(restored.tickets)) {
           setTickets(restored.tickets);
+          try {
+            localStorage.setItem('serviceTicketsData', JSON.stringify(restored.tickets));
+          } catch (e) {
+            console.warn(e);
+          }
           restored.tickets.forEach((t) => insertSupabaseTicket(t));
         }
-        if (restored.pos) {
+        if (restored.pos && Array.isArray(restored.pos)) {
           setPos(restored.pos);
+          try {
+            localStorage.setItem('purchaseOrdersData', JSON.stringify(restored.pos));
+          } catch (e) {
+            console.warn(e);
+          }
           restored.pos.forEach((p) => insertSupabasePO(p));
         }
-        if (restored.sims) {
+        if (restored.sims && Array.isArray(restored.sims)) {
           setSims(restored.sims);
+          try {
+            localStorage.setItem('simsData', JSON.stringify(restored.sims));
+          } catch (e) {
+            console.warn(e);
+          }
           restored.sims.forEach((s) => insertSupabaseSIM(s));
         }
-        if (restored.issues) {
+        if (restored.issues && Array.isArray(restored.issues)) {
           setIssues(restored.issues);
           bulkInsertSupabaseIssues(restored.issues);
           try {
@@ -1129,8 +1309,13 @@ export default function App() {
             console.warn('localStorage save error', e);
           }
         }
-        if (restored.categoryGroups) {
+        if (restored.categoryGroups && Array.isArray(restored.categoryGroups)) {
           setCategoryGroups(restored.categoryGroups);
+          try {
+            localStorage.setItem('categoryGroups', JSON.stringify(restored.categoryGroups));
+          } catch (e) {
+            console.warn(e);
+          }
           saveSupabaseCategoryGroups(restored.categoryGroups);
         }
         if (restored.systemOptions) {
@@ -1142,6 +1327,18 @@ export default function App() {
             console.warn('localStorage save error', e);
           }
         }
+        if (restored.appSettings) {
+          setAppSettings(restored.appSettings);
+          saveSupabaseAppSettings(restored.appSettings);
+          try {
+            localStorage.setItem('appSettings', JSON.stringify(restored.appSettings));
+          } catch (e) {
+            console.warn(e);
+          }
+        }
+
+        // Record telemetry log
+        recordSystemAccessLog('Admin (admin@local.com)', 'Database Restored from File').catch((e) => console.warn(e));
 
         showToast('Backup data restored successfully!');
       }
@@ -1296,12 +1493,14 @@ export default function App() {
           {activeTab === 'sim' && (
             <SIMTab
               sims={sims}
+              devices={devices}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               onOpenAddSIMModal={() => setIsAddSIMOpen(true)}
               onOpenEditSIMModal={(sim) => setEditingSIM(sim)}
               onDeleteSIM={handleDeleteSIM}
               onBulkDeleteSIMs={handleBulkDeleteSIMs}
+              onSyncAllSimsFromDevices={handleSyncAllSimsFromDevices}
             />
           )}
 
@@ -1327,8 +1526,21 @@ export default function App() {
                 issues,
                 categoryGroups,
                 systemOptions,
+                appSettings,
               }}
+              liveUsers={liveUsers}
               onRestoreData={handleRestoreData}
+              showToast={showToast}
+            />
+          )}
+
+          {activeTab === 'ticket_generator' && (
+            <SupportTicketGeneratorTab
+              devices={devices}
+              tickets={tickets}
+              issues={issues}
+              appLogo={appSettings.appLogo}
+              appName={appSettings.appName}
             />
           )}
 

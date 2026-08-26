@@ -24,6 +24,29 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
 
   if (!isOpen || !formData) return null;
 
+  const toInputDate = (d?: string) => {
+    if (!d || d === 'Pending' || d === '-') return '';
+    if (d.includes('-')) return d;
+    const parts = d.split('/');
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      let year = parts[2];
+      if (year.length === 2) year = `20${year}`;
+      return `${year}-${month}-${day}`;
+    }
+    return '';
+  };
+
+  const toStorageDate = (d: string) => {
+    if (!d) return 'Pending';
+    const parts = d.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
+    }
+    return d;
+  };
+
   const handleChange = (field: keyof Ticket, value: string | number) => {
     setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
@@ -121,13 +144,27 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
             />
           </div>
           <div>
-            <label className="block text-slate-700 dark:text-slate-400 mb-1 font-semibold">Service Provide Date</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-slate-700 dark:text-slate-400 font-semibold">Service Provide Date</label>
+              {formData.provDate && formData.provDate !== 'Pending' ? (
+                <button
+                  type="button"
+                  onClick={() => handleChange('provDate', 'Pending')}
+                  className="text-[10.5px] text-rose-600 dark:text-rose-400 hover:underline font-medium cursor-pointer"
+                >
+                  Set Pending
+                </button>
+              ) : (
+                <span className="text-[10.5px] text-amber-600 dark:text-amber-400 font-medium">
+                  (Pending)
+                </span>
+              )}
+            </div>
             <input
-              type="text"
-              value={formData.provDate}
-              onChange={(e) => handleChange('provDate', e.target.value)}
-              placeholder="e.g. 16/07/26 or Pending"
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+              type="date"
+              value={toInputDate(formData.provDate)}
+              onChange={(e) => handleChange('provDate', toStorageDate(e.target.value))}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
             />
           </div>
           <div>

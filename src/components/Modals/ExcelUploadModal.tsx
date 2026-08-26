@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, FileSpreadsheet, Download, CheckCircle, AlertCircle, X, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Device } from '../../types';
@@ -22,7 +22,27 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const resetUploadState = () => {
+    setFile(null);
+    setParsedData([]);
+    setError(null);
+    setDragActive(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Ensure absolutely no cache on open or close
+  useEffect(() => {
+    resetUploadState();
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
+  const handleModalClose = () => {
+    resetUploadState();
+    onClose();
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -226,6 +246,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     }));
 
     onImportDevices(fullDevices);
+    resetUploadState();
     onClose();
   };
 
@@ -248,7 +269,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleModalClose}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -385,7 +406,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
         <div className="flex justify-end gap-2 border-t border-slate-200 dark:border-slate-800 pt-3">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleModalClose}
             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold transition cursor-pointer border border-slate-200 dark:border-transparent"
           >
             Cancel

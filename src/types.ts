@@ -8,6 +8,7 @@ export type TabType =
   | 'sim'
   | 'branch_report'
   | 'backup'
+  | 'ticket_generator'
   | 'settings';
 
 export interface IssueTrackerItem {
@@ -123,4 +124,43 @@ export interface AppSettings {
   appName: string;
   appLogo: string; // base64 data URL or web image URL
   tagline?: string;
+}
+
+export interface SystemAccessLog {
+  id: string;
+  timestamp: string; // ISO string
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm:ss
+  userProfile: string; // Profile / User identifier
+  laptopProfile: string; // e.g. "HP Pavilion (Windows 11)", "MacBook Pro (macOS)"
+  browser: string; // Chrome 124, Edge, etc.
+  ipAddress: string; // Public / Network IP
+  location: string; // e.g. "Dhaka, Bangladesh"
+  isp?: string; // ISP provider
+  action: string; // 'Login', 'Session Start', 'Backup Export', 'Backup Restore'
+  deviceDetails: {
+    screenResolution: string;
+    os: string;
+    deviceType: string;
+    platform: string;
+    language: string;
+    userAgent: string;
+  };
+}
+
+export interface LiveActiveUser {
+  sessionId: string;
+  userProfile: string;
+  laptopProfile: string;
+  ipAddress: string;
+  location: string;
+  isp?: string;
+  browser: string;
+  screenResolution: string;
+  os: string;
+  deviceType: string;
+  currentTab: string;
+  onlineSince: string; // ISO string
+  lastHeartbeat: number; // timestamp
+  isCurrentDevice?: boolean;
 }

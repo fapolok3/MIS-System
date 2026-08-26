@@ -485,6 +485,28 @@ export async function insertSupabaseSIM(sim: SIMItem): Promise<boolean> {
   }
 }
 
+export async function bulkInsertSupabaseSIMs(sims: SIMItem[]): Promise<boolean> {
+  try {
+    const rows = sims.map((sim) => ({
+      id: sim.id,
+      sim_number: sim.simNumber,
+      operator: sim.operator,
+      assigned_device: sim.assignedDevice,
+      location: sim.location,
+      status: sim.status,
+    }));
+    const { error } = await supabase.from('sim_inventory').upsert(rows);
+    if (error) {
+      console.warn('Supabase bulkInsertSIMs error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkInsertSIMs catch error:', err);
+    return false;
+  }
+}
+
 export async function deleteSupabaseSIM(id: string): Promise<boolean> {
   try {
     const { error } = await supabase.from('sim_inventory').delete().eq('id', id);
