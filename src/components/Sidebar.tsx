@@ -18,6 +18,7 @@ import {
   Menu,
   Settings,
   Ticket,
+  Globe,
 } from 'lucide-react';
 import { TabType, CategoryGroup } from '../types';
 
@@ -159,15 +160,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <GitBranch className="w-5 h-5" />
           </button>
           <button
-            onClick={() => setActiveTab('backup')}
-            title="Backup & Restore"
+            onClick={() => setActiveTab('odoo')}
+            title="Odoo ERP"
             className={`p-2.5 rounded-lg flex items-center justify-center transition cursor-pointer ${
-              activeTab === 'backup'
-                ? 'bg-indigo-50 dark:bg-indigo-600/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/40'
+              activeTab === 'odoo'
+                ? 'bg-purple-50 dark:bg-purple-600/30 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/40'
                 : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            <Database className="w-5 h-5" />
+            <div className="w-5 h-5 rounded bg-purple-600 text-white flex items-center justify-center text-[10px] font-black leading-none shadow-xs">
+              O
+            </div>
           </button>
           <button
             onClick={() => setActiveTab('ticket_generator')}
@@ -190,6 +193,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
           >
             <Settings className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setActiveTab('backup')}
+            title="Backup & Restore"
+            className={`p-2.5 rounded-lg flex items-center justify-center transition cursor-pointer ${
+              activeTab === 'backup'
+                ? 'bg-indigo-50 dark:bg-indigo-600/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/40'
+                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Database className="w-5 h-5" />
           </button>
 
           <div className="w-8 border-t border-slate-200 dark:border-slate-800 my-1" />
@@ -321,14 +335,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <GitBranch className="w-4 h-4" /> All Branch Report
               </button>
               <button
-                onClick={() => setActiveTab('backup')}
-                className={`w-full text-left px-3 py-2 rounded flex items-center gap-2 transition cursor-pointer ${
-                  activeTab === 'backup'
-                    ? 'bg-indigo-50 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold border-l-2 border-indigo-600 dark:border-indigo-500'
+                onClick={() => setActiveTab('odoo')}
+                className={`w-full text-left px-3 py-2 rounded flex items-center justify-between transition cursor-pointer ${
+                  activeTab === 'odoo'
+                    ? 'bg-purple-50 dark:bg-slate-900 text-purple-600 dark:text-purple-400 font-bold border-l-2 border-purple-600 dark:border-purple-500'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
-                <Database className="w-4 h-4" /> Backup & Restore
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-purple-600 text-white flex items-center justify-center text-[9px] font-black leading-none">
+                    O
+                  </div>
+                  <span>Odoo</span>
+                </div>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300">
+                  ERP
+                </span>
               </button>
               <button
                 onClick={() => setActiveTab('ticket_generator')}
@@ -349,6 +371,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <Settings className="w-4 h-4" /> System Settings
+              </button>
+              <button
+                onClick={() => setActiveTab('backup')}
+                className={`w-full text-left px-3 py-2 rounded flex items-center gap-2 transition cursor-pointer ${
+                  activeTab === 'backup'
+                    ? 'bg-indigo-50 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold border-l-2 border-indigo-600 dark:border-indigo-500'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Database className="w-4 h-4" /> Backup & Restore
               </button>
             </nav>
           </div>

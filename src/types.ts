@@ -7,9 +7,10 @@ export type TabType =
   | 'service'
   | 'sim'
   | 'branch_report'
-  | 'backup'
+  | 'odoo'
   | 'ticket_generator'
-  | 'settings';
+  | 'settings'
+  | 'backup';
 
 export interface IssueTrackerItem {
   id: string;
