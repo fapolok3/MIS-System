@@ -377,13 +377,20 @@ export default function App() {
     };
   }, [activeTab]);
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    setToast({
-      id: String(Date.now()),
-      message,
-      type,
-    });
-  };
+  const handleCloseToast = React.useCallback(() => {
+    setToast(null);
+  }, []);
+
+  const showToast = React.useCallback(
+    (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+      setToast({
+        id: `${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+        message,
+        type,
+      });
+    },
+    []
+  );
 
   const askConfirmation = (title: string, message: string, onConfirm: () => void) => {
     setConfirmConfig({
@@ -1579,7 +1586,7 @@ export default function App() {
       />
 
       {/* Global Toast Notification */}
-      <Toast toast={toast} onClose={() => setToast(null)} />
+      <Toast toast={toast} onClose={handleCloseToast} />
 
       {/* Global Confirmation Modal for Deletions */}
       <ConfirmModal

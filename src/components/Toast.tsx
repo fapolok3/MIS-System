@@ -15,6 +15,11 @@ interface ToastProps {
 
 export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
   const [progress, setProgress] = useState(100);
+  const onCloseRef = React.useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!toast) {
@@ -24,7 +29,7 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
 
     setProgress(100);
     const startTime = Date.now();
-    const duration = 4000;
+    const duration = 3200;
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -33,12 +38,12 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
 
       if (elapsed >= duration) {
         clearInterval(interval);
-        onClose();
+        onCloseRef.current();
       }
-    }, 30);
+    }, 25);
 
     return () => clearInterval(interval);
-  }, [toast, onClose]);
+  }, [toast?.id]);
 
   if (!toast) return null;
 
