@@ -67,7 +67,6 @@ import { ServiceTab } from './components/ServiceTab';
 import { SIMTab } from './components/SIMTab';
 import { BranchReportTab } from './components/BranchReportTab';
 import { BackupTab } from './components/BackupTab';
-import { OdooTab } from './components/OdooTab';
 import { SupportTicketGeneratorTab } from './components/SupportTicketGeneratorTab';
 import { SettingsTab } from './components/SettingsTab';
 import { LoginModal } from './components/LoginModal';
@@ -102,7 +101,6 @@ const pathToTab = (path: string): TabType => {
   if (cleanPath === '/service' || cleanPath === '/service-tickets') return 'service';
   if (cleanPath === '/sim' || cleanPath === '/sim-management') return 'sim';
   if (cleanPath === '/branch-report' || cleanPath === '/all-branch-report') return 'branch_report';
-  if (cleanPath === '/odoo') return 'odoo';
   if (cleanPath === '/ticket-generator' || cleanPath === '/support-ticket' || cleanPath === '/ticket') return 'ticket_generator';
   if (cleanPath === '/settings') return 'settings';
   if (cleanPath === '/backup') return 'backup';
@@ -118,7 +116,6 @@ const tabToPath = (tab: TabType): string => {
     case 'service': return '/service';
     case 'sim': return '/sim';
     case 'branch_report': return '/branch-report';
-    case 'odoo': return '/odoo';
     case 'ticket_generator': return '/ticket-generator';
     case 'settings': return '/settings';
     case 'backup': return '/backup';
@@ -341,7 +338,6 @@ export default function App() {
       case 'service': return 'Service Tickets SLA';
       case 'sim': return 'SIM Management';
       case 'branch_report': return 'Branch MIS Report';
-      case 'odoo': return 'Odoo Portal';
       case 'ticket_generator': return 'Ticket Generator';
       case 'settings': return 'System Settings';
       case 'backup': return 'Backup & Restore';
@@ -1369,11 +1365,7 @@ export default function App() {
         />
 
         {/* Dynamic Tab Content Area */}
-        <main
-          className={`flex-1 min-w-0 ${
-            activeTab === 'odoo' ? 'p-0 overflow-hidden' : 'p-4 md:p-6 overflow-y-auto'
-          } bg-slate-100 dark:bg-slate-900 h-full transition-colors duration-200`}
-        >
+        <main className="flex-1 min-w-0 p-4 md:p-6 bg-slate-100 dark:bg-slate-900 overflow-y-auto h-full transition-colors duration-200">
           {activeTab === 'dashboard' && (
             <DashboardTab
               tickets={tickets}
@@ -1489,8 +1481,6 @@ export default function App() {
               showToast={showToast}
             />
           )}
-
-          {activeTab === 'odoo' && <OdooTab />}
 
           {activeTab === 'ticket_generator' && (
             <SupportTicketGeneratorTab

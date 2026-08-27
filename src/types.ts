@@ -7,7 +7,6 @@ export type TabType =
   | 'service'
   | 'sim'
   | 'branch_report'
-  | 'odoo'
   | 'ticket_generator'
   | 'settings'
   | 'backup';
