@@ -1006,3 +1006,37 @@ export async function bulkDeleteSupabaseIssues(issueIds: string[]): Promise<bool
   }
 }
 
+// -------------------------------------------------------------
+// LIVE REALTIME SUBSCRIPTION FOR MULTI-USER COLLABORATION
+// -------------------------------------------------------------
+export function subscribeToSupabaseLiveSync(
+  onTableChange: (tableName: string, eventType: string) => void
+): () => void {
+  try {
+    const channelName = `realtime-multiuser-sync-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public' },
+        (payload) => {
+          if (payload && payload.table) {
+            onTableChange(payload.table, payload.eventType || 'UPDATE');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (err) {
+        console.warn('Error removing Supabase channel:', err);
+      }
+    };
+  } catch (e) {
+    console.warn('Failed to subscribe to Supabase realtime channel:', e);
+    return () => {};
+  }
+}
+

@@ -427,7 +427,13 @@ export const SIMTab: React.FC<SIMTabProps> = ({
                           className="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer w-3.5 h-3.5 accent-indigo-600"
                         />
                       </td>
-                      <td className="p-3 font-bold text-slate-900 dark:text-slate-200">{sim.simNumber}</td>
+                      <td className="p-3 font-bold text-slate-900 dark:text-slate-200">
+                        {sim.simNumber ? (
+                          sim.simNumber
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500 font-normal italic text-[11px]">(Blank)</span>
+                        )}
+                      </td>
                       <td className="p-3 font-sans font-bold text-blue-600 dark:text-blue-400">
                         {sim.operator}
                       </td>

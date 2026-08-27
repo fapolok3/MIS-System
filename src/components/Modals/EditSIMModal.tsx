@@ -40,12 +40,14 @@ export const EditSIMModal: React.FC<EditSIMModalProps> = ({
         </h3>
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
           <div>
-            <label className="block text-slate-700 dark:text-slate-400 mb-1 font-semibold">SIM Number</label>
+            <label className="block text-slate-700 dark:text-slate-400 mb-1 font-semibold">
+              SIM Number <span className="text-slate-400 font-normal">(Optional / Can be blank)</span>
+            </label>
             <input
               type="text"
               value={formData.simNumber}
               onChange={(e) => setFormData({ ...formData, simNumber: e.target.value })}
-              required
+              placeholder="Leave empty for blank"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono"
             />
           </div>

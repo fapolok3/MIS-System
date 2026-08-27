@@ -52,6 +52,7 @@ import {
   deleteSupabaseIssue,
   bulkInsertSupabaseIssues,
   bulkDeleteSupabaseIssues,
+  subscribeToSupabaseLiveSync,
   defaultAppSettings,
 } from './lib/supabase';
 
@@ -393,9 +394,9 @@ export default function App() {
     });
   };
 
-  // Load live data from Supabase on mount
-  useEffect(() => {
-    async function loadSupabaseData() {
+  // Load live data from Supabase (Single Source of Truth)
+  const loadSupabaseData = React.useCallback(async (silent = false) => {
+    try {
       const [
         dbDevices,
         dbTickets,
@@ -416,188 +417,136 @@ export default function App() {
         fetchSupabaseAppSettings(),
       ]);
 
-      // 1. Devices merge
-      if (dbDevices && Array.isArray(dbDevices)) {
-        const localSaved = localStorage.getItem('devicesData');
-        let localDevs: Device[] = [];
-        if (localSaved) {
-          try { localDevs = JSON.parse(localSaved) || []; } catch (e) {}
-        }
-        const dbMap = new Map(dbDevices.map((d) => [d.sl || d.id, d]));
-        const merged = [...dbDevices];
-        const missing: Device[] = [];
-        for (const ld of localDevs) {
-          if (!dbMap.has(ld.sl || ld.id)) {
-            merged.push(ld);
-            missing.push(ld);
-          }
-        }
-        setDevices(merged);
-        try { localStorage.setItem('devicesData', JSON.stringify(merged)); } catch (e) {}
-        if (missing.length > 0) {
-          bulkInsertSupabaseDevices(missing);
-        }
-      }
-
-      // 2. Service Tickets & SLA merge
-      const localTicketsSaved = localStorage.getItem('serviceTicketsData');
-      let localTickets: Ticket[] = [];
-      if (localTicketsSaved) {
-        try { localTickets = JSON.parse(localTicketsSaved) || []; } catch (e) {}
-      }
-
-      if (dbTickets && Array.isArray(dbTickets)) {
-        const dbTicketMap = new Map(dbTickets.map((t) => [String(t.id), t]));
-        const mergedTickets = [...dbTickets];
-        const missingInDb: Ticket[] = [];
-
-        for (const lt of localTickets) {
-          if (lt && lt.id && !dbTicketMap.has(String(lt.id))) {
-            mergedTickets.push(lt);
-            missingInDb.push(lt);
-          }
-        }
-
-        setTickets(mergedTickets);
+      // 1. Devices (Supabase is authoritative, never resurrect deleted items)
+      if (dbDevices !== null) {
+        setDevices(dbDevices);
         try {
-          localStorage.setItem('serviceTicketsData', JSON.stringify(mergedTickets));
+          localStorage.setItem('devicesData', JSON.stringify(dbDevices));
+        } catch (e) {
+          console.warn('localStorage save devices error', e);
+        }
+      }
+
+      // 2. Service Tickets & SLA
+      if (dbTickets !== null) {
+        setTickets(dbTickets);
+        try {
+          localStorage.setItem('serviceTicketsData', JSON.stringify(dbTickets));
         } catch (e) {
           console.warn('localStorage save tickets error', e);
         }
-
-        if (missingInDb.length > 0) {
-          bulkInsertSupabaseTickets(missingInDb);
-        }
-      } else if (localTickets.length > 0) {
-        setTickets(localTickets);
-        bulkInsertSupabaseTickets(localTickets);
       }
 
-      // 3. Purchase Orders merge
-      if (dbPOs && Array.isArray(dbPOs)) {
-        if (dbPOs.length > 0) {
-          setPos(dbPOs);
-          try {
-            localStorage.setItem('purchaseOrdersData', JSON.stringify(dbPOs));
-          } catch (e) {
-            console.warn('localStorage save pos error', e);
-          }
-        }
-      }
-
-      // 4. SIMs merge
-      if (dbSIMs && Array.isArray(dbSIMs)) {
-        if (dbSIMs.length > 0) {
-          setSims(dbSIMs);
-          try {
-            localStorage.setItem('simsData', JSON.stringify(dbSIMs));
-          } catch (e) {
-            console.warn('localStorage save sims error', e);
-          }
-        }
-      }
-
-      // 5. Issues (Issue Tracker) merge
-      const localIssuesSaved = localStorage.getItem('issueTrackerData');
-      let localIssues: IssueTrackerItem[] = [];
-      if (localIssuesSaved) {
-        try { localIssues = JSON.parse(localIssuesSaved) || []; } catch (e) {}
-      }
-
-      if (dbIssues && Array.isArray(dbIssues)) {
-        const dbIssueMap = new Map(dbIssues.map((i) => [String(i.id), i]));
-        const mergedIssues = [...dbIssues];
-        const missingIssues: IssueTrackerItem[] = [];
-
-        for (const li of localIssues) {
-          if (li && li.id && !dbIssueMap.has(String(li.id))) {
-            mergedIssues.push(li);
-            missingIssues.push(li);
-          }
-        }
-
-        setIssues(mergedIssues);
+      // 3. Purchase Orders
+      if (dbPOs !== null) {
+        setPos(dbPOs);
         try {
-          localStorage.setItem('issueTrackerData', JSON.stringify(mergedIssues));
+          localStorage.setItem('purchaseOrdersData', JSON.stringify(dbPOs));
         } catch (e) {
-          console.warn('localStorage save error', e);
+          console.warn('localStorage save pos error', e);
         }
-
-        if (missingIssues.length > 0) {
-          bulkInsertSupabaseIssues(missingIssues);
-        }
-      } else if (localIssues.length > 0) {
-        setIssues(localIssues);
-        bulkInsertSupabaseIssues(localIssues);
       }
 
-      // 6. Category Groups merge
-      if (dbCategoryGroups && dbCategoryGroups.length > 0) {
+      // 4. SIMs
+      if (dbSIMs !== null) {
+        setSims(dbSIMs);
+        try {
+          localStorage.setItem('simsData', JSON.stringify(dbSIMs));
+        } catch (e) {
+          console.warn('localStorage save sims error', e);
+        }
+      }
+
+      // 5. Issues (Issue Tracker)
+      if (dbIssues !== null) {
+        setIssues(dbIssues);
+        try {
+          localStorage.setItem('issueTrackerData', JSON.stringify(dbIssues));
+        } catch (e) {
+          console.warn('localStorage save issues error', e);
+        }
+      }
+
+      // 6. Category Groups
+      if (dbCategoryGroups !== null && dbCategoryGroups.length > 0) {
         setCategoryGroups(dbCategoryGroups);
         try {
           localStorage.setItem('categoryGroups', JSON.stringify(dbCategoryGroups));
         } catch (e) {
-          console.warn('localStorage save error', e);
+          console.warn('localStorage save categoryGroups error', e);
         }
       }
 
-      // 7. System Dropdown Options merge (Union of all option arrays)
-      const localSysSaved = localStorage.getItem('systemOptions');
-      let localSys: SystemOptions | null = null;
-      if (localSysSaved) {
-        try { localSys = JSON.parse(localSysSaved); } catch (e) {}
-      }
-
-      if (dbSystemOptions) {
-        const unionArray = (dbArr?: string[], locArr?: string[], initArr?: string[]) => {
-          return Array.from(
-            new Set([
-              ...(dbArr || []),
-              ...(locArr || []),
-              ...(initArr || []),
-            ])
-          ).filter(Boolean);
-        };
-
-        const mergedOptions: SystemOptions = {
-          deviceStatuses: unionArray(dbSystemOptions.deviceStatuses, localSys?.deviceStatuses, initialSystemOptions.deviceStatuses),
-          simOperators: unionArray(dbSystemOptions.simOperators, localSys?.simOperators, initialSystemOptions.simOperators),
-          accessTypes: unionArray(dbSystemOptions.accessTypes, localSys?.accessTypes, initialSystemOptions.accessTypes),
-          locationTypes: unionArray(dbSystemOptions.locationTypes, localSys?.locationTypes, initialSystemOptions.locationTypes),
-          issueTypes: unionArray(dbSystemOptions.issueTypes, localSys?.issueTypes, initialSystemOptions.issueTypes),
-          ticketPriorities: unionArray(dbSystemOptions.ticketPriorities, localSys?.ticketPriorities, initialSystemOptions.ticketPriorities),
-          ticketStatuses: unionArray(dbSystemOptions.ticketStatuses, localSys?.ticketStatuses, initialSystemOptions.ticketStatuses),
-          vendors: unionArray(dbSystemOptions.vendors, localSys?.vendors, initialSystemOptions.vendors),
-          poStatuses: unionArray(dbSystemOptions.poStatuses, localSys?.poStatuses, initialSystemOptions.poStatuses),
-          simStatuses: unionArray(dbSystemOptions.simStatuses, localSys?.simStatuses, initialSystemOptions.simStatuses),
-          technicians: unionArray(dbSystemOptions.technicians, localSys?.technicians, initialSystemOptions.technicians),
-          slaStatuses: unionArray(dbSystemOptions.slaStatuses, localSys?.slaStatuses, initialSystemOptions.slaStatuses),
-        };
-
-        setSystemOptions(mergedOptions);
+      // 7. System Dropdown Options
+      if (dbSystemOptions !== null) {
+        setSystemOptions(dbSystemOptions);
         try {
-          localStorage.setItem('systemOptions', JSON.stringify(mergedOptions));
+          localStorage.setItem('systemOptions', JSON.stringify(dbSystemOptions));
         } catch (e) {
-          console.warn('localStorage save error', e);
+          console.warn('localStorage save systemOptions error', e);
         }
-        // Save merged options back to Supabase to keep in sync
-        saveSupabaseSystemOptions(mergedOptions);
-      } else if (localSys) {
-        setSystemOptions(localSys);
-        saveSupabaseSystemOptions(localSys);
       }
 
-      if (dbAppSettings) {
+      // 8. App Settings
+      if (dbAppSettings !== null) {
         setAppSettings(dbAppSettings);
         try {
           localStorage.setItem('appSettings', JSON.stringify(dbAppSettings));
         } catch (e) {
-          console.warn('localStorage save error', e);
+          console.warn('localStorage save appSettings error', e);
         }
       }
+    } catch (err) {
+      if (!silent) {
+        console.warn('Error loading Supabase live data:', err);
+      }
     }
-    loadSupabaseData();
   }, []);
+
+  // Real-time synchronization across all laptops, tabs, and users
+  useEffect(() => {
+    // 1. Initial fetch from database
+    loadSupabaseData();
+
+    // 2. Realtime WebSocket subscription from Supabase for instant multi-laptop synchronization
+    let debounceTimer: any = null;
+    const triggerDebouncedSync = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        loadSupabaseData(true);
+      }, 300);
+    };
+
+    const unsubscribeRealtime = subscribeToSupabaseLiveSync(() => {
+      triggerDebouncedSync();
+    });
+
+    // 3. Tab focus & visibility change listener (refreshes if user returns from another tab or computer)
+    const handleWindowFocus = () => {
+      loadSupabaseData(true);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadSupabaseData(true);
+      }
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 4. Background heartbeat refresh interval (every 20s) to keep all laptops 100% in sync
+    const intervalId = setInterval(() => {
+      loadSupabaseData(true);
+    }, 20000);
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      unsubscribeRealtime();
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(intervalId);
+    };
+  }, [loadSupabaseData]);
 
   // Persist collections to localStorage
   useEffect(() => {
@@ -703,142 +652,53 @@ export default function App() {
     showToast(`Category "${categoryName}" added successfully!`);
   };
 
-  // Device Handlers
-  const syncSimFromDevice = (device: Device) => {
-    const simNum = device.sim?.trim();
-    if (!simNum || simNum === '-' || simNum.toLowerCase() === 'n/a' || simNum.toLowerCase() === 'none') {
-      return;
-    }
+  // Helper to construct SIM Item from Device (supports blank SIMs and duplicate creation)
+  const createSimItemFromDevice = (device: Device, customId?: string): SIMItem => {
+    const rawSim = device.sim ? String(device.sim).trim() : '';
+    const isBlankOrPlaceholder =
+      !rawSim ||
+      rawSim === '-' ||
+      rawSim.toLowerCase() === 'n/a' ||
+      rawSim.toLowerCase() === 'none' ||
+      rawSim.toLowerCase() === 'null' ||
+      rawSim.toLowerCase() === 'undefined';
 
-    const simStatus: 'ACTIVE' | 'INACTIVE' = device.status === 'LIVE' ? 'ACTIVE' : 'INACTIVE';
+    const simStatus: 'ACTIVE' | 'INACTIVE' =
+      device.status === 'LIVE' ? 'ACTIVE' : 'INACTIVE';
 
-    setSims((prevSims) => {
-      const existingIndex = prevSims.findIndex(
-        (s) =>
-          (s.simNumber && s.simNumber.trim() === simNum) ||
-          (s.assignedDevice && s.assignedDevice === device.id)
-      );
-
-      if (existingIndex >= 0) {
-        const updatedSims = [...prevSims];
-        const existingSim = updatedSims[existingIndex];
-        const updatedSim: SIMItem = {
-          ...existingSim,
-          simNumber: simNum,
-          operator: device.operator || existingSim.operator,
-          assignedDevice: device.id || existingSim.assignedDevice,
-          location: device.location || existingSim.location,
-          status: simStatus,
-        };
-        updatedSims[existingIndex] = updatedSim;
-        insertSupabaseSIM(updatedSim);
-        return updatedSims;
-      } else {
-        const newSim: SIMItem = {
-          id: `sim-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-          simNumber: simNum,
-          operator: device.operator || 'GP',
-          assignedDevice: device.id || '-',
-          location: device.location || '-',
-          status: simStatus,
-        };
-        insertSupabaseSIM(newSim);
-        return [newSim, ...prevSims];
-      }
-    });
+    return {
+      id: customId || `sim-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+      simNumber: isBlankOrPlaceholder ? '' : rawSim,
+      operator: device.operator || 'GP',
+      assignedDevice: device.id || '-',
+      location: device.location || '-',
+      status: simStatus,
+    };
   };
 
-  // Sync & Reconcile All SIMs from Device Inventory
+  // Sync & Reconcile All SIMs from Device Inventory (creates for all devices, including blank & duplicates)
   const handleSyncAllSimsFromDevices = () => {
     if (devices.length === 0) {
       showToast('No devices available to sync.', 'info');
       return;
     }
 
-    const isValidSIM = (num?: string) => {
-      if (!num) return false;
-      const clean = num.trim().toLowerCase();
-      return (
-        clean !== '' &&
-        clean !== '-' &&
-        clean !== 'n/a' &&
-        clean !== 'none' &&
-        clean !== 'null' &&
-        clean !== 'undefined'
-      );
-    };
+    const baseTime = Date.now();
+    // Create a SIM record for EVERY device in Device MIS Tree (including blank SIM numbers and duplicates)
+    const syncedSims: SIMItem[] = devices.map((dev, idx) =>
+      createSimItemFromDevice(
+        dev,
+        `sim-${baseTime}-${idx}-${Math.floor(Math.random() * 100000)}`
+      )
+    );
 
-    const syncedSimsMap = new Map<string, SIMItem>();
-
-    // Seed existing SIMs
-    sims.forEach((s) => {
-      const key = s.simNumber ? s.simNumber.trim() : s.id;
-      syncedSimsMap.set(key, { ...s });
-    });
-
-    let newlyAdded = 0;
-    let updated = 0;
-
-    devices.forEach((dev, idx) => {
-      const hasSim = isValidSIM(dev.sim);
-      const simStatus: 'ACTIVE' | 'INACTIVE' = dev.status === 'LIVE' ? 'ACTIVE' : 'INACTIVE';
-      const simOp = dev.operator || 'GP';
-      const simLoc = dev.location || '-';
-
-      if (hasSim) {
-        const simNum = dev.sim.trim();
-        if (syncedSimsMap.has(simNum)) {
-          const existing = syncedSimsMap.get(simNum)!;
-          syncedSimsMap.set(simNum, {
-            ...existing,
-            simNumber: simNum,
-            operator: simOp,
-            assignedDevice: dev.id || existing.assignedDevice,
-            location: simLoc,
-            status: simStatus,
-          });
-          updated++;
-        } else {
-          // Check by assignedDevice
-          let foundByDev = false;
-          for (const [k, v] of syncedSimsMap.entries()) {
-            if (v.assignedDevice && dev.id && v.assignedDevice.trim().toLowerCase() === dev.id.trim().toLowerCase()) {
-              syncedSimsMap.set(k, {
-                ...v,
-                simNumber: simNum,
-                operator: simOp,
-                location: simLoc,
-                status: simStatus,
-              });
-              foundByDev = true;
-              updated++;
-              break;
-            }
-          }
-          if (!foundByDev) {
-            const newSim: SIMItem = {
-              id: `sim-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
-              simNumber: simNum,
-              operator: simOp,
-              assignedDevice: dev.id || '-',
-              location: simLoc,
-              status: simStatus,
-            };
-            syncedSimsMap.set(simNum, newSim);
-            newlyAdded++;
-          }
-        }
-      }
-    });
-
-    const finalSimsList = Array.from(syncedSimsMap.values());
-    setSims(finalSimsList);
+    setSims(syncedSims);
     try {
-      localStorage.setItem('simsData', JSON.stringify(finalSimsList));
+      localStorage.setItem('simsData', JSON.stringify(syncedSims));
     } catch (e) {}
-    bulkInsertSupabaseSIMs(finalSimsList);
+    bulkInsertSupabaseSIMs(syncedSims);
 
-    const message = `Sync complete: Total SIMs in inventory: ${finalSimsList.length} (Updated: ${updated}, Newly added: ${newlyAdded}).`;
+    const message = `Sync complete: Created & synchronized ${syncedSims.length} SIM records in SIM management from Device MIS Tree.`;
     showToast(message, 'success');
   };
 
@@ -849,8 +709,19 @@ export default function App() {
     };
     setDevices((prev) => [...prev, newDevice]);
     insertSupabaseDevice(newDevice);
-    syncSimFromDevice(newDevice);
-    showToast(`Device "${newDevice.id}" created successfully!`);
+
+    // Auto-create SIM in SIM Management (always creates, even if blank or duplicate)
+    const newSim = createSimItemFromDevice(newDevice);
+    setSims((prevSims) => {
+      const updatedSims = [newSim, ...prevSims];
+      try {
+        localStorage.setItem('simsData', JSON.stringify(updatedSims));
+      } catch (e) {}
+      return updatedSims;
+    });
+    insertSupabaseSIM(newSim);
+
+    showToast(`Device "${newDevice.id}" created & added to SIM management!`);
   };
 
   const handleSaveEditedDevice = (updatedDevice: Device) => {
@@ -858,7 +729,54 @@ export default function App() {
       prev.map((d) => (d.sl === updatedDevice.sl ? updatedDevice : d))
     );
     insertSupabaseDevice(updatedDevice);
-    syncSimFromDevice(updatedDevice);
+
+    const rawSim = updatedDevice.sim ? String(updatedDevice.sim).trim() : '';
+    const isBlankOrPlaceholder =
+      !rawSim ||
+      rawSim === '-' ||
+      rawSim.toLowerCase() === 'n/a' ||
+      rawSim.toLowerCase() === 'none' ||
+      rawSim.toLowerCase() === 'null' ||
+      rawSim.toLowerCase() === 'undefined';
+    const cleanSimNum = isBlankOrPlaceholder ? '' : rawSim;
+    const simStatus: 'ACTIVE' | 'INACTIVE' =
+      updatedDevice.status === 'LIVE' ? 'ACTIVE' : 'INACTIVE';
+
+    setSims((prevSims) => {
+      // Check if there is an existing SIM assigned to this device ID
+      const existingIndex = prevSims.findIndex(
+        (s) =>
+          s.assignedDevice &&
+          updatedDevice.id &&
+          s.assignedDevice.trim().toLowerCase() === updatedDevice.id.trim().toLowerCase()
+      );
+
+      let updatedSims: SIMItem[];
+      if (existingIndex >= 0) {
+        const existingSim = prevSims[existingIndex];
+        const updatedSim: SIMItem = {
+          ...existingSim,
+          simNumber: cleanSimNum,
+          operator: updatedDevice.operator || existingSim.operator,
+          assignedDevice: updatedDevice.id || existingSim.assignedDevice,
+          location: updatedDevice.location || existingSim.location,
+          status: simStatus,
+        };
+        updatedSims = [...prevSims];
+        updatedSims[existingIndex] = updatedSim;
+        insertSupabaseSIM(updatedSim);
+      } else {
+        // If no matching SIM exists, create a new one (even if blank or duplicate)
+        const newSim = createSimItemFromDevice(updatedDevice);
+        updatedSims = [newSim, ...prevSims];
+        insertSupabaseSIM(newSim);
+      }
+      try {
+        localStorage.setItem('simsData', JSON.stringify(updatedSims));
+      } catch (e) {}
+      return updatedSims;
+    });
+
     showToast(`Device "${updatedDevice.id}" updated successfully!`);
   };
 
@@ -1002,14 +920,28 @@ export default function App() {
     setDevices((prev) => [...formattedDevices, ...prev]);
     bulkInsertSupabaseDevices(formattedDevices);
 
-    // Auto-sync SIM cards from imported devices
-    formattedDevices.forEach((dev) => syncSimFromDevice(dev));
+    // Auto-create SIM cards in SIM Management for EVERY imported device (blank SIMs & duplicates are all created!)
+    const newSimItems: SIMItem[] = formattedDevices.map((dev, idx) =>
+      createSimItemFromDevice(
+        dev,
+        `sim-${baseTime}-${idx}-${Math.floor(Math.random() * 100000)}`
+      )
+    );
+
+    setSims((prev) => {
+      const updatedSims = [...newSimItems, ...prev];
+      try {
+        localStorage.setItem('simsData', JSON.stringify(updatedSims));
+      } catch (e) {}
+      return updatedSims;
+    });
+    bulkInsertSupabaseSIMs(newSimItems);
 
     if (formattedDevices.length > 0) {
       setActiveCategory(formattedDevices[0].category);
       setActiveTab('devices');
     }
-    showToast(`${formattedDevices.length} Devices imported successfully!`);
+    showToast(`${formattedDevices.length} Devices imported & ${newSimItems.length} SIM records created in SIM management!`);
   };
 
   // Ticket Handlers
