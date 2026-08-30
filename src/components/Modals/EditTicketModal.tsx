@@ -6,7 +6,7 @@ interface EditTicketModalProps {
   isOpen: boolean;
   systemOptions: SystemOptions;
   onClose: () => void;
-  onSaveTicket: (updated: Ticket) => void;
+  onSaveTicket: (updated: Ticket, originalId?: string) => void;
 }
 
 export const EditTicketModal: React.FC<EditTicketModalProps> = ({
@@ -54,7 +54,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData) {
-      onSaveTicket(formData);
+      onSaveTicket(formData, ticket?.id);
       onClose();
     }
   };

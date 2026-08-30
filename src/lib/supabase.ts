@@ -200,7 +200,7 @@ export async function fetchSupabaseTickets(): Promise<Ticket[] | null> {
 
 function mapSupabaseTickets(data: any[]): Ticket[] {
   return data.map((t: any) => ({
-    id: String(t.id || ''),
+    id: String(t.id || t.ticket_no || t.ticketNo || ''),
     subject: t.subject || t.title || '',
     from: t.from_user || t.from || t.sender || '',
     reqDate: t.req_date || t.reqDate || '',
@@ -226,8 +226,11 @@ function mapSupabaseTickets(data: any[]): Ticket[] {
 
 export async function insertSupabaseTicket(ticket: Ticket): Promise<boolean> {
   try {
+    const ticketId = String(ticket.id || '').trim();
+    if (!ticketId) return false;
+
     const row: Record<string, any> = {
-      id: String(ticket.id),
+      id: ticketId,
       subject: ticket.subject || '',
       from_user: ticket.from || '',
       req_date: ticket.reqDate || '',
@@ -251,20 +254,33 @@ export async function insertSupabaseTicket(ticket: Ticket): Promise<boolean> {
       updated_at: new Date().toISOString(),
     };
     
-    // First attempt upsert with onConflict
+    // First attempt upsert with standard onConflict 'id'
     let { error } = await supabase.from('tickets').upsert([row], { onConflict: 'id' });
     if (error) {
       console.warn('Supabase insertTicket initial upsert error:', error.message);
-      // Try update directly
-      const updateRes = await supabase.from('tickets').update(row).eq('id', String(ticket.id));
+      
+      // Fallback 1: If column from_user is named 'from' in database
+      if (error.message?.includes('from_user') || error.message?.includes('column')) {
+        try {
+          const altRow = { ...row };
+          delete altRow.from_user;
+          altRow['from'] = ticket.from || '';
+          const altRes = await supabase.from('tickets').upsert([altRow], { onConflict: 'id' });
+          if (!altRes.error) return true;
+        } catch (e) {}
+      }
+
+      // Fallback 2: Try direct update
+      const updateRes = await supabase.from('tickets').update(row).eq('id', ticketId);
       if (!updateRes.error) {
         return true;
       }
-      console.warn('Supabase insertTicket update fallback error:', updateRes.error.message);
-      // Try plain insert
+      console.warn('Supabase insertTicket update fallback error:', updateRes.error?.message);
+
+      // Fallback 3: Try plain insert
       const insertRes = await supabase.from('tickets').insert([row]);
       if (insertRes.error) {
-        console.error('Supabase insertTicket final insert error:', insertRes.error.message);
+        console.error('Supabase insertTicket final insert error:', insertRes.error?.message);
         return false;
       }
     }
@@ -279,7 +295,7 @@ export async function bulkInsertSupabaseTickets(tickets: Ticket[]): Promise<bool
   try {
     if (!tickets || tickets.length === 0) return true;
     const rows = tickets.map((ticket) => ({
-      id: String(ticket.id),
+      id: String(ticket.id || '').trim(),
       subject: ticket.subject || '',
       from_user: ticket.from || '',
       req_date: ticket.reqDate || '',
@@ -301,10 +317,23 @@ export async function bulkInsertSupabaseTickets(tickets: Ticket[]): Promise<bool
       remarks: ticket.remarks || '',
       email_details: ticket.emailDetails || '',
       updated_at: new Date().toISOString(),
-    }));
+    })).filter((r) => r.id);
+
     let { error } = await supabase.from('tickets').upsert(rows, { onConflict: 'id' });
     if (error) {
       console.warn('Supabase bulkInsertTickets onConflict error (retrying upsert):', error.message);
+      if (error.message?.includes('from_user') || error.message?.includes('column')) {
+        try {
+          const altRows = rows.map((r, idx) => {
+            const alt = { ...r };
+            delete alt.from_user;
+            alt['from'] = tickets[idx]?.from || '';
+            return alt;
+          });
+          const altRes = await supabase.from('tickets').upsert(altRows, { onConflict: 'id' });
+          if (!altRes.error) return true;
+        } catch (e) {}
+      }
       const res = await supabase.from('tickets').upsert(rows);
       if (res.error) {
         console.error('Supabase bulkInsertTickets final error:', res.error.message);
@@ -320,7 +349,7 @@ export async function bulkInsertSupabaseTickets(tickets: Ticket[]): Promise<bool
 
 export async function deleteSupabaseTicket(id: string | number): Promise<boolean> {
   try {
-    const { error } = await supabase.from('tickets').delete().eq('id', String(id));
+    const { error } = await supabase.from('tickets').delete().eq('id', String(id).trim());
     if (error) {
       console.warn('Supabase deleteTicket error:', error.message);
       return false;
@@ -334,7 +363,7 @@ export async function deleteSupabaseTicket(id: string | number): Promise<boolean
 
 export async function bulkDeleteSupabaseTickets(ids: (string | number)[]): Promise<boolean> {
   try {
-    const stringIds = ids.map(String);
+    const stringIds = ids.map((id) => String(id).trim()).filter(Boolean);
     const { error } = await supabase.from('tickets').delete().in('id', stringIds);
     if (error) {
       console.warn('Supabase bulkDeleteTickets error:', error.message);

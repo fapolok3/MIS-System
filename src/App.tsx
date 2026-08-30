@@ -952,10 +952,17 @@ export default function App() {
   };
 
   // Ticket Handlers
-  const handleImportTickets = (newTickets: Ticket[]) => {
+  const handleImportTickets = async (newTickets: Ticket[]) => {
     setTickets((prev) => [...newTickets, ...prev]);
-    bulkInsertSupabaseTickets(newTickets);
-    showToast(`${newTickets.length} Service Ticket(s) imported from Excel successfully!`);
+    try {
+      localStorage.setItem('serviceTicketsData', JSON.stringify([...newTickets, ...tickets]));
+    } catch (e) {}
+    const success = await bulkInsertSupabaseTickets(newTickets);
+    if (success) {
+      showToast(`${newTickets.length} Service Ticket(s) imported & saved to Supabase!`);
+    } else {
+      showToast(`${newTickets.length} Service Ticket(s) imported locally! (Supabase sync failed - check tickets table & RLS)`, 'info');
+    }
   };
 
   const handleSaveNewTicket = async (newTicket: Ticket) => {
@@ -966,20 +973,33 @@ export default function App() {
       } catch (e) {}
       return updated;
     });
-    await insertSupabaseTicket(newTicket);
-    showToast(`Service Ticket "${newTicket.id}" created successfully!`);
+    const success = await insertSupabaseTicket(newTicket);
+    if (success) {
+      showToast(`Service Ticket "${newTicket.id}" created & saved to Supabase!`);
+    } else {
+      showToast(`Service Ticket "${newTicket.id}" saved locally! (Supabase sync requires tickets table setup)`, 'info');
+    }
   };
 
-  const handleSaveEditedTicket = async (updatedTicket: Ticket) => {
+  const handleSaveEditedTicket = async (updatedTicket: Ticket, originalId?: string) => {
     setTickets((prev) => {
-      const updated = prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t));
+      const targetId = originalId || updatedTicket.id;
+      const updated = prev.map((t) => (t.id === targetId ? updatedTicket : t));
       try {
         localStorage.setItem('serviceTicketsData', JSON.stringify(updated));
       } catch (e) {}
       return updated;
     });
-    await insertSupabaseTicket(updatedTicket);
-    showToast(`Service Ticket "${updatedTicket.id}" updated successfully!`);
+
+    if (originalId && originalId !== updatedTicket.id) {
+      await deleteSupabaseTicket(originalId);
+    }
+    const success = await insertSupabaseTicket(updatedTicket);
+    if (success) {
+      showToast(`Service Ticket "${updatedTicket.id}" updated in Supabase successfully!`);
+    } else {
+      showToast(`Service Ticket "${updatedTicket.id}" updated locally! (Supabase sync requires tickets table setup)`, 'info');
+    }
   };
 
   const handleDeleteTicket = (ticketId: string) => {
