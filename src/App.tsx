@@ -957,11 +957,11 @@ export default function App() {
     try {
       localStorage.setItem('serviceTicketsData', JSON.stringify([...newTickets, ...tickets]));
     } catch (e) {}
-    const success = await bulkInsertSupabaseTickets(newTickets);
-    if (success) {
+    const result = await bulkInsertSupabaseTickets(newTickets);
+    if (result.success) {
       showToast(`${newTickets.length} Service Ticket(s) imported & saved to Supabase!`);
     } else {
-      showToast(`${newTickets.length} Service Ticket(s) imported locally! (Supabase sync failed - check tickets table & RLS)`, 'info');
+      showToast(`${newTickets.length} ticket(s) saved locally! (Supabase: ${result.error || 'Check tickets table'})`, 'error');
     }
   };
 
@@ -973,11 +973,11 @@ export default function App() {
       } catch (e) {}
       return updated;
     });
-    const success = await insertSupabaseTicket(newTicket);
-    if (success) {
+    const result = await insertSupabaseTicket(newTicket);
+    if (result.success) {
       showToast(`Service Ticket "${newTicket.id}" created & saved to Supabase!`);
     } else {
-      showToast(`Service Ticket "${newTicket.id}" saved locally! (Supabase sync requires tickets table setup)`, 'info');
+      showToast(`Service Ticket saved locally! (Supabase Error: ${result.error || 'Check table schema'})`, 'error');
     }
   };
 
@@ -994,11 +994,11 @@ export default function App() {
     if (originalId && originalId !== updatedTicket.id) {
       await deleteSupabaseTicket(originalId);
     }
-    const success = await insertSupabaseTicket(updatedTicket);
-    if (success) {
+    const result = await insertSupabaseTicket(updatedTicket);
+    if (result.success) {
       showToast(`Service Ticket "${updatedTicket.id}" updated in Supabase successfully!`);
     } else {
-      showToast(`Service Ticket "${updatedTicket.id}" updated locally! (Supabase sync requires tickets table setup)`, 'info');
+      showToast(`Service Ticket updated locally! (Supabase Error: ${result.error || 'Check table schema'})`, 'error');
     }
   };
 
