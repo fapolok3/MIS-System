@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus } from 'lucide-react';
 import { Device, SystemOptions, CategoryGroup } from '../../types';
 
@@ -20,15 +20,15 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   onSaveDevice,
 }) => {
   const [category, setCategory] = useState(activeCategory);
-  const [status, setStatus] = useState<string>(systemOptions.deviceStatuses[0] || 'LIVE');
+  const [status, setStatus] = useState<string>(systemOptions.deviceStatuses?.[0] || 'LIVE');
   const [sol, setSol] = useState('');
   const [location, setLocation] = useState('');
   const [deviceId, setDeviceId] = useState('');
   const [sim, setSim] = useState('');
-  const [operator, setOperator] = useState<string>(systemOptions.simOperators[0] || 'GP');
+  const [operator, setOperator] = useState<string>(systemOptions.simOperators?.[0] || 'GP');
   const [floor, setFloor] = useState('');
   const [placement, setPlacement] = useState('');
-  const [accessType, setAccessType] = useState<string>(systemOptions.accessTypes[0] || 'ENTRY/EXIT');
+  const [accessType, setAccessType] = useState<string>(systemOptions.accessTypes?.[0] || 'ENTRY/EXIT');
   const [bm, setBm] = useState('-');
   const [price, setPrice] = useState('৳ 65,000');
   const [district, setDistrict] = useState('');
@@ -36,9 +36,11 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
     new Date().toISOString().split('T')[0]
   );
 
-  // Sync category and reset fields when modal opens or activeCategory changes
+  const prevIsOpen = useRef(false);
+
+  // Reset fields ONLY when the modal transitions from closed to open
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpen.current) {
       setCategory(activeCategory);
       setSol('');
       setLocation('');
@@ -50,11 +52,12 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
       setDistrict('');
       setPrice('৳ 65,000');
       setInstallDate(new Date().toISOString().split('T')[0]);
-      setStatus(systemOptions.deviceStatuses[0] || 'LIVE');
-      setOperator(systemOptions.simOperators[0] || 'GP');
-      setAccessType(systemOptions.accessTypes[0] || 'ENTRY/EXIT');
+      setStatus(systemOptions.deviceStatuses?.[0] || 'LIVE');
+      setOperator(systemOptions.simOperators?.[0] || 'GP');
+      setAccessType(systemOptions.accessTypes?.[0] || 'ENTRY/EXIT');
     }
-  }, [isOpen, activeCategory, systemOptions]);
+    prevIsOpen.current = isOpen;
+  }, [isOpen, activeCategory]);
 
   if (!isOpen) return null;
 

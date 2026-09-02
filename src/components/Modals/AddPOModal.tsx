@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PurchaseOrder, SystemOptions, CategoryGroup } from '../../types';
 
 interface AddPOModalProps {
@@ -20,7 +20,7 @@ export const AddPOModal: React.FC<AddPOModalProps> = ({
 }) => {
   const defaultCategory = categoryGroups?.[0]?.items?.[0] || 'Main Branch';
   const [poNumber, setPoNumber] = useState(`PO-2026-${9901 + poCount}`);
-  const [vendor, setVendor] = useState(systemOptions.vendors[0] || 'BracNet Ltd');
+  const [vendor, setVendor] = useState(systemOptions.vendors?.[0] || 'BracNet Ltd');
   const [category, setCategory] = useState(defaultCategory);
   const [qty, setQty] = useState(10);
   const [totalPrice, setTotalPrice] = useState('৳ 650,000');
@@ -28,21 +28,24 @@ export const AddPOModal: React.FC<AddPOModalProps> = ({
     new Date().toISOString().split('T')[0]
   );
   const [status, setStatus] = useState<any>(
-    systemOptions.poStatuses[0] || 'ONGOING'
+    systemOptions.poStatuses?.[0] || 'ONGOING'
   );
 
+  const prevIsOpen = useRef(false);
+
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpen.current) {
       setPoNumber(`PO-2026-${9901 + poCount}`);
-      setVendor(systemOptions.vendors[0] || 'BracNet Ltd');
+      setVendor(systemOptions.vendors?.[0] || 'BracNet Ltd');
       const initialCat = categoryGroups?.[0]?.items?.[0] || 'Main Branch';
       setCategory(initialCat);
       setQty(10);
       setTotalPrice('৳ 650,000');
       setIssueDate(new Date().toISOString().split('T')[0]);
-      setStatus(systemOptions.poStatuses[0] || 'ONGOING');
+      setStatus(systemOptions.poStatuses?.[0] || 'ONGOING');
     }
-  }, [isOpen, categoryGroups, poCount, systemOptions]);
+    prevIsOpen.current = isOpen;
+  }, [isOpen, poCount]);
 
   if (!isOpen) return null;
 
