@@ -521,6 +521,7 @@ export async function fetchSupabaseSIMs(): Promise<SIMItem[] | null> {
     const { data, error } = await supabase
       .from('sim_inventory')
       .select('*')
+      .limit(10000)
       .order('id', { ascending: false });
 
     if (error) {
@@ -554,7 +555,7 @@ export async function insertSupabaseSIM(sim: SIMItem): Promise<boolean> {
       location: sim.location,
       status: sim.status,
     };
-    const { error } = await supabase.from('sim_inventory').upsert([row]);
+    const { error } = await supabase.from('sim_inventory').upsert([row], { onConflict: 'id' });
     if (error) {
       console.warn('Supabase insertSIM error:', error.message);
       return false;
@@ -568,6 +569,7 @@ export async function insertSupabaseSIM(sim: SIMItem): Promise<boolean> {
 
 export async function bulkInsertSupabaseSIMs(sims: SIMItem[]): Promise<boolean> {
   try {
+    if (!sims || sims.length === 0) return true;
     const rows = sims.map((sim) => ({
       id: sim.id,
       sim_number: sim.simNumber,
@@ -576,14 +578,85 @@ export async function bulkInsertSupabaseSIMs(sims: SIMItem[]): Promise<boolean> 
       location: sim.location,
       status: sim.status,
     }));
-    const { error } = await supabase.from('sim_inventory').upsert(rows);
-    if (error) {
-      console.warn('Supabase bulkInsertSIMs error:', error.message);
-      return false;
+
+    const batchSize = 100;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const chunk = rows.slice(i, i + batchSize);
+      const { error } = await supabase.from('sim_inventory').upsert(chunk, { onConflict: 'id' });
+      if (error) {
+        console.warn('Supabase bulkInsertSIMs chunk error:', error.message);
+      }
     }
     return true;
   } catch (err) {
     console.warn('Supabase bulkInsertSIMs catch error:', err);
+    return false;
+  }
+}
+
+/**
+ * Replaces the entire SIM inventory in Supabase with the provided SIM items.
+ * Upserts valid SIM items and automatically purges any stale/orphaned/duplicate IDs from Supabase.
+ */
+export async function syncReplaceSupabaseSIMs(sims: SIMItem[]): Promise<boolean> {
+  try {
+    // 1. Retrieve all current IDs in sim_inventory (up to 10000 to catch all historical duplicates)
+    const { data: existingData, error: fetchErr } = await supabase
+      .from('sim_inventory')
+      .select('id')
+      .limit(10000);
+
+    if (fetchErr) {
+      console.warn('Supabase syncReplaceSIMs fetch existing warning:', fetchErr.message);
+    }
+
+    const newIds = new Set(sims.map((s) => s.id));
+    const existingIds: string[] = (existingData || []).map((r: any) => r.id).filter(Boolean);
+
+    // Identify stale IDs present in Supabase that are not in the new clean list
+    const idsToDelete = existingIds.filter((id) => !newIds.has(id));
+
+    // 2. Batch upsert the valid rows
+    if (sims.length > 0) {
+      const rows = sims.map((sim) => ({
+        id: sim.id,
+        sim_number: sim.simNumber || '',
+        operator: sim.operator || 'GP',
+        assigned_device: sim.assignedDevice || '',
+        location: sim.location || '',
+        status: sim.status || 'ACTIVE',
+      }));
+
+      const batchSize = 100;
+      for (let i = 0; i < rows.length; i += batchSize) {
+        const chunk = rows.slice(i, i + batchSize);
+        const { error: upsertErr } = await supabase
+          .from('sim_inventory')
+          .upsert(chunk, { onConflict: 'id' });
+        if (upsertErr) {
+          console.warn('Supabase syncReplaceSIMs upsert chunk error:', upsertErr.message);
+        }
+      }
+    }
+
+    // 3. Delete obsolete/orphaned IDs in batches
+    if (idsToDelete.length > 0) {
+      const deleteBatchSize = 100;
+      for (let i = 0; i < idsToDelete.length; i += deleteBatchSize) {
+        const chunk = idsToDelete.slice(i, i + deleteBatchSize);
+        const { error: deleteErr } = await supabase
+          .from('sim_inventory')
+          .delete()
+          .in('id', chunk);
+        if (deleteErr) {
+          console.warn('Supabase syncReplaceSIMs delete chunk error:', deleteErr.message);
+        }
+      }
+    }
+
+    return true;
+  } catch (err) {
+    console.warn('Supabase syncReplaceSIMs catch error:', err);
     return false;
   }
 }

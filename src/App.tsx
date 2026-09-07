@@ -39,6 +39,7 @@ import {
   fetchSupabaseSIMs,
   insertSupabaseSIM,
   bulkInsertSupabaseSIMs,
+  syncReplaceSupabaseSIMs,
   deleteSupabaseSIM,
   bulkDeleteSupabaseSIMs,
   fetchSupabaseCategoryGroups,
@@ -123,6 +124,117 @@ const tabToPath = (tab: TabType): string => {
     default:
       return '/dashboard';
   }
+};
+
+export const isValidKey = (val?: string): boolean => {
+  if (!val) return false;
+  const trimmed = val.trim().toLowerCase();
+  return (
+    trimmed !== '' &&
+    trimmed !== '-' &&
+    trimmed !== 'n/a' &&
+    trimmed !== 'none' &&
+    trimmed !== 'null' &&
+    trimmed !== 'undefined' &&
+    trimmed !== 'unassigned'
+  );
+};
+
+export const getDeterministicSimId = (device: Device): string => {
+  const rawId = device.id ? String(device.id).trim() : '';
+  const safeKey = rawId ? rawId.replace(/[^a-zA-Z0-9_-]/g, '_') : String(device.sl);
+  return `sim-dev-${safeKey}`;
+};
+
+export const createSimItemFromDevice = (device: Device, customId?: string): SIMItem => {
+  const rawSim = device.sim ? String(device.sim).trim() : '';
+  const cleanSimNum = isValidKey(rawSim) ? rawSim : '';
+  const simStatus: 'ACTIVE' | 'INACTIVE' = device.status === 'LIVE' ? 'ACTIVE' : 'INACTIVE';
+
+  return {
+    id: customId || getDeterministicSimId(device),
+    simNumber: cleanSimNum,
+    operator: device.operator || 'GP',
+    assignedDevice: device.id || '-',
+    location: device.location || '-',
+    status: simStatus,
+  };
+};
+
+/**
+ * Strict Invariant Enforcer:
+ * Total SIMs can NEVER exceed total devices.
+ * Reconciles current devices 1-to-1 with the SIM inventory, preserving updated data
+ * while permanently eliminating orphaned SIMs (devices no longer present) and duplicates.
+ */
+export const reconcileSimsWithDevices = (sourceSims: SIMItem[], currentDevices: Device[]): SIMItem[] => {
+  if (!currentDevices || currentDevices.length === 0) {
+    return [];
+  }
+
+  // Pre-index existing SIMs by assignedDevice (case-insensitive), deterministic ID, and valid SIM number
+  const simByDevice = new Map<string, SIMItem>();
+  const simById = new Map<string, SIMItem>();
+  const simByNumber = new Map<string, SIMItem>();
+
+  for (const s of sourceSims) {
+    if (s.assignedDevice && isValidKey(s.assignedDevice)) {
+      const devKey = s.assignedDevice.trim().toLowerCase();
+      if (!simByDevice.has(devKey)) {
+        simByDevice.set(devKey, s);
+      }
+    }
+    if (s.id) {
+      simById.set(s.id, s);
+    }
+    if (isValidKey(s.simNumber)) {
+      const numKey = s.simNumber.trim().toLowerCase();
+      if (!simByNumber.has(numKey)) {
+        simByNumber.set(numKey, s);
+      }
+    }
+  }
+
+  const reconciled: SIMItem[] = [];
+  const assignedSimIds = new Set<string>();
+
+  for (const dev of currentDevices) {
+    const deterministicId = getDeterministicSimId(dev);
+    const devIdLower = dev.id ? dev.id.trim().toLowerCase() : '';
+    const cleanDevSim = isValidKey(dev.sim) ? dev.sim.trim() : '';
+    const simStatus: 'ACTIVE' | 'INACTIVE' = dev.status === 'LIVE' ? 'ACTIVE' : 'INACTIVE';
+
+    // Find best matching SIM
+    let matchedSim: SIMItem | undefined;
+    if (devIdLower && simByDevice.has(devIdLower)) {
+      matchedSim = simByDevice.get(devIdLower);
+    } else if (simById.has(deterministicId)) {
+      matchedSim = simById.get(deterministicId);
+    } else if (cleanDevSim && simByNumber.has(cleanDevSim.toLowerCase())) {
+      const candidate = simByNumber.get(cleanDevSim.toLowerCase());
+      if (candidate && !assignedSimIds.has(candidate.id)) {
+        matchedSim = candidate;
+      }
+    }
+
+    const effectiveSimNumber = cleanDevSim || (matchedSim && isValidKey(matchedSim.simNumber) ? matchedSim.simNumber.trim() : '');
+    const effectiveOperator = dev.operator || matchedSim?.operator || 'GP';
+    const effectiveLocation = dev.location || matchedSim?.location || '-';
+
+    const simItem: SIMItem = {
+      id: deterministicId,
+      simNumber: effectiveSimNumber,
+      operator: effectiveOperator,
+      assignedDevice: dev.id || '-',
+      location: effectiveLocation,
+      status: simStatus,
+    };
+
+    reconciled.push(simItem);
+    assignedSimIds.add(simItem.id);
+  }
+
+  return reconciled;
 };
 
 export default function App() {
@@ -215,9 +327,18 @@ export default function App() {
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('simsData');
+        const savedDevsStr = localStorage.getItem('devicesData');
+        const savedDevs = savedDevsStr ? JSON.parse(savedDevsStr) : null;
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            if (Array.isArray(savedDevs) && savedDevs.length > 0) {
+              if (parsed.length > savedDevs.length) {
+                return reconcileSimsWithDevices(parsed, savedDevs);
+              }
+            }
+            return parsed;
+          }
         }
       } catch (e) {
         console.warn('localStorage parse error', e);
@@ -456,11 +577,32 @@ export default function App() {
 
       // 4. SIMs
       if (dbSIMs !== null) {
-        setSims(dbSIMs);
-        try {
-          localStorage.setItem('simsData', JSON.stringify(dbSIMs));
-        } catch (e) {
-          console.warn('localStorage save sims error', e);
+        const targetDevices = dbDevices !== null ? dbDevices : devices;
+        if (targetDevices && targetDevices.length > 0) {
+          // Strict Invariant: Total SIMs can NEVER exceed total devices.
+          // Filter out orphaned/duplicate SIMs and auto-reconcile 1-to-1 with registered devices.
+          const cleanSims = reconcileSimsWithDevices(dbSIMs, targetDevices);
+          setSims(cleanSims);
+          try {
+            localStorage.setItem('simsData', JSON.stringify(cleanSims));
+          } catch (e) {
+            console.warn('localStorage save sims error', e);
+          }
+
+          // If Supabase contains stale/orphaned SIMs (e.g. from past syncs or other laptops),
+          // auto-purge them from Supabase in the background so they never re-propagate!
+          if (dbSIMs.length !== cleanSims.length || dbSIMs.some((s) => !s.id.startsWith('sim-dev-'))) {
+            syncReplaceSupabaseSIMs(cleanSims).catch((err) => {
+              console.warn('Auto-purge excess Supabase SIMs error:', err);
+            });
+          }
+        } else {
+          setSims(dbSIMs);
+          try {
+            localStorage.setItem('simsData', JSON.stringify(dbSIMs));
+          } catch (e) {
+            console.warn('localStorage save sims error', e);
+          }
         }
       }
 
@@ -659,54 +801,35 @@ export default function App() {
     showToast(`Category "${categoryName}" added successfully!`);
   };
 
-  // Helper to construct SIM Item from Device (supports blank SIMs and duplicate creation)
-  const createSimItemFromDevice = (device: Device, customId?: string): SIMItem => {
-    const rawSim = device.sim ? String(device.sim).trim() : '';
-    const isBlankOrPlaceholder =
-      !rawSim ||
-      rawSim === '-' ||
-      rawSim.toLowerCase() === 'n/a' ||
-      rawSim.toLowerCase() === 'none' ||
-      rawSim.toLowerCase() === 'null' ||
-      rawSim.toLowerCase() === 'undefined';
-
-    const simStatus: 'ACTIVE' | 'INACTIVE' =
-      device.status === 'LIVE' ? 'ACTIVE' : 'INACTIVE';
-
-    return {
-      id: customId || `sim-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
-      simNumber: isBlankOrPlaceholder ? '' : rawSim,
-      operator: device.operator || 'GP',
-      assignedDevice: device.id || '-',
-      location: device.location || '-',
-      status: simStatus,
-    };
-  };
-
-  // Sync & Reconcile All SIMs from Device Inventory (creates for all devices, including blank & duplicates)
-  const handleSyncAllSimsFromDevices = () => {
+  // Sync & Reconcile All SIMs from Device Inventory (Strict 1-to-1 match; purges duplicates and extra SIMs)
+  const handleSyncAllSimsFromDevices = async () => {
     if (devices.length === 0) {
       showToast('No devices available to sync.', 'info');
       return;
     }
 
-    const baseTime = Date.now();
-    // Create a SIM record for EVERY device in Device MIS Tree (including blank SIM numbers and duplicates)
-    const syncedSims: SIMItem[] = devices.map((dev, idx) =>
-      createSimItemFromDevice(
-        dev,
-        `sim-${baseTime}-${idx}-${Math.floor(Math.random() * 100000)}`
-      )
-    );
+    // Reconcile strictly 1-to-1 with current registered devices
+    const syncedSims = reconcileSimsWithDevices(sims, devices);
 
     setSims(syncedSims);
     try {
       localStorage.setItem('simsData', JSON.stringify(syncedSims));
     } catch (e) {}
-    bulkInsertSupabaseSIMs(syncedSims);
 
-    const message = `Sync complete: Created & synchronized ${syncedSims.length} SIM records in SIM management from Device MIS Tree.`;
-    showToast(message, 'success');
+    // Fully replace and purge any stale or orphaned SIMs from Supabase
+    const success = await syncReplaceSupabaseSIMs(syncedSims);
+
+    if (success) {
+      showToast(
+        `Sync complete: ${syncedSims.length} SIM records synchronized and Supabase cleaned successfully!`,
+        'success'
+      );
+    } else {
+      showToast(
+        `Sync complete: ${syncedSims.length} SIM records synchronized locally.`,
+        'info'
+      );
+    }
   };
 
   const handleSaveNewDevice = (deviceData: Omit<Device, 'sl'>) => {
@@ -717,10 +840,10 @@ export default function App() {
     setDevices((prev) => [...prev, newDevice]);
     insertSupabaseDevice(newDevice);
 
-    // Auto-create SIM in SIM Management (always creates, even if blank or duplicate)
+    // Auto-create deterministic SIM in SIM Management
     const newSim = createSimItemFromDevice(newDevice);
     setSims((prevSims) => {
-      const updatedSims = [newSim, ...prevSims];
+      const updatedSims = [newSim, ...prevSims.filter((s) => s.id !== newSim.id)];
       try {
         localStorage.setItem('simsData', JSON.stringify(updatedSims));
       } catch (e) {}
@@ -737,25 +860,18 @@ export default function App() {
     );
     insertSupabaseDevice(updatedDevice);
 
-    const rawSim = updatedDevice.sim ? String(updatedDevice.sim).trim() : '';
-    const isBlankOrPlaceholder =
-      !rawSim ||
-      rawSim === '-' ||
-      rawSim.toLowerCase() === 'n/a' ||
-      rawSim.toLowerCase() === 'none' ||
-      rawSim.toLowerCase() === 'null' ||
-      rawSim.toLowerCase() === 'undefined';
-    const cleanSimNum = isBlankOrPlaceholder ? '' : rawSim;
+    const deterministicId = getDeterministicSimId(updatedDevice);
+    const cleanSimNum = isValidKey(updatedDevice.sim) ? String(updatedDevice.sim).trim() : '';
     const simStatus: 'ACTIVE' | 'INACTIVE' =
       updatedDevice.status === 'LIVE' ? 'ACTIVE' : 'INACTIVE';
 
     setSims((prevSims) => {
-      // Check if there is an existing SIM assigned to this device ID
       const existingIndex = prevSims.findIndex(
         (s) =>
-          s.assignedDevice &&
-          updatedDevice.id &&
-          s.assignedDevice.trim().toLowerCase() === updatedDevice.id.trim().toLowerCase()
+          s.id === deterministicId ||
+          (s.assignedDevice &&
+            updatedDevice.id &&
+            s.assignedDevice.trim().toLowerCase() === updatedDevice.id.trim().toLowerCase())
       );
 
       let updatedSims: SIMItem[];
@@ -763,7 +879,8 @@ export default function App() {
         const existingSim = prevSims[existingIndex];
         const updatedSim: SIMItem = {
           ...existingSim,
-          simNumber: cleanSimNum,
+          id: deterministicId,
+          simNumber: cleanSimNum || (isValidKey(existingSim.simNumber) ? existingSim.simNumber : ''),
           operator: updatedDevice.operator || existingSim.operator,
           assignedDevice: updatedDevice.id || existingSim.assignedDevice,
           location: updatedDevice.location || existingSim.location,
@@ -773,7 +890,6 @@ export default function App() {
         updatedSims[existingIndex] = updatedSim;
         insertSupabaseSIM(updatedSim);
       } else {
-        // If no matching SIM exists, create a new one (even if blank or duplicate)
         const newSim = createSimItemFromDevice(updatedDevice);
         updatedSims = [newSim, ...prevSims];
         insertSupabaseSIM(newSim);
@@ -785,18 +901,6 @@ export default function App() {
     });
 
     showToast(`Device "${updatedDevice.id}" updated successfully!`);
-  };
-
-  const isValidKey = (val?: string): boolean => {
-    if (!val) return false;
-    const trimmed = val.trim().toLowerCase();
-    return (
-      trimmed !== '' &&
-      trimmed !== '-' &&
-      trimmed !== 'n/a' &&
-      trimmed !== 'none' &&
-      trimmed !== 'unassigned'
-    );
   };
 
   const handleDeleteDevice = (sl: number) => {
@@ -927,16 +1031,16 @@ export default function App() {
     setDevices((prev) => [...formattedDevices, ...prev]);
     bulkInsertSupabaseDevices(formattedDevices);
 
-    // Auto-create SIM cards in SIM Management for EVERY imported device (blank SIMs & duplicates are all created!)
-    const newSimItems: SIMItem[] = formattedDevices.map((dev, idx) =>
-      createSimItemFromDevice(
-        dev,
-        `sim-${baseTime}-${idx}-${Math.floor(Math.random() * 100000)}`
-      )
+    // Auto-create SIM cards in SIM Management with deterministic IDs
+    const newSimItems: SIMItem[] = formattedDevices.map((dev) =>
+      createSimItemFromDevice(dev)
     );
 
     setSims((prev) => {
-      const updatedSims = [...newSimItems, ...prev];
+      const allDevices = [...formattedDevices, ...devices];
+      const newSimIds = new Set(newSimItems.map((s) => s.id));
+      const combined = [...newSimItems, ...prev.filter((s) => !newSimIds.has(s.id))];
+      const updatedSims = reconcileSimsWithDevices(combined, allDevices);
       try {
         localStorage.setItem('simsData', JSON.stringify(updatedSims));
       } catch (e) {}
@@ -1074,16 +1178,92 @@ export default function App() {
   };
 
   const handleSaveNewSIM = (newSIM: SIMItem) => {
-    setSims((prev) => [newSIM, ...prev]);
-    insertSupabaseSIM(newSIM);
-    showToast(`SIM Card "${newSIM.simNumber}" added successfully!`);
+    const assignedDevId = newSIM.assignedDevice && newSIM.assignedDevice !== '-' ? newSIM.assignedDevice.trim().toLowerCase() : '';
+    const matchedDevice = assignedDevId ? devices.find((d) => d.id && d.id.trim().toLowerCase() === assignedDevId) : undefined;
+
+    let targetSimId = newSIM.id;
+    if (matchedDevice) {
+      targetSimId = getDeterministicSimId(matchedDevice);
+    }
+
+    const simWithDeterministicId: SIMItem = {
+      ...newSIM,
+      id: targetSimId,
+      assignedDevice: matchedDevice ? matchedDevice.id : newSIM.assignedDevice,
+    };
+
+    setSims((prev) => {
+      const filtered = prev.filter((s) => s.id !== targetSimId && (!assignedDevId || s.assignedDevice.toLowerCase() !== assignedDevId));
+      const updated = [simWithDeterministicId, ...filtered];
+      try {
+        localStorage.setItem('simsData', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    insertSupabaseSIM(simWithDeterministicId);
+
+    // Sync to device if matched
+    if (matchedDevice) {
+      const updatedDevice: Device = {
+        ...matchedDevice,
+        sim: newSIM.simNumber || '-',
+        operator: newSIM.operator || matchedDevice.operator,
+        location: newSIM.location || matchedDevice.location,
+      };
+      setDevices((prevDevs) => {
+        const idx = prevDevs.findIndex((d) => d.sl === matchedDevice.sl);
+        if (idx >= 0) {
+          const updatedDevs = [...prevDevs];
+          updatedDevs[idx] = updatedDevice;
+          try {
+            localStorage.setItem('devicesData', JSON.stringify(updatedDevs));
+          } catch (e) {}
+          return updatedDevs;
+        }
+        return prevDevs;
+      });
+      insertSupabaseDevice(updatedDevice);
+    }
+
+    showToast(`SIM Card "${newSIM.simNumber || 'Blank'}" added successfully!`);
   };
 
   const handleSaveEditedSIM = (updatedSIM: SIMItem) => {
-    setSims((prev) =>
-      prev.map((s) => (s.id === updatedSIM.id ? updatedSIM : s))
-    );
+    setSims((prev) => {
+      const updated = prev.map((s) => (s.id === updatedSIM.id ? updatedSIM : s));
+      try {
+        localStorage.setItem('simsData', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
     insertSupabaseSIM(updatedSIM);
+
+    // Sync back to corresponding device in Device MIS Tree if assigned
+    if (updatedSIM.assignedDevice && updatedSIM.assignedDevice !== '-') {
+      setDevices((prevDevs) => {
+        const idx = prevDevs.findIndex(
+          (d) => d.id && d.id.trim().toLowerCase() === updatedSIM.assignedDevice.trim().toLowerCase()
+        );
+        if (idx >= 0) {
+          const matched = prevDevs[idx];
+          const updatedDevice: Device = {
+            ...matched,
+            sim: updatedSIM.simNumber || '-',
+            operator: updatedSIM.operator || matched.operator,
+            location: updatedSIM.location || matched.location,
+          };
+          const updatedDevs = [...prevDevs];
+          updatedDevs[idx] = updatedDevice;
+          try {
+            localStorage.setItem('devicesData', JSON.stringify(updatedDevs));
+          } catch (e) {}
+          insertSupabaseDevice(updatedDevice);
+          return updatedDevs;
+        }
+        return prevDevs;
+      });
+    }
+
     showToast(`SIM Card "${updatedSIM.simNumber}" updated successfully!`);
   };
 
@@ -1261,13 +1441,15 @@ export default function App() {
           restored.pos.forEach((p) => insertSupabasePO(p));
         }
         if (restored.sims && Array.isArray(restored.sims)) {
-          setSims(restored.sims);
+          const targetDevices = (restored.devices && Array.isArray(restored.devices)) ? restored.devices : devices;
+          const cleanSims = reconcileSimsWithDevices(restored.sims, targetDevices);
+          setSims(cleanSims);
           try {
-            localStorage.setItem('simsData', JSON.stringify(restored.sims));
+            localStorage.setItem('simsData', JSON.stringify(cleanSims));
           } catch (e) {
             console.warn(e);
           }
-          restored.sims.forEach((s) => insertSupabaseSIM(s));
+          syncReplaceSupabaseSIMs(cleanSims);
         }
         if (restored.issues && Array.isArray(restored.issues)) {
           setIssues(restored.issues);
