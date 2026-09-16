@@ -1,25 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  AlertCircle,
-  Clock,
-  Calendar,
-  User,
-  MapPin,
-  Building2,
-  Tag,
-  Layers,
-  Repeat,
   FileText,
+  Clock,
   CheckCircle2,
-  Plus,
   RotateCcw,
   Sparkles,
   ArrowRight,
-  ShieldAlert,
-  Edit2,
-  Trash2,
-  Eye,
   Check,
+  Search,
+  HardDrive,
+  X,
 } from 'lucide-react';
 import {
   IssueTrackerItem,
@@ -27,8 +17,12 @@ import {
   SystemOptions,
   Device,
 } from '../types';
-import { ConfirmModal } from './Modals/ConfirmModal';
-import { format12HourTime } from '../utils/excelExport';
+import {
+  STATUS_OPTIONS,
+  PRIORITY_OPTIONS,
+  PREMESIS_OPTIONS,
+  normalizeIssue,
+} from '../utils/issueConstants';
 
 interface IssueTrackerTabProps {
   issues: IssueTrackerItem[];
@@ -49,853 +43,976 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
   devices = [],
   onNavigateToReport,
 }) => {
-  // Helper to get formatted current Date (YYYY-MM-DD) and Time (HH:MM)
-  const getNowDate = () => new Date().toISOString().split('T')[0];
-  const getNowTime = () => {
-    const d = new Date();
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  // Helper for formatted Date (YYYY-MM-DD) & Time (HH:MM)
+  const getTodayDate = () => new Date().toISOString().split('T')[0];
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  // Form State
-  const [branchName, setBranchName] = useState('');
-  const [issueType, setIssueType] = useState(
-    systemOptions.issueTypes[0] || 'Network Disconnection'
-  );
-  const [category, setCategory] = useState(
-    categoryGroups[0]?.title || 'Branch MIS'
-  );
-  const [odooTicketId, setOdooTicketId] = useState('');
-  const [priority, setPriority] = useState<string>(
-    systemOptions.ticketPriorities[2] || systemOptions.ticketPriorities[0] || 'MEDIUM'
-  );
-  const [deviceReplace, setDeviceReplace] = useState<'YES' | 'NO'>('NO');
-  const [replaceDeviceId, setReplaceDeviceId] = useState('');
-  const [oldDeviceId, setOldDeviceId] = useState('');
-  const [location, setLocation] = useState('');
-  const [assignPerson, setAssignPerson] = useState(
-    systemOptions.technicians[0] || 'Support Engineer Team'
-  );
-  const [status, setStatus] = useState<string>(
-    systemOptions.ticketStatuses[0] || 'OPEN'
-  );
-  const [date, setDate] = useState(getNowDate());
+  // State for Editing
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Date & Time Fields
-  const [clientReportingDate, setClientReportingDate] = useState(getNowDate());
-  const [clientReportingTime, setClientReportingTime] = useState(getNowTime());
+  // 34 Fields State
+  const [sl, setSl] = useState<number>(issues.length + 1);
+  const [issueLogDate, setIssueLogDate] = useState<string>(getTodayDate());
+  const [odooId, setOdooId] = useState<string>('');
+  const [status, setStatus] = useState<string>('Open');
+  const [clientName, setClientName] = useState<string>('Brac Bank');
+  const [premesisName, setPremesisName] = useState<string>('ROC');
 
-  const [clientResponseDate, setClientResponseDate] = useState('');
-  const [clientResponseTime, setClientResponseTime] = useState('');
+  const [priority, setPriority] = useState<string>('Medium');
+  const [deviceReplace, setDeviceReplace] = useState<'Yes' | 'No'>('No');
+  const [oldDevice, setOldDevice] = useState<string>('-');
+  const [newDevice, setNewDevice] = useState<string>('-');
 
-  const [resolutionDate, setResolutionDate] = useState('');
-  const [resolutionTime, setResolutionTime] = useState('');
+  const [clientReportingTime, setClientReportingTime] = useState<string>('');
+  const [responseTime, setResponseTime] = useState<string>('');
+  const [accessories, setAccessories] = useState<string>('');
+  const [product, setProduct] = useState<string>('');
 
-  const [details, setDetails] = useState('');
+  const [district, setDistrict] = useState<string>('Dhaka');
+  const [address, setAddress] = useState<string>('');
+  const [contactPerson, setContactPerson] = useState<string>('');
+  const [number, setNumber] = useState<string>('');
+
+  const [deliveryOption, setDeliveryOption] = useState<string>('Hand Delivery');
+  const [serviceType, setServiceType] = useState<string>('On-Site');
+  const [kam, setKam] = useState<string>('');
+  const [segment, setSegment] = useState<string>('Enterprise');
+  const [invoiceHandover, setInvoiceHandover] = useState<string>('Pending');
+
+  const [collectionAmount, setCollectionAmount] = useState<string>('0');
+  const [paymentMethod, setPaymentMethod] = useState<string>('Bank Transfer');
+  const [vendorBillAmount, setVendorBillAmount] = useState<string>('0');
+
+  const [installationStatus, setInstallationStatus] = useState<string>('Pending');
+  const [handedOverTo, setHandedOverTo] = useState<string>('Ops Team');
+  const [assignPerson, setAssignPerson] = useState<string>(
+    systemOptions.technicians?.[0] || 'Support Engineer Team'
+  );
+  const [handoverCollected, setHandoverCollected] = useState<'Yes' | 'No'>('No');
+  const [installationDate, setInstallationDate] = useState<string>('');
+  const [unitQty, setUnitQty] = useState<number>(1);
+
+  const [comments, setComments] = useState<string>('');
+  const [remarks, setRemarks] = useState<string>('');
+
+  // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successToast, setSuccessToast] = useState('');
 
-  // Editing state for recent list
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [viewingIssue, setViewingIssue] = useState<IssueTrackerItem | null>(null);
-
-  // Confirmation modal state
-  const [confirmConfig, setConfirmConfig] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: () => {},
-  });
+  // Auto-calculate SL number when not editing
+  useEffect(() => {
+    if (!editingId) {
+      const maxSl = issues.reduce((max, item) => {
+        const itemSl = item.sl !== undefined ? Number(item.sl) : 0;
+        return itemSl > max ? itemSl : max;
+      }, 0);
+      setSl(maxSl + 1);
+    }
+  }, [issues, editingId]);
 
   const showToast = (msg: string) => {
     setSuccessToast(msg);
     setTimeout(() => setSuccessToast(''), 4000);
   };
 
-  // Quick Set Now Handlers
+  // Toggle Device Fields
+  const handleDeviceReplaceChange = (val: 'Yes' | 'No') => {
+    setDeviceReplace(val);
+    if (val === 'No') {
+      setOldDevice('-');
+      setNewDevice('-');
+    } else {
+      if (oldDevice === '-') setOldDevice('');
+      if (newDevice === '-') setNewDevice('');
+    }
+  };
+
+  // Quick Autocomplete from registered Device
+  const handleSelectRegisteredDevice = (deviceId: string) => {
+    if (!deviceId) return;
+    const found = devices.find((d) => d.id === deviceId);
+    if (found) {
+      if (deviceReplace === 'Yes') {
+        setOldDevice(found.id);
+      }
+      if (found.location) {
+        setPremesisName(found.location);
+      }
+      if (found.district) {
+        setDistrict(found.district);
+      }
+      if (found.category) {
+        setSegment(found.category);
+      }
+      showToast(`Device ${found.id} details loaded into form!`);
+    }
+  };
+
+  // Quick Set Now handlers
   const handleSetReportingNow = () => {
-    setClientReportingDate(getNowDate());
-    setClientReportingTime(getNowTime());
-    showToast('Client Reporting Time set to Current Time!');
+    setClientReportingTime(getCurrentDateTime());
+    showToast('Client Reporting Time set to current timestamp!');
   };
 
   const handleSetResponseNow = () => {
-    setClientResponseDate(getNowDate());
-    setClientResponseTime(getNowTime());
-    showToast('Client Response Time set to Current Time!');
+    setResponseTime(getCurrentDateTime());
+    showToast('Response Time set to current timestamp!');
   };
 
-  const handleSetResolutionNow = () => {
-    setResolutionDate(getNowDate());
-    setResolutionTime(getNowTime());
-    if (status === 'OPEN' || status === 'IN_PROGRESS') {
-      setStatus('RESOLVED');
-    }
-    showToast('Resolution Time set to Current Time & status updated to Resolved!');
-  };
-
-  // Reset Form
+  // Reset form to blank defaults
   const handleResetForm = () => {
     setEditingId(null);
-    setBranchName('');
-    setIssueType(systemOptions.issueTypes[0] || 'Network Disconnection');
-    setCategory(categoryGroups[0]?.title || 'Branch MIS');
-    setOdooTicketId('');
-    setPriority('MEDIUM');
-    setDeviceReplace('NO');
-    setReplaceDeviceId('');
-    setOldDeviceId('');
-    setLocation('');
-    setAssignPerson(systemOptions.technicians[0] || 'Support Engineer Team');
-    setStatus('OPEN');
-    setDate(getNowDate());
-    setClientReportingDate(getNowDate());
-    setClientReportingTime(getNowTime());
-    setClientResponseDate('');
-    setClientResponseTime('');
-    setResolutionDate('');
-    setResolutionTime('');
-    setDetails('');
+    const maxSl = issues.reduce((max, item) => {
+      const itemSl = item.sl !== undefined ? Number(item.sl) : 0;
+      return itemSl > max ? itemSl : max;
+    }, 0);
+    setSl(maxSl + 1);
+    setIssueLogDate(getTodayDate());
+    setOdooId('');
+    setStatus('Open');
+    setClientName('Brac Bank');
+    setPremesisName('ROC');
+    setPriority('Medium');
+    setDeviceReplace('No');
+    setOldDevice('-');
+    setNewDevice('-');
+    setClientReportingTime('');
+    setResponseTime('');
+    setAccessories('');
+    setProduct('');
+    setDistrict('Dhaka');
+    setAddress('');
+    setContactPerson('');
+    setNumber('');
+    setDeliveryOption('Hand Delivery');
+    setServiceType('On-Site');
+    setKam('');
+    setSegment('Enterprise');
+    setInvoiceHandover('Pending');
+    setCollectionAmount('0');
+    setPaymentMethod('Bank Transfer');
+    setVendorBillAmount('0');
+    setInstallationStatus('Pending');
+    setHandedOverTo('Ops Team');
+    setAssignPerson(systemOptions.technicians?.[0] || 'Support Engineer Team');
+    setHandoverCollected('No');
+    setInstallationDate('');
+    setUnitQty(1);
+    setComments('');
+    setRemarks('');
   };
 
-  // Load Issue into form for edit
-  const handleEditIssue = (issue: IssueTrackerItem) => {
-    setEditingId(issue.id);
-    setBranchName(issue.branchName);
-    setIssueType(issue.issueType);
-    setCategory(issue.category);
-    setOdooTicketId(issue.odooTicketId);
-    setPriority(issue.priority);
-    setDeviceReplace(issue.deviceReplace);
-    setReplaceDeviceId(issue.replaceDeviceId || '');
-    setOldDeviceId(issue.oldDeviceId || '');
-    setLocation(issue.location);
-    setAssignPerson(issue.assignPerson);
-    setStatus(issue.status);
-    setDate(issue.date);
-    setClientReportingDate(issue.clientReportingDate);
-    setClientReportingTime(issue.clientReportingTime);
-    setClientResponseDate(issue.clientResponseDate || '');
-    setClientResponseTime(issue.clientResponseTime || '');
-    setResolutionDate(issue.resolutionDate || '');
-    setResolutionTime(issue.resolutionTime || '');
-    setDetails(issue.details);
+  // Populate form for editing an existing issue
+  const handleEditIssue = (item: IssueTrackerItem) => {
+    const normalized = normalizeIssue(item);
+    setEditingId(normalized.id);
+    setSl(normalized.sl !== undefined ? normalized.sl : 1);
+    setIssueLogDate(normalized.issueLogDate || getTodayDate());
+    setOdooId(normalized.odooId || '');
+    setStatus(normalized.status || 'Open');
+    setClientName(normalized.clientName || 'Brac Bank');
+    setPremesisName(normalized.premesisName || 'ROC');
+    setPriority(normalized.priority || 'Medium');
+    setDeviceReplace(normalized.deviceReplace === 'Yes' ? 'Yes' : 'No');
+    setOldDevice(normalized.oldDevice || '-');
+    setNewDevice(normalized.newDevice || '-');
+    setClientReportingTime(normalized.clientReportingTime || '');
+    setResponseTime(normalized.responseTime || '');
+    setAccessories(normalized.accessories || '');
+    setProduct(normalized.product || '');
+    setDistrict(normalized.district || 'Dhaka');
+    setAddress(normalized.address || '');
+    setContactPerson(normalized.contactPerson || '');
+    setNumber(normalized.number || '');
+    setDeliveryOption(normalized.deliveryOption || 'Hand Delivery');
+    setServiceType(normalized.serviceType || 'On-Site');
+    setKam(normalized.kam || '');
+    setSegment(normalized.segment || 'Enterprise');
+    setInvoiceHandover(normalized.invoiceHandover || 'Pending');
+    setCollectionAmount(String(normalized.collectionAmount || '0'));
+    setPaymentMethod(normalized.paymentMethod || 'Bank Transfer');
+    setVendorBillAmount(String(normalized.vendorBillAmount || '0'));
+    setInstallationStatus(normalized.installationStatus || 'Pending');
+    setHandedOverTo(normalized.handedOverTo || 'Ops Team');
+    setAssignPerson(normalized.assignPerson || 'Support Engineer Team');
+    setHandoverCollected(normalized.handoverCollected === 'Yes' ? 'Yes' : 'No');
+    setInstallationDate(normalized.installationDate || '');
+    setUnitQty(Number(normalized.unitQty) || 1);
+    setComments(normalized.comments || '');
+    setRemarks(normalized.remarks || '');
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast(`Loaded ${issue.id} for editing.`);
+    showToast(`Loaded SL #${normalized.sl} (${normalized.odooId || 'Entry'}) into editor!`);
   };
 
-  // Handle Form Submit
+  // Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!branchName.trim()) {
-      showToast('Please enter or select a Branch Name');
-      return;
-    }
-
     setIsSubmitting(true);
-    const newIssue: IssueTrackerItem = {
-      id: editingId || `ISSUE-${Date.now().toString().slice(-5)}`,
-      branchName: branchName.trim(),
-      issueType,
-      category,
-      odooTicketId: odooTicketId.trim(),
+
+    const targetId = editingId || `issue-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+
+    const newEntry: IssueTrackerItem = normalizeIssue({
+      id: targetId,
+      sl: Number(sl) || issues.length + 1,
+      issueLogDate: issueLogDate || getTodayDate(),
+      odooId: odooId.trim(),
+      status,
+      clientName: clientName.trim(),
+      premesisName,
       priority,
       deviceReplace,
-      replaceDeviceId: replaceDeviceId.trim(),
-      oldDeviceId: oldDeviceId.trim(),
-      location: location.trim(),
-      assignPerson: assignPerson.trim(),
-      status,
-      date,
-      clientReportingDate,
+      oldDevice: deviceReplace === 'Yes' ? oldDevice.trim() : '-',
+      newDevice: deviceReplace === 'Yes' ? newDevice.trim() : '-',
       clientReportingTime,
-      clientResponseDate,
-      clientResponseTime,
-      resolutionDate,
-      resolutionTime,
-      details: details.trim(),
-      createdAt: editingId
-        ? issues.find((i) => i.id === editingId)?.createdAt || new Date().toISOString()
-        : new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+      responseTime,
+      accessories: accessories.trim(),
+      product: product.trim(),
+      district: district.trim(),
+      address: address.trim(),
+      contactPerson: contactPerson.trim(),
+      number: number.trim(),
+      deliveryOption: deliveryOption.trim(),
+      serviceType: serviceType.trim(),
+      kam: kam.trim(),
+      segment: segment.trim(),
+      invoiceHandover: invoiceHandover.trim(),
+      collectionAmount: collectionAmount.trim() || '0',
+      paymentMethod: paymentMethod.trim(),
+      vendorBillAmount: vendorBillAmount.trim() || '0',
+      installationStatus: installationStatus.trim(),
+      handedOverTo: handedOverTo.trim(),
+      assignPerson: assignPerson.trim(),
+      handoverCollected,
+      installationDate,
+      unitQty: Number(unitQty) || 1,
+      comments: comments.trim(),
+      remarks: remarks.trim(),
+    });
 
-    await onSaveIssue(newIssue);
-    setIsSubmitting(false);
-
-    showToast(
-      editingId
-        ? `Issue ${newIssue.id} updated successfully!`
-        : `Issue ${newIssue.id} logged & saved successfully!`
-    );
-
-    handleResetForm();
+    try {
+      await onSaveIssue(newEntry);
+      showToast(
+        editingId
+          ? `SL #${newEntry.sl} updated successfully!`
+          : `New log entry SL #${newEntry.sl} created successfully!`
+      );
+      if (!editingId) {
+        handleResetForm();
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error saving entry, please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // Extract unique category names from categoryGroups configured in System Settings
-  const availableCategories = useMemo(() => {
-    const cats = new Set<string>();
-    if (categoryGroups && categoryGroups.length > 0) {
-      categoryGroups.forEach((g) => {
-        if (g.title) cats.add(g.title);
-        if (g.items && Array.isArray(g.items)) {
-          g.items.forEach((it) => {
-            if (it) cats.add(it);
-          });
-        }
-      });
-    }
-    const list = Array.from(cats);
-    return list.length > 0
-      ? list
-      : ['Branch MIS', 'Info Security', 'Infrastructure', 'Head Office'];
-  }, [categoryGroups]);
-
-  // Priority options list from System Settings
-  const priorityOptions = useMemo(() => {
-    const defaultPriorities = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
-    if (systemOptions.ticketPriorities && systemOptions.ticketPriorities.length > 0) {
-      return Array.from(new Set([...systemOptions.ticketPriorities, ...defaultPriorities]));
-    }
-    return defaultPriorities;
-  }, [systemOptions.ticketPriorities]);
-
-  // Status options list from System Settings
-  const statusOptions = useMemo(() => {
-    const defaultStatuses = ['OPEN', 'IN_PROGRESS', 'PENDING_CLIENT', 'RESOLVED', 'CLOSED'];
-    if (systemOptions.ticketStatuses && systemOptions.ticketStatuses.length > 0) {
-      return Array.from(new Set([...systemOptions.ticketStatuses, ...defaultStatuses]));
-    }
-    return defaultStatuses;
-  }, [systemOptions.ticketStatuses]);
-
   return (
-    <div className="space-y-6">
-      {/* Toast Notification */}
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* Toast */}
       {successToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white text-xs font-semibold px-4 py-3 rounded-lg shadow-xl flex items-center space-x-2 border border-emerald-400">
-          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-          <span>{successToast}</span>
+        <div className="fixed top-20 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-5 py-3 rounded-xl shadow-2xl border border-slate-700 animate-in fade-in slide-in-from-top-4 duration-300">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 dark:text-emerald-600 shrink-0" />
+          <span className="text-sm font-semibold">{successToast}</span>
         </div>
       )}
 
       {/* Header Banner */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center space-x-3.5">
-          <div className="p-3 bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 rounded-xl">
-            <AlertCircle className="w-6 h-6" />
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
+              34 Fields Issue Tracker
+            </span>
+            {editingId && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                Editing Mode
+              </span>
+            )}
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
-              Issue Tracker Entry
-              {editingId && (
-                <span className="text-xs bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40 px-2 py-0.5 rounded font-mono">
-                  Editing: {editingId}
-                </span>
-              )}
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Log incident tickets, track client turnaround times (TAT), and manage device replacements.
-            </p>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+            {editingId ? `Edit Issue & Job Entry (SL #${sl})` : 'Add New Issue & Job Entry'}
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Complete ticket, device specifications, service timeline, financial metrics, and operational routing form
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 self-stretch md:self-auto">
-          {editingId && (
-            <button
-              type="button"
-              onClick={handleResetForm}
-              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-lg transition cursor-pointer flex items-center gap-1.5 border border-slate-300 dark:border-slate-700"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Cancel Edit</span>
-            </button>
-          )}
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleResetForm}
+            className="px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Reset Form
+          </button>
           <button
             type="button"
             onClick={onNavigateToReport}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-2 shadow-xs"
+            className="px-4 py-2.5 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer"
           >
-            <FileText className="w-4 h-4" />
-            <span>View Issue Reports & Analytics</span>
-            <ArrowRight className="w-3.5 h-3.5 ml-1" />
+            <FileText className="w-3.5 h-3.5" />
+            View in Issue Report ({issues.length})
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Main Entry Form Card */}
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-xs space-y-6">
-        <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400">
-            <Sparkles className="w-4 h-4" />
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              {editingId ? 'Edit Incident Details' : 'New Issue Registration'}
-            </h2>
-          </div>
-        </div>
-
-        {/* 3-Column Grid: Core Attributes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          {/* 1. Branch Name */}
-          <div className="space-y-1">
-            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
-              <Building2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Branch Name *</span>
-            </label>
-            <input
-              type="text"
-              value={branchName}
-              onChange={(e) => setBranchName(e.target.value)}
-              placeholder="e.g. Gulshan Branch"
-              required
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-indigo-500 transition shadow-xs"
-            />
-          </div>
-
-          {/* 2. Issue Type */}
-          <div className="space-y-1">
-            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
-              <Tag className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Issue Type *</span>
-            </label>
-            <select
-              value={issueType}
-              onChange={(e) => setIssueType(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition shadow-xs"
-            >
-              {systemOptions.issueTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 3. Odoo Ticket ID */}
-          <div className="space-y-1">
-            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
-              <FileText className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Odoo Ticket ID</span>
-            </label>
-            <input
-              type="text"
-              value={odooTicketId}
-              onChange={(e) => setOdooTicketId(e.target.value)}
-              placeholder="e.g. OD-94821"
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-indigo-500 transition shadow-xs"
-            />
-          </div>
-        </div>
-
-        {/* 4-Column Grid: Priority, Replacement, Location, Assignee */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-          {/* 5. Priority */}
-          <div className="space-y-1">
-            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
-              <ShieldAlert className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Priority</span>
-            </label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition font-bold shadow-xs"
-            >
-              {priorityOptions.map((p) => {
-                const icon =
-                  p === 'CRITICAL'
-                    ? '🔴'
-                    : p === 'HIGH'
-                    ? '🟠'
-                    : p === 'MEDIUM'
-                    ? '🟡'
-                    : p === 'LOW'
-                    ? '🟢'
-                    : '⚡';
-                return (
-                  <option key={p} value={p}>
-                    {icon} {p}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
-          {/* 6. Device Replace */}
-          <div className="space-y-1">
-            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
-              <Repeat className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Device Replace</span>
-            </label>
-            <select
-              value={deviceReplace}
-              onChange={(e) => setDeviceReplace(e.target.value as 'YES' | 'NO')}
-              className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-lg p-2.5 font-bold transition focus:outline-none shadow-xs ${
-                deviceReplace === 'YES'
-                  ? 'border-amber-500 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30'
-                  : 'border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'
-              }`}
-            >
-              <option value="NO">NO - Servicing / Repair</option>
-              <option value="YES">YES - Replace Device</option>
-            </select>
-          </div>
-
-          {/* 7. Location */}
-          <div className="space-y-1">
-            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Location / Department</span>
-            </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. 2nd Floor Server Room, Cash Counter"
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition shadow-xs"
-            />
-          </div>
-
-          {/* 8. Assign Person (from System Settings Technicians) */}
-          <div className="space-y-1">
-            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1">
-              <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Assign Person</span>
-            </label>
-            <select
-              value={assignPerson}
-              onChange={(e) => setAssignPerson(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition shadow-xs"
-            >
-              <option value="">Unassigned / Select Person</option>
-              {systemOptions.technicians &&
-                systemOptions.technicians.map((tech) => (
-                  <option key={tech} value={tech}>
-                    {tech}
+      {/* Main 34 Fields Form Card */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
+          {/* Registered Device Quick Fill Helper (Optional convenience) */}
+          {devices.length > 0 && (
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>Quickly prefill from a registered Device MIS inventory record:</span>
+              </div>
+              <select
+                onChange={(e) => handleSelectRegisteredDevice(e.target.value)}
+                defaultValue=""
+                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-semibold focus:outline-none"
+              >
+                <option value="">-- Choose Registered Device --</option>
+                {devices.map((d) => (
+                  <option key={d.sl} value={d.id}>
+                    {d.id} ({d.location || 'Branch'} - {d.category})
                   </option>
                 ))}
-              {assignPerson &&
-                systemOptions.technicians &&
-                !systemOptions.technicians.includes(assignPerson) && (
-                  <option value={assignPerson}>{assignPerson}</option>
-                )}
-            </select>
-          </div>
-        </div>
+              </select>
+            </div>
+          )}
 
-        {/* Conditional Replacement Fields (Highlighted when Device Replace is YES) */}
-        {deviceReplace === 'YES' && (
-          <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div className="space-y-1">
-              <label className="text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1">
-                <span>Old Device ID (Faulty / Removed)</span>
+          {/* Group 1: 1. Ticket & Identification Details */}
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-4 py-2.5 rounded-lg border-l-4 border-blue-600 mb-4">
+              <span>1. Ticket & Identification Details</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              {/* SL */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  SL Number *
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={sl}
+                  onChange={(e) => setSl(Number(e.target.value))}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Issue Log Date */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Issue Log Date
+                </label>
+                <input
+                  type="date"
+                  value={issueLogDate}
+                  onChange={(e) => setIssueLogDate(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Odoo ID */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Odoo Id
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. S1601"
+                  value={odooId}
+                  onChange={(e) => setOdooId(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Status */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Status
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className={`w-full px-3 py-2 text-xs font-bold rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none transition ${
+                    status === 'Open'
+                      ? 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800'
+                      : status === 'Pending'
+                      ? 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800'
+                      : status === 'OnBoard'
+                      ? 'bg-blue-50 text-blue-800 border-blue-300 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800'
+                      : status === 'Working'
+                      ? 'bg-purple-50 text-purple-800 border-purple-300 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+                  }`}
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Client Name */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Client Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Client Name"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Premesis Name */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Premesis Name
+                </label>
+                <select
+                  value={premesisName}
+                  onChange={(e) => setPremesisName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  {PREMESIS_OPTIONS.map((prem) => (
+                    <option key={prem} value={prem}>
+                      {prem}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Group 2: 2. Priority & Device Specifications */}
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-4 py-2.5 rounded-lg border-l-4 border-blue-600 mb-4">
+              <span>2. Priority & Device Specifications</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Priority */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Priority Level
+                </label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                  className={`w-full px-3 py-2 text-xs font-bold rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    priority === 'High'
+                      ? 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800'
+                      : priority === 'Medium'
+                      ? 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800'
+                      : 'bg-sky-50 text-sky-800 border-sky-300 dark:bg-sky-950/50 dark:text-sky-300 dark:border-sky-800'
+                  }`}
+                >
+                  {PRIORITY_OPTIONS.map((pri) => (
+                    <option key={pri} value={pri}>
+                      {pri}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Device Replace */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Device Replace Required
+                </label>
+                <select
+                  value={deviceReplace}
+                  onChange={(e) => handleDeviceReplaceChange(e.target.value as 'Yes' | 'No')}
+                  className={`w-full px-3 py-2 text-xs font-bold rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    deviceReplace === 'Yes'
+                      ? 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+                  }`}
+                >
+                  <option value="No">No</option>
+                  <option value="Yes">Yes</option>
+                </select>
+              </div>
+
+              {/* Old Device */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Old Device ID / Serial {deviceReplace === 'Yes' && <span className="text-red-500">*</span>}
+                </label>
+                <input
+                  type="text"
+                  placeholder="Old Device Serial/ID"
+                  disabled={deviceReplace === 'No'}
+                  value={oldDevice}
+                  onChange={(e) => setOldDevice(e.target.value)}
+                  className={`w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    deviceReplace === 'No' ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-850' : ''
+                  }`}
+                />
+              </div>
+
+              {/* New Device */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  New Device ID / Serial {deviceReplace === 'Yes' && <span className="text-red-500">*</span>}
+                </label>
+                <input
+                  type="text"
+                  placeholder="New Device Serial/ID"
+                  disabled={deviceReplace === 'No'}
+                  value={newDevice}
+                  onChange={(e) => setNewDevice(e.target.value)}
+                  className={`w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    deviceReplace === 'No' ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-850' : ''
+                  }`}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Group 3: 3. Service Timelines & Hardware */}
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-4 py-2.5 rounded-lg border-l-4 border-blue-600 mb-4">
+              <span>3. Service Timelines & Hardware</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Client Reporting Time */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    Client Reporting Time & Date
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleSetReportingNow}
+                    className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                  >
+                    Now
+                  </button>
+                </div>
+                <input
+                  type="datetime-local"
+                  value={clientReportingTime}
+                  onChange={(e) => setClientReportingTime(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Response Time */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    Response Time & Date
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleSetResponseNow}
+                    className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                  >
+                    Now
+                  </button>
+                </div>
+                <input
+                  type="datetime-local"
+                  value={responseTime}
+                  onChange={(e) => setResponseTime(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Accessories */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Accessories Provided
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Power Cord, Adapter, Mount Kit"
+                  value={accessories}
+                  onChange={(e) => setAccessories(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Product */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Product Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Router X1, Switch 24P"
+                  value={product}
+                  onChange={(e) => setProduct(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Group 4: 4. Location & Contact Details */}
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-4 py-2.5 rounded-lg border-l-4 border-blue-600 mb-4">
+              <span>4. Location & Contact Details</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              {/* District */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  District
+                </label>
+                <input
+                  type="text"
+                  placeholder="District Name"
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Contact Person */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Contact Person Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Full Contact Name"
+                  value={contactPerson}
+                  onChange={(e) => setContactPerson(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Contact Number */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Contact Phone Number
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 01711000000"
+                  value={number}
+                  onChange={(e) => setNumber(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Site Address */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                Detailed Site Address
               </label>
               <input
                 type="text"
-                value={oldDeviceId}
-                onChange={(e) => setOldDeviceId(e.target.value)}
-                placeholder="e.g. RTR-GLS-02 / DVR-104"
-                className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/80 rounded-lg p-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-amber-500 transition"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1">
-                <span>Replace Device ID (New / Installed)</span>
-              </label>
-              <input
-                type="text"
-                value={replaceDeviceId}
-                onChange={(e) => setReplaceDeviceId(e.target.value)}
-                placeholder="e.g. RTR-GLS-09 / DVR-208"
-                className="w-full bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-700/80 rounded-lg p-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-amber-500 transition"
+                placeholder="Full Site Address Location (e.g. Gulshan 1 Branch, Level 4, Plot 12)"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
           </div>
-        )}
 
-        {/* 2-Column Grid: Status & Issue Date */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <div className="space-y-1">
-            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Status</span>
-            </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="w-full h-[42px] bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-indigo-500 transition shadow-xs"
-            >
-              {statusOptions.map((st) => {
-                const icon =
-                  st === 'OPEN'
-                    ? '🔵'
-                    : st === 'IN_PROGRESS' || st === 'WORKING'
-                    ? '🟡'
-                    : st === 'PENDING_CLIENT' || st === 'ASSIGNED'
-                    ? '🟠'
-                    : st === 'RESOLVED'
-                    ? '🟢'
-                    : st === 'CLOSED'
-                    ? '⚪'
-                    : '🔹';
-                return (
-                  <option key={st} value={st}>
-                    {icon} {st}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-700 dark:text-white" />
-              <span>Issue Log Date</span>
-            </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full h-[42px] bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition shadow-xs"
-            />
-          </div>
-        </div>
-
-        {/* Section: 3 Time & Date Boxes with "Set Now" Buttons */}
-        <div className="border-t border-slate-200 dark:border-slate-800 pt-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              Incident Timeline & SLA Tracking
-            </h3>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">
-              Click <strong className="text-indigo-600 dark:text-indigo-300 font-mono">"Set Now"</strong> to automatically fill current date & live time
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
-            {/* Box 1: Client Reporting Time & Date */}
-            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2.5 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                  Client Reporting Time & Date
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSetReportingNow}
-                  className="px-2 py-0.5 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700/60 rounded text-[10px] font-bold cursor-pointer transition shadow-xs"
-                  title="Click to set today's date & running time"
-                >
-                  ⚡ Set Now
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Date</label>
-                  <input
-                    type="date"
-                    value={clientReportingDate}
-                    onChange={(e) => setClientReportingDate(e.target.value)}
-                    required
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Time</label>
-                  <input
-                    type="time"
-                    value={clientReportingTime}
-                    onChange={(e) => setClientReportingTime(e.target.value)}
-                    required
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
-                  />
-                </div>
-              </div>
+          {/* Group 5: 5. Operations & Logistics Routing */}
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-4 py-2.5 rounded-lg border-l-4 border-blue-600 mb-4">
+              <span>5. Operations & Logistics Routing</span>
             </div>
-
-            {/* Box 2: Client Response Time & Date */}
-            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2.5 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                  Client Response Time & Date
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSetResponseNow}
-                  className="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 rounded text-[10px] font-bold cursor-pointer transition shadow-xs"
-                  title="Click to set today's date & running time"
-                >
-                  ⚡ Set Now
-                </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Delivery Option */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Delivery Option
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Courier, Hand Delivery"
+                  value={deliveryOption}
+                  onChange={(e) => setDeliveryOption(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Date</label>
-                  <input
-                    type="date"
-                    value={clientResponseDate}
-                    onChange={(e) => setClientResponseDate(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Time</label>
-                  <input
-                    type="time"
-                    value={clientResponseTime}
-                    onChange={(e) => setClientResponseTime(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Box 3: Resolution Time & Date */}
-            <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2.5 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  Resolution Time & Date
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSetResolutionNow}
-                  className="px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60 rounded text-[10px] font-bold cursor-pointer transition shadow-xs"
-                  title="Click to set today's date & running time"
-                >
-                  ⚡ Set Now
-                </button>
+              {/* Service Type */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Service Type
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. On-Site, Return, Replacement"
+                  value={serviceType}
+                  onChange={(e) => setServiceType(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Date</label>
-                  <input
-                    type="date"
-                    value={resolutionDate}
-                    onChange={(e) => setResolutionDate(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5">Time</label>
-                  <input
-                    type="time"
-                    value={resolutionTime}
-                    onChange={(e) => setResolutionTime(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs shadow-xs"
-                  />
-                </div>
+              {/* KAM */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Key Account Manager (KAM)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Assigned KAM Name"
+                  value={kam}
+                  onChange={(e) => setKam(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Market Segment */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Market Segment
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Enterprise, SME, Corporate"
+                  value={segment}
+                  onChange={(e) => setSegment(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Invoice Handover */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Invoice Handover Status
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Pending, Done, Completed"
+                  value={invoiceHandover}
+                  onChange={(e) => setInvoiceHandover(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Section: Details / Description */}
-        <div className="space-y-1.5 text-xs">
-          <label className="text-slate-700 dark:text-slate-300 font-semibold block">
-            Details & Incident Notes
-          </label>
-          <textarea
-            value={details}
-            onChange={(e) => setDetails(e.target.value)}
-            rows={3}
-            placeholder="Enter issue description, error logs, root cause analysis, and resolution troubleshooting steps..."
-            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition text-xs resize-y shadow-xs"
-          />
-        </div>
+          {/* Group 6: 6. Financial & Payment Metrics */}
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-4 py-2.5 rounded-lg border-l-4 border-blue-600 mb-4">
+              <span>6. Financial & Payment Metrics</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Collection Amount */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Collection Amount (BDT)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={collectionAmount}
+                  onChange={(e) => setCollectionAmount(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
 
-        {/* Submit Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400">
-            {editingId && (
-              <span className="text-amber-600 dark:text-amber-400 font-semibold">Updating existing incident: {editingId}</span>
-            )}
+              {/* Payment Method */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Payment Method
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Cash, Bank Transfer, Cheque"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Vendor Bill Amount */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Vendor Bill Amount (BDT)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={vendorBillAmount}
+                  onChange={(e) => setVendorBillAmount(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
-            <button
-              type="button"
-              onClick={handleResetForm}
-              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold cursor-pointer transition flex items-center gap-1.5 border border-slate-200 dark:border-transparent"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset Form</span>
-            </button>
+          {/* Group 7: 7. Installation & Field Assignment */}
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-4 py-2.5 rounded-lg border-l-4 border-blue-600 mb-4">
+              <span>7. Installation & Field Assignment</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+              {/* Installation Status */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Installation Status
+                </label>
+                <input
+                  type="text"
+                  placeholder="Pending / In Progress / Completed"
+                  value={installationStatus}
+                  onChange={(e) => setInstallationStatus(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
 
-            {/* Submit / Update button visible only after typing in Details & Incident Notes (or if editing) */}
-            {(details.trim().length > 0 || editingId) && (
+              {/* Handed Over To */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Handed Over To
+                </label>
+                <input
+                  type="text"
+                  placeholder="Person / Department"
+                  value={handedOverTo}
+                  onChange={(e) => setHandedOverTo(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Assigned Person */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Assigned Person
+                </label>
+                <input
+                  type="text"
+                  placeholder="Assigned Person Name"
+                  value={assignPerson}
+                  onChange={(e) => setAssignPerson(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Handover Collected */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Handover Collected
+                </label>
+                <select
+                  value={handoverCollected}
+                  onChange={(e) => setHandoverCollected(e.target.value as 'Yes' | 'No')}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="No">No</option>
+                  <option value="Yes">Yes</option>
+                </select>
+              </div>
+
+              {/* Installation Date */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Installation Date
+                </label>
+                <input
+                  type="date"
+                  value={installationDate}
+                  onChange={(e) => setInstallationDate(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Unit Qty */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Unit Quantity
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="1"
+                  value={unitQty}
+                  onChange={(e) => setUnitQty(Number(e.target.value) || 1)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Group 8: 8. Additional Comments & Remarks */}
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-4 py-2.5 rounded-lg border-l-4 border-blue-600 mb-4">
+              <span>8. Additional Comments & Remarks</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Issue Description & Comments
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Enter detailed issue notes..."
+                  value={comments}
+                  onChange={(e) => setComments(e.target.value)}
+                  className="w-full p-3 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-y"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Final Operational Remarks
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Enter resolution remarks..."
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  className="w-full p-3 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-y"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Form Actions Footer */}
+          <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              * All 34 fields will be permanently stored and reflected in the <b>Issue Report</b> dashboard.
+            </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleResetForm}
+                className="flex-1 sm:flex-none px-5 py-2.5 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                Cancel / Reset
+              </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-2 shadow-xs animate-in fade-in zoom-in-95 duration-200"
+                className="flex-1 sm:flex-none px-6 py-2.5 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Check className="w-4 h-4" />
-                <span>{isSubmitting ? 'Saving...' : editingId ? 'Update Issue' : 'Submit Issue'}</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </form>
-
-      {/* View Issue Modal */}
-      {viewingIssue && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-              <div>
-                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono font-bold uppercase tracking-wider">
-                  Incident Record Details
-                </span>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  {viewingIssue.id}
-                  {viewingIssue.odooTicketId && (
-                    <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded font-mono border border-slate-200 dark:border-transparent">
-                      Odoo: {viewingIssue.odooTicketId}
-                    </span>
-                  )}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setViewingIssue(null)}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg bg-slate-100 dark:bg-slate-800 cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-xs">
-              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Branch</span>
-                <span className="font-bold text-slate-900 dark:text-white">{viewingIssue.branchName}</span>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Specific Location</span>
-                <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-indigo-500 dark:text-indigo-400 shrink-0" />
-                  <span>{viewingIssue.location || 'N/A'}</span>
-                </span>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Issue Type</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">{viewingIssue.issueType}</span>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Category</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">{viewingIssue.category}</span>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Priority</span>
-                <span className="font-bold text-amber-600 dark:text-amber-400">{viewingIssue.priority}</span>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Status</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">{viewingIssue.status}</span>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Assigned Person</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200">{viewingIssue.assignPerson || 'None'}</span>
-              </div>
-            </div>
-
-            {viewingIssue.deviceReplace === 'YES' && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 rounded-lg text-xs grid grid-cols-2 gap-2">
-                <div>
-                  <span className="text-[10px] text-amber-700 dark:text-amber-400 block">Old Device ID (Removed)</span>
-                  <span className="font-mono font-bold text-slate-900 dark:text-white">{viewingIssue.oldDeviceId || 'N/A'}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-amber-700 dark:text-amber-400 block">Replace Device ID (New)</span>
-                  <span className="font-mono font-bold text-slate-900 dark:text-white">{viewingIssue.replaceDeviceId || 'N/A'}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Timelines */}
-            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-              <span className="font-bold text-slate-800 dark:text-slate-300 block border-b border-slate-200 dark:border-slate-800 pb-1">
-                SLA & Turnaround Timeline
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Client Reported:</span>
-                  <span className="font-mono text-slate-800 dark:text-slate-200">
-                    {viewingIssue.clientReportingDate || 'N/A'}{' '}
-                    {format12HourTime(viewingIssue.clientReportingTime)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Client Responded:</span>
-                  <span className="font-mono text-slate-800 dark:text-slate-200">
-                    {viewingIssue.clientResponseDate
-                      ? `${viewingIssue.clientResponseDate} ${format12HourTime(viewingIssue.clientResponseTime)}`
-                      : 'Pending'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Resolution:</span>
-                  <span className="font-mono text-slate-800 dark:text-slate-200">
-                    {viewingIssue.resolutionDate
-                      ? `${viewingIssue.resolutionDate} ${format12HourTime(viewingIssue.resolutionTime)}`
-                      : 'In Progress'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {viewingIssue.details && (
-              <div className="space-y-1 text-xs">
-                <span className="text-slate-600 dark:text-slate-400 font-semibold block">Incident Notes & Details:</span>
-                <div className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                  {viewingIssue.details}
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => {
-                  const toEdit = viewingIssue;
-                  setViewingIssue(null);
-                  handleEditIssue(toEdit);
-                }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold cursor-pointer"
-              >
-                Edit This Issue
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewingIssue(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs cursor-pointer border border-slate-200 dark:border-transparent"
-              >
-                Close
+                {isSubmitting ? 'Saving...' : editingId ? 'Update Log Entry' : 'Save Log Entry'}
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Confirmation Modal */}
-      <ConfirmModal
-        isOpen={confirmConfig.isOpen}
-        title={confirmConfig.title}
-        message={confirmConfig.message}
-        onConfirm={() => {
-          confirmConfig.onConfirm();
-          setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
-        }}
-        onCancel={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
-      />
+        </form>
+      </div>
     </div>
   );
 };

@@ -333,9 +333,7 @@ export default function App() {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
             if (Array.isArray(savedDevs) && savedDevs.length > 0) {
-              if (parsed.length > savedDevs.length) {
-                return reconcileSimsWithDevices(parsed, savedDevs);
-              }
+              return reconcileSimsWithDevices(parsed, savedDevs);
             }
             return parsed;
           }
@@ -346,6 +344,17 @@ export default function App() {
     }
     return initialSIMs;
   });
+
+  // Strict Invariant Guard: Total SIM count can NEVER exceed total registered devices.
+  useEffect(() => {
+    if (devices.length > 0 && sims.length > devices.length) {
+      const clean = reconcileSimsWithDevices(sims, devices);
+      setSims(clean);
+      try {
+        localStorage.setItem('simsData', JSON.stringify(clean));
+      } catch (e) {}
+    }
+  }, [devices.length, sims.length]);
   const [issues, setIssues] = useState<IssueTrackerItem[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -354,7 +363,14 @@ export default function App() {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
             const demoIds = new Set(['ISSUE-1001', 'ISSUE-1002', 'ISSUE-1003', 'ISSUE-1004']);
-            return parsed.filter((item: IssueTrackerItem) => !demoIds.has(item.id));
+            return parsed.filter(
+              (item: IssueTrackerItem) =>
+                item &&
+                item.id &&
+                !demoIds.has(item.id) &&
+                !item.id.startsWith('issue-seed-') &&
+                !item.id.startsWith('demo-')
+            );
           }
         }
       } catch (e) {
@@ -575,9 +591,9 @@ export default function App() {
         }
       }
 
-      // 4. SIMs
+      // 4. SIMs (Supabase is authoritative, strictly clamp and reconcile 1-to-1 with registered devices)
       if (dbSIMs !== null) {
-        const targetDevices = dbDevices !== null ? dbDevices : devices;
+        const targetDevices = (dbDevices !== null && dbDevices.length > 0) ? dbDevices : devices;
         if (targetDevices && targetDevices.length > 0) {
           // Strict Invariant: Total SIMs can NEVER exceed total devices.
           // Filter out orphaned/duplicate SIMs and auto-reconcile 1-to-1 with registered devices.
@@ -587,14 +603,6 @@ export default function App() {
             localStorage.setItem('simsData', JSON.stringify(cleanSims));
           } catch (e) {
             console.warn('localStorage save sims error', e);
-          }
-
-          // If Supabase contains stale/orphaned SIMs (e.g. from past syncs or other laptops),
-          // auto-purge them from Supabase in the background so they never re-propagate!
-          if (dbSIMs.length !== cleanSims.length || dbSIMs.some((s) => !s.id.startsWith('sim-dev-'))) {
-            syncReplaceSupabaseSIMs(cleanSims).catch((err) => {
-              console.warn('Auto-purge excess Supabase SIMs error:', err);
-            });
           }
         } else {
           setSims(dbSIMs);
@@ -608,9 +616,17 @@ export default function App() {
 
       // 5. Issues (Issue Tracker)
       if (dbIssues !== null) {
-        setIssues(dbIssues);
+        const cleanDbIssues = dbIssues.filter(
+          (item: IssueTrackerItem) =>
+            item &&
+            item.id &&
+            !item.id.startsWith('issue-seed-') &&
+            !item.id.startsWith('demo-') &&
+            !['ISSUE-1001', 'ISSUE-1002', 'ISSUE-1003', 'ISSUE-1004'].includes(item.id)
+        );
+        setIssues(cleanDbIssues);
         try {
-          localStorage.setItem('issueTrackerData', JSON.stringify(dbIssues));
+          localStorage.setItem('issueTrackerData', JSON.stringify(cleanDbIssues));
         } catch (e) {
           console.warn('localStorage save issues error', e);
         }
@@ -1358,7 +1374,7 @@ export default function App() {
     );
   };
 
-  const handleSaveIssue = async (issue: IssueTrackerItem) => {
+  const handleSaveIssue = async (issue: IssueTrackerItem): Promise<boolean> => {
     setIssues((prev) => {
       const exists = prev.some((i) => i.id === issue.id);
       const updated = exists ? prev.map((i) => (i.id === issue.id ? issue : i)) : [issue, ...prev];
@@ -1369,10 +1385,11 @@ export default function App() {
       }
       return updated;
     });
-    insertSupabaseIssue(issue);
+    const success = await insertSupabaseIssue(issue);
+    return success;
   };
 
-  const handleDeleteIssue = (id: string) => {
+  const handleDeleteIssue = async (id: string) => {
     setIssues((prev) => {
       const updated = prev.filter((i) => i.id !== id);
       try {
@@ -1382,10 +1399,10 @@ export default function App() {
       }
       return updated;
     });
-    deleteSupabaseIssue(id);
+    await deleteSupabaseIssue(id);
   };
 
-  const handleBulkDeleteIssues = (ids: string[]) => {
+  const handleBulkDeleteIssues = async (ids: string[]) => {
     setIssues((prev) => {
       const updated = prev.filter((i) => !ids.includes(i.id));
       try {
@@ -1395,7 +1412,7 @@ export default function App() {
       }
       return updated;
     });
-    bulkDeleteSupabaseIssues(ids);
+    await bulkDeleteSupabaseIssues(ids);
   };
 
   // Backup Restore Handler
@@ -1714,14 +1731,16 @@ export default function App() {
         onAddCategory={handleAddCategory}
       />
 
-      <AddDeviceModal
-        isOpen={isAddDeviceOpen}
-        activeCategory={activeCategory}
-        categoryGroups={categoryGroups}
-        systemOptions={systemOptions}
-        onClose={() => setIsAddDeviceOpen(false)}
-        onSaveDevice={handleSaveNewDevice}
-      />
+      {isAddDeviceOpen && (
+        <AddDeviceModal
+          isOpen={isAddDeviceOpen}
+          activeCategory={activeCategory}
+          categoryGroups={categoryGroups}
+          systemOptions={systemOptions}
+          onClose={() => setIsAddDeviceOpen(false)}
+          onSaveDevice={handleSaveNewDevice}
+        />
+      )}
 
       <EditDeviceModal
         isOpen={Boolean(editingDevice)}

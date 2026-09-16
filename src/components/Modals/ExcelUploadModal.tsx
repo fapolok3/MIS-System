@@ -6,7 +6,7 @@ import { Device } from '../../types';
 interface ExcelUploadModalProps {
   isOpen: boolean;
   activeCategory: string;
-  onClose: () => void;
+  onClose?: () => void;
   onImportDevices: (devices: Device[]) => void;
 }
 
@@ -41,7 +41,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
 
   const handleModalClose = () => {
     resetUploadState();
-    onClose();
+    onClose?.();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,7 +247,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
 
     onImportDevices(fullDevices);
     resetUploadState();
-    onClose();
+    onClose?.();
   };
 
   return (

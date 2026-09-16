@@ -5,7 +5,7 @@ interface EditTicketModalProps {
   ticket: Ticket | null;
   isOpen: boolean;
   systemOptions: SystemOptions;
-  onClose: () => void;
+  onClose?: () => void;
   onSaveTicket: (updated: Ticket, originalId?: string) => void;
 }
 
@@ -55,7 +55,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
     e.preventDefault();
     if (formData) {
       onSaveTicket(formData, ticket?.id);
-      onClose();
+      onClose?.();
     }
   };
 
@@ -311,7 +311,7 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
           <div className="col-span-2 flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => onClose?.()}
               className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg font-bold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent"
             >
               Cancel

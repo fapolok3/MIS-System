@@ -1008,8 +1008,49 @@ export async function saveSupabaseAppSettings(settings: AppSettings): Promise<bo
 }
 
 // -------------------------------------------------------------
-// ISSUE TRACKER & ISSUE REPORTS
+// ISSUE TRACKER & ISSUE REPORTS (Extended 34-Field Mapping)
 // -------------------------------------------------------------
+function serializeIssueDetails(issue: IssueTrackerItem): string {
+  const payload = {
+    sl: issue.sl,
+    issueLogDate: issue.issueLogDate || issue.date,
+    odooId: issue.odooId || issue.odooTicketId,
+    status: issue.status || 'Open',
+    clientName: issue.clientName || issue.branchName,
+    premesisName: issue.premesisName || issue.location,
+    priority: issue.priority || 'Medium',
+    deviceReplace: issue.deviceReplace || 'No',
+    oldDevice: issue.oldDevice || issue.oldDeviceId || '-',
+    newDevice: issue.newDevice || issue.replaceDeviceId || '-',
+    clientReportingTime: issue.clientReportingTime || '',
+    responseTime: issue.responseTime || '',
+    accessories: issue.accessories || '',
+    product: issue.product || '',
+    district: issue.district || '',
+    address: issue.address || '',
+    contactPerson: issue.contactPerson || '',
+    number: issue.number || '',
+    comments: issue.comments || issue.details || '',
+    deliveryOption: issue.deliveryOption || '',
+    serviceType: issue.serviceType || issue.issueType || '',
+    kam: issue.kam || '',
+    segment: issue.segment || issue.category || '',
+    invoiceHandover: issue.invoiceHandover || '',
+    collectionAmount: issue.collectionAmount !== undefined ? issue.collectionAmount : '0',
+    paymentMethod: issue.paymentMethod || '',
+    installationStatus: issue.installationStatus || '',
+    handedOverTo: issue.handedOverTo || '',
+    assignPerson: issue.assignPerson || '',
+    handoverCollected: issue.handoverCollected || 'No',
+    installationDate: issue.installationDate || issue.resolutionDate || '',
+    unitQty: issue.unitQty !== undefined ? issue.unitQty : 1,
+    vendorBillAmount: issue.vendorBillAmount !== undefined ? issue.vendorBillAmount : '0',
+    remarks: issue.remarks || '',
+    details: issue.details || '',
+  };
+  return JSON.stringify(payload);
+}
+
 export async function fetchSupabaseIssues(): Promise<IssueTrackerItem[] | null> {
   try {
     const { data, error } = await supabase
@@ -1024,30 +1065,83 @@ export async function fetchSupabaseIssues(): Promise<IssueTrackerItem[] | null> 
 
     if (!data) return [];
 
-    return data.map((d: any) => ({
-      id: d.id || `ISSUE-${Date.now()}`,
-      branchName: d.branch_name || '',
-      issueType: d.issue_type || '',
-      category: d.category || '',
-      odooTicketId: d.odoo_ticket_id || '',
-      priority: d.priority || 'MEDIUM',
-      deviceReplace: d.device_replace === 'YES' || d.device_replace === true ? 'YES' : 'NO',
-      replaceDeviceId: d.replace_device_id || '',
-      oldDeviceId: d.old_device_id || '',
-      location: d.location || '',
-      assignPerson: d.assign_person || '',
-      status: d.status || 'OPEN',
-      date: d.date || '',
-      clientReportingDate: d.client_reporting_date || '',
-      clientReportingTime: d.client_reporting_time || '',
-      clientResponseDate: d.client_response_date || '',
-      clientResponseTime: d.client_response_time || '',
-      resolutionDate: d.resolution_date || '',
-      resolutionTime: d.resolution_time || '',
-      details: d.details || '',
-      createdAt: d.created_at || new Date().toISOString(),
-      updatedAt: d.updated_at || new Date().toISOString(),
-    }));
+    return data.map((d: any, index: number) => {
+      let ext: any = {};
+      if (d.details && typeof d.details === 'string') {
+        try {
+          if (d.details.trim().startsWith('{')) {
+            ext = JSON.parse(d.details);
+          }
+        } catch (e) {}
+      }
+
+      const clientName = ext.clientName || d.branch_name || '';
+      const premesisName = ext.premesisName || d.location || 'ROC';
+      const odooId = ext.odooId || d.odoo_ticket_id || '';
+      const status = ext.status || d.status || 'Open';
+      const priority = ext.priority || d.priority || 'Medium';
+      const deviceReplace = ext.deviceReplace || (d.device_replace === 'YES' || d.device_replace === true ? 'Yes' : 'No');
+      const oldDevice = ext.oldDevice || d.old_device_id || '-';
+      const newDevice = ext.newDevice || d.replace_device_id || '-';
+      const comments = ext.comments || (ext.details ? ext.details : d.details || '');
+      const remarks = ext.remarks || '';
+
+      return {
+        id: d.id || `ISSUE-${Date.now()}-${index}`,
+        sl: ext.sl !== undefined ? ext.sl : index + 1,
+        issueLogDate: ext.issueLogDate || d.date || (d.created_at ? d.created_at.split('T')[0] : ''),
+        odooId,
+        status,
+        clientName,
+        premesisName,
+        priority,
+        deviceReplace,
+        oldDevice,
+        newDevice,
+        clientReportingTime: ext.clientReportingTime || (d.client_reporting_date ? `${d.client_reporting_date}T${d.client_reporting_time || '00:00'}` : ''),
+        responseTime: ext.responseTime || (d.client_response_date ? `${d.client_response_date}T${d.client_response_time || '00:00'}` : ''),
+        accessories: ext.accessories || '',
+        product: ext.product || '',
+        district: ext.district || '',
+        address: ext.address || '',
+        contactPerson: ext.contactPerson || '',
+        number: ext.number || '',
+        comments,
+        deliveryOption: ext.deliveryOption || '',
+        serviceType: ext.serviceType || d.issue_type || '',
+        kam: ext.kam || '',
+        segment: ext.segment || d.category || '',
+        invoiceHandover: ext.invoiceHandover || '',
+        collectionAmount: ext.collectionAmount !== undefined ? ext.collectionAmount : '0',
+        paymentMethod: ext.paymentMethod || '',
+        installationStatus: ext.installationStatus || '',
+        handedOverTo: ext.handedOverTo || '',
+        assignPerson: ext.assignPerson || d.assign_person || '',
+        handoverCollected: ext.handoverCollected || 'No',
+        installationDate: ext.installationDate || d.resolution_date || '',
+        unitQty: ext.unitQty !== undefined ? ext.unitQty : 1,
+        vendorBillAmount: ext.vendorBillAmount !== undefined ? ext.vendorBillAmount : '0',
+        remarks,
+
+        // Legacy compatibility properties
+        branchName: clientName,
+        issueType: ext.serviceType || d.issue_type || '',
+        category: ext.segment || d.category || '',
+        odooTicketId: odooId,
+        replaceDeviceId: newDevice,
+        oldDeviceId: oldDevice,
+        location: premesisName,
+        date: ext.issueLogDate || d.date || '',
+        clientReportingDate: d.client_reporting_date || '',
+        clientResponseDate: d.client_response_date || '',
+        clientResponseTime: d.client_response_time || '',
+        resolutionDate: d.resolution_date || '',
+        resolutionTime: d.resolution_time || '',
+        details: comments,
+        createdAt: d.created_at || new Date().toISOString(),
+        updatedAt: d.updated_at || new Date().toISOString(),
+      };
+    });
   } catch (err) {
     console.warn('Supabase fetchIssues catch error:', err);
     return null;
@@ -1056,32 +1150,33 @@ export async function fetchSupabaseIssues(): Promise<IssueTrackerItem[] | null> 
 
 export async function insertSupabaseIssue(issue: IssueTrackerItem): Promise<boolean> {
   try {
+    const serialized = serializeIssueDetails(issue);
     const row = {
       id: issue.id,
-      branch_name: issue.branchName,
-      issue_type: issue.issueType,
-      category: issue.category,
-      odoo_ticket_id: issue.odooTicketId,
-      priority: issue.priority,
-      device_replace: issue.deviceReplace,
-      replace_device_id: issue.replaceDeviceId,
-      old_device_id: issue.oldDeviceId,
-      location: issue.location,
-      assign_person: issue.assignPerson,
-      status: issue.status,
-      date: issue.date,
-      client_reporting_date: issue.clientReportingDate,
-      client_reporting_time: issue.clientReportingTime,
-      client_response_date: issue.clientResponseDate,
-      client_response_time: issue.clientResponseTime,
-      resolution_date: issue.resolutionDate,
-      resolution_time: issue.resolutionTime,
-      details: issue.details,
+      branch_name: issue.clientName || issue.branchName || '',
+      issue_type: issue.serviceType || issue.issueType || '',
+      category: issue.segment || issue.category || '',
+      odoo_ticket_id: issue.odooId || issue.odooTicketId || '',
+      priority: issue.priority || 'Medium',
+      device_replace: issue.deviceReplace || 'No',
+      replace_device_id: issue.newDevice || issue.replaceDeviceId || '',
+      old_device_id: issue.oldDevice || issue.oldDeviceId || '',
+      location: issue.premesisName || issue.location || '',
+      assign_person: issue.assignPerson || '',
+      status: issue.status || 'Open',
+      date: issue.issueLogDate || issue.date || '',
+      client_reporting_date: issue.clientReportingDate || (issue.clientReportingTime ? issue.clientReportingTime.split('T')[0] : ''),
+      client_reporting_time: issue.clientReportingTime ? (issue.clientReportingTime.split('T')[1] || '') : '',
+      client_response_date: issue.clientResponseDate || (issue.responseTime ? issue.responseTime.split('T')[0] : ''),
+      client_response_time: issue.responseTime ? (issue.responseTime.split('T')[1] || '') : '',
+      resolution_date: issue.installationDate || issue.resolutionDate || '',
+      resolution_time: issue.resolutionTime || '',
+      details: serialized,
       created_at: issue.createdAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from('issues').upsert([row]);
+    const { error } = await supabase.from('issues').upsert([row], { onConflict: 'id' });
     if (error) {
       console.warn('Supabase insertIssue error:', error.message);
       return false;
@@ -1095,32 +1190,35 @@ export async function insertSupabaseIssue(issue: IssueTrackerItem): Promise<bool
 
 export async function bulkInsertSupabaseIssues(issues: IssueTrackerItem[]): Promise<boolean> {
   try {
-    const rows = issues.map((issue) => ({
-      id: issue.id,
-      branch_name: issue.branchName,
-      issue_type: issue.issueType,
-      category: issue.category,
-      odoo_ticket_id: issue.odooTicketId,
-      priority: issue.priority,
-      device_replace: issue.deviceReplace,
-      replace_device_id: issue.replaceDeviceId,
-      old_device_id: issue.oldDeviceId,
-      location: issue.location,
-      assign_person: issue.assignPerson,
-      status: issue.status,
-      date: issue.date,
-      client_reporting_date: issue.clientReportingDate,
-      client_reporting_time: issue.clientReportingTime,
-      client_response_date: issue.clientResponseDate,
-      client_response_time: issue.clientResponseTime,
-      resolution_date: issue.resolutionDate,
-      resolution_time: issue.resolutionTime,
-      details: issue.details,
-      created_at: issue.createdAt || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
+    const rows = issues.map((issue) => {
+      const serialized = serializeIssueDetails(issue);
+      return {
+        id: issue.id || `ISSUE-${Math.floor(10000 + Math.random() * 90000)}`,
+        branch_name: issue.clientName || issue.branchName || '',
+        issue_type: issue.serviceType || issue.issueType || '',
+        category: issue.segment || issue.category || '',
+        odoo_ticket_id: issue.odooId || issue.odooTicketId || '',
+        priority: issue.priority || 'Medium',
+        device_replace: issue.deviceReplace || 'No',
+        replace_device_id: issue.newDevice || issue.replaceDeviceId || '',
+        old_device_id: issue.oldDevice || issue.oldDeviceId || '',
+        location: issue.premesisName || issue.location || '',
+        assign_person: issue.assignPerson || '',
+        status: issue.status || 'Open',
+        date: issue.issueLogDate || issue.date || '',
+        client_reporting_date: issue.clientReportingDate || (issue.clientReportingTime ? issue.clientReportingTime.split('T')[0] : ''),
+        client_reporting_time: issue.clientReportingTime ? (issue.clientReportingTime.split('T')[1] || '') : '',
+        client_response_date: issue.clientResponseDate || (issue.responseTime ? issue.responseTime.split('T')[0] : ''),
+        client_response_time: issue.responseTime ? (issue.responseTime.split('T')[1] || '') : '',
+        resolution_date: issue.installationDate || issue.resolutionDate || '',
+        resolution_time: issue.resolutionTime || '',
+        details: serialized,
+        created_at: issue.createdAt || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    });
 
-    const { error } = await supabase.from('issues').upsert(rows);
+    const { error } = await supabase.from('issues').upsert(rows, { onConflict: 'id' });
     if (error) {
       console.warn('Supabase bulkInsertIssues error:', error.message);
       return false;

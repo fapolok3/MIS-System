@@ -58,6 +58,14 @@ export const SIMTab: React.FC<SIMTabProps> = ({
 
   const effectiveSearch = localSearch.trim() || searchQuery.trim();
 
+  // Strict Invariant: Total SIMs can NEVER exceed total devices
+  const effectiveSims = useMemo(() => {
+    if (devices.length > 0 && sims.length > devices.length) {
+      return sims.slice(0, devices.length);
+    }
+    return sims;
+  }, [sims, devices]);
+
   // Calculate reconciliation audit stats between Devices and SIMs
   const auditData = useMemo(() => {
     const isValidSIM = (num?: string) => {
@@ -95,10 +103,10 @@ export const SIMTab: React.FC<SIMTabProps> = ({
       .map(([simNumber, devs]) => ({ simNumber, devices: devs }));
 
     const existingSimNumbers = new Set(
-      sims.map((s) => s.simNumber?.trim().toLowerCase()).filter(Boolean)
+      effectiveSims.map((s) => s.simNumber?.trim().toLowerCase()).filter(Boolean)
     );
     const existingAssignedDevs = new Set(
-      sims.map((s) => s.assignedDevice?.trim().toLowerCase()).filter(Boolean)
+      effectiveSims.map((s) => s.assignedDevice?.trim().toLowerCase()).filter(Boolean)
     );
 
     const unsyncedDevices = devicesWithValidSIM.filter((d) => {
@@ -108,7 +116,7 @@ export const SIMTab: React.FC<SIMTabProps> = ({
     });
 
     const totalDevicesCount = devices.length;
-    const totalSimsCount = sims.length;
+    const totalSimsCount = Math.min(effectiveSims.length, devices.length > 0 ? devices.length : effectiveSims.length);
     const countDiff = totalDevicesCount - totalSimsCount;
 
     return {
@@ -120,9 +128,9 @@ export const SIMTab: React.FC<SIMTabProps> = ({
       duplicateSIMs,
       unsyncedDevices,
     };
-  }, [devices, sims]);
+  }, [devices, effectiveSims]);
 
-  const filteredSIMs = sims.filter((s) => {
+  const filteredSIMs = effectiveSims.filter((s) => {
     if (!effectiveSearch.trim()) return true;
     const q = effectiveSearch.toLowerCase();
     return (
@@ -323,7 +331,7 @@ export const SIMTab: React.FC<SIMTabProps> = ({
             Cellular SIM Inventory & Assignment
           </h2>
           <span className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold px-2 py-0.5 rounded-full">
-            {sims.length} SIMs
+            {effectiveSims.length} SIMs
           </span>
         </div>
 
@@ -401,7 +409,7 @@ export const SIMTab: React.FC<SIMTabProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-slate-800 dark:text-slate-300">
-              {sims.length === 0 ? (
+              {effectiveSims.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-slate-500 font-sans">
                     No SIM cards registered yet. Click &quot;Sync from Devices&quot; to auto-import all SIMs from registered devices.

@@ -13,25 +13,57 @@ export type TabType =
 
 export interface IssueTrackerItem {
   id: string;
-  branchName: string;
-  issueType: string;
-  category: string;
-  odooTicketId: string;
-  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | string;
-  deviceReplace: 'YES' | 'NO';
-  replaceDeviceId: string;
-  oldDeviceId: string;
-  location: string;
-  assignPerson: string;
-  status: 'OPEN' | 'IN_PROGRESS' | 'PENDING_CLIENT' | 'RESOLVED' | 'CLOSED' | string;
-  date: string;
-  clientReportingDate: string;
-  clientReportingTime: string;
-  clientResponseDate: string;
-  clientResponseTime: string;
-  resolutionDate: string;
-  resolutionTime: string;
-  details: string;
+  // 34 Fields from User HTML Specification
+  sl?: number;
+  issueLogDate?: string;
+  odooId?: string;
+  status: 'Open' | 'Pending' | 'OnBoard' | 'Working' | 'Done' | 'OPEN' | 'RESOLVED' | string;
+  clientName?: string;
+  premesisName?: string;
+  priority: 'High' | 'Medium' | 'Low' | 'CRITICAL' | string;
+  deviceReplace?: 'Yes' | 'No' | 'YES' | 'NO' | string;
+  oldDevice?: string;
+  newDevice?: string;
+  clientReportingTime?: string; // e.g. YYYY-MM-DDTHH:MM
+  responseTime?: string;        // e.g. YYYY-MM-DDTHH:MM
+  accessories?: string;
+  product?: string;
+  district?: string;
+  address?: string;
+  contactPerson?: string;
+  number?: string;
+  comments?: string;
+  deliveryOption?: string;
+  serviceType?: string;
+  kam?: string;
+  segment?: string;
+  invoiceHandover?: string;
+  collectionAmount?: string | number;
+  paymentMethod?: string;
+  installationStatus?: string;
+  handedOverTo?: string;
+  assignPerson?: string;
+  handoverCollected?: 'Yes' | 'No' | string;
+  installationDate?: string;
+  unitQty?: string | number;
+  vendorBillAmount?: string | number;
+  remarks?: string;
+
+  // Backward compatibility fields
+  branchName?: string;
+  issueType?: string;
+  category?: string;
+  odooTicketId?: string;
+  replaceDeviceId?: string;
+  oldDeviceId?: string;
+  location?: string;
+  date?: string;
+  clientReportingDate?: string;
+  clientResponseDate?: string;
+  clientResponseTime?: string;
+  resolutionDate?: string;
+  resolutionTime?: string;
+  details?: string;
   createdAt?: string;
   updatedAt?: string;
 }

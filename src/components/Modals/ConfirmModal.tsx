@@ -8,7 +8,8 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
-  onClose: () => void;
+  onClose?: () => void;
+  onCancel?: () => void;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -19,8 +20,24 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   cancelText = 'Cancel',
   onConfirm,
   onClose,
+  onCancel,
 }) => {
   if (!isOpen) return null;
+
+  const handleClose = () => {
+    if (typeof onClose === 'function') {
+      onClose();
+    } else if (typeof onCancel === 'function') {
+      onCancel();
+    }
+  };
+
+  const handleConfirm = () => {
+    if (typeof onConfirm === 'function') {
+      onConfirm();
+    }
+    handleClose();
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 dark:bg-black/70 backdrop-blur-xs p-4 animate-fade-in">
@@ -32,7 +49,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             <span>{title}</span>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition"
           >
             <X className="w-4 h-4" />
@@ -50,17 +67,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         <div className="flex justify-end space-x-3 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-lg cursor-pointer transition border border-slate-200 dark:border-transparent"
           >
             {cancelText}
           </button>
           <button
             type="button"
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }}
+            onClick={handleConfirm}
             className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg cursor-pointer flex items-center gap-1.5 shadow-md shadow-rose-900/20 transition"
           >
             <Trash2 className="w-3.5 h-3.5" />

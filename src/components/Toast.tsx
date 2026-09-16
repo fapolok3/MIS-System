@@ -10,7 +10,7 @@ export interface ToastData {
 
 interface ToastProps {
   toast: ToastData | null;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
@@ -38,7 +38,9 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
 
       if (elapsed >= duration) {
         clearInterval(interval);
-        onCloseRef.current();
+        if (typeof onCloseRef.current === 'function') {
+          onCloseRef.current();
+        }
       }
     }, 25);
 
@@ -46,6 +48,12 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
   }, [toast?.id]);
 
   if (!toast) return null;
+
+  const handleClose = () => {
+    if (typeof onClose === 'function') {
+      onClose();
+    }
+  };
 
   const type = toast.type || 'success';
 
@@ -135,7 +143,7 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
 
               {/* Close Button */}
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/80 transition cursor-pointer shrink-0 -mt-0.5 -mr-0.5"
                 aria-label="Close notification"
               >

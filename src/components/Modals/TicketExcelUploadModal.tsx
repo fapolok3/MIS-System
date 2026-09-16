@@ -5,7 +5,7 @@ import { Ticket, SystemOptions } from '../../types';
 
 interface TicketExcelUploadModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   onImportTickets: (tickets: Ticket[]) => void;
   systemOptions?: SystemOptions;
   ticketCount?: number;
@@ -43,7 +43,7 @@ export const TicketExcelUploadModal: React.FC<TicketExcelUploadModalProps> = ({
 
   const handleModalClose = () => {
     resetUploadState();
-    onClose();
+    onClose?.();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -271,7 +271,7 @@ export const TicketExcelUploadModal: React.FC<TicketExcelUploadModalProps> = ({
 
     onImportTickets(fullTickets);
     resetUploadState();
-    onClose();
+    onClose?.();
   };
 
   return (

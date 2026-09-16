@@ -4,7 +4,7 @@ import { SIMItem, SystemOptions } from '../../types';
 interface AddSIMModalProps {
   isOpen: boolean;
   systemOptions: SystemOptions;
-  onClose: () => void;
+  onClose?: () => void;
   onSaveSIM: (sim: SIMItem) => void;
 }
 
@@ -33,7 +33,7 @@ export const AddSIMModal: React.FC<AddSIMModalProps> = ({
       status,
     };
     onSaveSIM(newSIM);
-    onClose();
+    onClose?.();
   };
 
   return (
@@ -106,7 +106,7 @@ export const AddSIMModal: React.FC<AddSIMModalProps> = ({
           <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => onClose?.()}
               className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg font-bold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent"
             >
               Cancel

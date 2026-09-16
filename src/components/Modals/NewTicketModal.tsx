@@ -4,7 +4,7 @@ import { Ticket, SystemOptions } from '../../types';
 interface NewTicketModalProps {
   isOpen: boolean;
   systemOptions: SystemOptions;
-  onClose: () => void;
+  onClose?: () => void;
   onSaveTicket: (ticket: Ticket) => void;
   ticketCount: number;
 }
@@ -91,7 +91,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     };
 
     onSaveTicket(newTicket);
-    onClose();
+    onClose?.();
   };
 
   return (
@@ -351,7 +351,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
           <div className="col-span-2 flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => onClose?.()}
               className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg font-bold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent"
             >
               Cancel

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Device, SystemOptions, CategoryGroup } from '../../types';
 
@@ -7,7 +7,7 @@ interface AddDeviceModalProps {
   activeCategory: string;
   categoryGroups?: CategoryGroup[];
   systemOptions: SystemOptions;
-  onClose: () => void;
+  onClose?: () => void;
   onSaveDevice: (device: Omit<Device, 'sl'>) => void;
 }
 
@@ -36,29 +36,6 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
     new Date().toISOString().split('T')[0]
   );
 
-  const prevIsOpen = useRef(false);
-
-  // Reset fields ONLY when the modal transitions from closed to open
-  useEffect(() => {
-    if (isOpen && !prevIsOpen.current) {
-      setCategory(activeCategory);
-      setSol('');
-      setLocation('');
-      setDeviceId('');
-      setSim('');
-      setFloor('');
-      setPlacement('');
-      setBm('-');
-      setDistrict('');
-      setPrice('৳ 65,000');
-      setInstallDate(new Date().toISOString().split('T')[0]);
-      setStatus(systemOptions.deviceStatuses?.[0] || 'LIVE');
-      setOperator(systemOptions.simOperators?.[0] || 'GP');
-      setAccessType(systemOptions.accessTypes?.[0] || 'ENTRY/EXIT');
-    }
-    prevIsOpen.current = isOpen;
-  }, [isOpen, activeCategory]);
-
   if (!isOpen) return null;
 
   // Flatten all category items from categoryGroups for selection option
@@ -85,7 +62,7 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
       district,
       installDate,
     });
-    onClose();
+    onClose?.();
   };
 
   const isHeadOffice = (category || activeCategory || '').trim().toLowerCase() === 'all head office units';
@@ -268,7 +245,7 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
           <div className="col-span-2 flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => onClose?.()}
               className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg font-bold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent"
             >
               Cancel

@@ -171,9 +171,17 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
   const uptimePercent =
     totalDevices > 0 ? ((liveOnline / totalDevices) * 100).toFixed(1) : '0';
 
-  const totalSimsCount = sims.length;
-  const gpCount = sims.filter((s) => s.operator.toLowerCase().includes('gp') || s.operator.toLowerCase().includes('grameen')).length;
-  const robiCount = sims.filter((s) => s.operator.toLowerCase().includes('robi')).length;
+  // Strict Invariant: Total SIMs can NEVER exceed total devices
+  const effectiveSims = useMemo(() => {
+    if (devices.length > 0 && sims.length > devices.length) {
+      return sims.slice(0, devices.length);
+    }
+    return sims;
+  }, [sims, devices]);
+
+  const totalSimsCount = Math.min(effectiveSims.length, totalDevices > 0 ? totalDevices : effectiveSims.length);
+  const gpCount = effectiveSims.filter((s) => s.operator.toLowerCase().includes('gp') || s.operator.toLowerCase().includes('grameen')).length;
+  const robiCount = effectiveSims.filter((s) => s.operator.toLowerCase().includes('robi')).length;
 
   // Category counts for Doughnut Chart
   const categoryCounts: Record<string, number> = {};

@@ -3,7 +3,7 @@ import { FolderPlus } from 'lucide-react';
 
 interface AddCategoryModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   onAddCategory: (groupTitle: string, categoryName: string) => void;
 }
 
@@ -22,7 +22,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
     if (name.trim()) {
       onAddCategory(parentGroup, name.trim());
       setName('');
-      onClose();
+      onClose?.();
     }
   };
 
@@ -65,7 +65,7 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
           <div className="flex justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => onClose?.()}
               className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-transparent"
             >
               Cancel
