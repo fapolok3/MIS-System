@@ -207,7 +207,6 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
               type="text"
               value={bm}
               onChange={(e) => setBm(e.target.value)}
-              placeholder={isHeadOffice ? 'e.g. Finance / HR / ICT' : 'e.g. BM Name'}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>
@@ -217,7 +216,6 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
               type="text"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              placeholder="৳ 65,000"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>
@@ -229,7 +227,6 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
               type="text"
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
-              placeholder={isHeadOffice ? 'e.g. Operations / Retail' : 'e.g. Dhaka'}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>

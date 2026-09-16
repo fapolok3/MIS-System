@@ -939,7 +939,6 @@ Prepared By: ${preparedBy} | Authorized By: ${authorizedBy}
                   type="text"
                   value={odooTicketNo}
                   onChange={(e) => setOdooTicketNo(e.target.value)}
-                  placeholder="e.g. INC-2026-9874"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition font-mono"
                 />
               </div>
@@ -965,7 +964,6 @@ Prepared By: ${preparedBy} | Authorized By: ${authorizedBy}
                     type="text"
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
-                    placeholder="Enter Client Name or Select"
                     required
                     list="branch-list-ticket"
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
@@ -986,7 +984,6 @@ Prepared By: ${preparedBy} | Authorized By: ${authorizedBy}
                   type="text"
                   value={opportunity}
                   onChange={(e) => setOpportunity(e.target.value)}
-                  placeholder="e.g. Opportunity Details / Device info"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                 />
               </div>
@@ -1288,7 +1285,6 @@ Prepared By: ${preparedBy} | Authorized By: ${authorizedBy}
                   type="text"
                   value={preparedBy}
                   onChange={(e) => setPreparedBy(e.target.value)}
-                  placeholder="e.g. Taqi Year"
                   className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
@@ -1300,7 +1296,6 @@ Prepared By: ${preparedBy} | Authorized By: ${authorizedBy}
                   type="text"
                   value={authorizedBy}
                   onChange={(e) => setAuthorizedBy(e.target.value)}
-                  placeholder="e.g. Rafsin Hasan"
                   className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>

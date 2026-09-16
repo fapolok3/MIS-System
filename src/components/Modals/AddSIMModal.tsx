@@ -51,7 +51,6 @@ export const AddSIMModal: React.FC<AddSIMModalProps> = ({
               type="text"
               value={simNumber}
               onChange={(e) => setSimNumber(e.target.value)}
-              placeholder="e.g. 01708123884 (leave empty for blank)"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono"
             />
           </div>
@@ -75,7 +74,6 @@ export const AddSIMModal: React.FC<AddSIMModalProps> = ({
               type="text"
               value={assignedDevice}
               onChange={(e) => setAssignedDevice(e.target.value)}
-              placeholder="e.g. DEV-300101"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono"
             />
           </div>
@@ -85,7 +83,6 @@ export const AddSIMModal: React.FC<AddSIMModalProps> = ({
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Gouripur Branch"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>

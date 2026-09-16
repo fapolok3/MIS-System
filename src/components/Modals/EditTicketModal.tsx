@@ -191,7 +191,6 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
               type="text"
               value={formData.locType}
               onChange={(e) => handleChange('locType', e.target.value)}
-              placeholder="e.g. Main Branch, Sub Branch, SME, Head Office"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>
@@ -252,7 +251,6 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
               type="text"
               value={formData.tech}
               onChange={(e) => handleChange('tech', e.target.value)}
-              placeholder="e.g. Rahim Ahmed / Engineer Name & Phone"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>
@@ -282,7 +280,6 @@ export const EditTicketModal: React.FC<EditTicketModalProps> = ({
               type="text"
               value={formData.slaStatus}
               onChange={(e) => handleChange('slaStatus', e.target.value)}
-              placeholder="e.g. WITHIN SLA or SLA BREACH"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>

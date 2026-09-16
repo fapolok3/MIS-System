@@ -1127,7 +1127,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                     <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Old Device</label>
                     <input
                       type="text"
-                      value={editingIssue.oldDevice || '-'}
+                      value={editingIssue.oldDevice || ''}
                       onChange={(e) => setEditingIssue({ ...editingIssue, oldDevice: e.target.value })}
                       className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                     />
@@ -1136,7 +1136,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                     <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">New Device</label>
                     <input
                       type="text"
-                      value={editingIssue.newDevice || '-'}
+                      value={editingIssue.newDevice || ''}
                       onChange={(e) => setEditingIssue({ ...editingIssue, newDevice: e.target.value })}
                       className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                     />
@@ -1268,7 +1268,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Assign Person</label>
+                    <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Assigned Person</label>
                     <input
                       type="text"
                       value={editingIssue.assignPerson || ''}

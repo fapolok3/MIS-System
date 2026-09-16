@@ -63,42 +63,40 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
   const [issueLogDate, setIssueLogDate] = useState<string>(getTodayDate());
   const [odooId, setOdooId] = useState<string>('');
   const [status, setStatus] = useState<string>('Open');
-  const [clientName, setClientName] = useState<string>('Brac Bank');
-  const [premesisName, setPremesisName] = useState<string>('ROC');
+  const [clientName, setClientName] = useState<string>('');
+  const [premesisName, setPremesisName] = useState<string>('');
 
   const [priority, setPriority] = useState<string>('Medium');
   const [deviceReplace, setDeviceReplace] = useState<'Yes' | 'No'>('No');
-  const [oldDevice, setOldDevice] = useState<string>('-');
-  const [newDevice, setNewDevice] = useState<string>('-');
+  const [oldDevice, setOldDevice] = useState<string>('');
+  const [newDevice, setNewDevice] = useState<string>('');
 
   const [clientReportingTime, setClientReportingTime] = useState<string>('');
   const [responseTime, setResponseTime] = useState<string>('');
   const [accessories, setAccessories] = useState<string>('');
   const [product, setProduct] = useState<string>('');
 
-  const [district, setDistrict] = useState<string>('Dhaka');
+  const [district, setDistrict] = useState<string>('');
   const [address, setAddress] = useState<string>('');
   const [contactPerson, setContactPerson] = useState<string>('');
   const [number, setNumber] = useState<string>('');
 
-  const [deliveryOption, setDeliveryOption] = useState<string>('Hand Delivery');
-  const [serviceType, setServiceType] = useState<string>('On-Site');
+  const [deliveryOption, setDeliveryOption] = useState<string>('');
+  const [serviceType, setServiceType] = useState<string>('');
   const [kam, setKam] = useState<string>('');
-  const [segment, setSegment] = useState<string>('Enterprise');
-  const [invoiceHandover, setInvoiceHandover] = useState<string>('Pending');
+  const [segment, setSegment] = useState<string>('');
+  const [invoiceHandover, setInvoiceHandover] = useState<string>('');
 
-  const [collectionAmount, setCollectionAmount] = useState<string>('0');
-  const [paymentMethod, setPaymentMethod] = useState<string>('Bank Transfer');
-  const [vendorBillAmount, setVendorBillAmount] = useState<string>('0');
+  const [collectionAmount, setCollectionAmount] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
+  const [vendorBillAmount, setVendorBillAmount] = useState<string>('');
 
-  const [installationStatus, setInstallationStatus] = useState<string>('Pending');
-  const [handedOverTo, setHandedOverTo] = useState<string>('Ops Team');
-  const [assignPerson, setAssignPerson] = useState<string>(
-    systemOptions.technicians?.[0] || 'Support Engineer Team'
-  );
+  const [installationStatus, setInstallationStatus] = useState<string>('');
+  const [handedOverTo, setHandedOverTo] = useState<string>('');
+  const [assignPerson, setAssignPerson] = useState<string>('');
   const [handoverCollected, setHandoverCollected] = useState<'Yes' | 'No'>('No');
   const [installationDate, setInstallationDate] = useState<string>('');
-  const [unitQty, setUnitQty] = useState<number>(1);
+  const [unitQty, setUnitQty] = useState<string>('');
 
   const [comments, setComments] = useState<string>('');
   const [remarks, setRemarks] = useState<string>('');
@@ -127,11 +125,8 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
   const handleDeviceReplaceChange = (val: 'Yes' | 'No') => {
     setDeviceReplace(val);
     if (val === 'No') {
-      setOldDevice('-');
-      setNewDevice('-');
-    } else {
-      if (oldDevice === '-') setOldDevice('');
-      if (newDevice === '-') setNewDevice('');
+      setOldDevice('');
+      setNewDevice('');
     }
   };
 
@@ -178,34 +173,34 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
     setIssueLogDate(getTodayDate());
     setOdooId('');
     setStatus('Open');
-    setClientName('Brac Bank');
-    setPremesisName('ROC');
+    setClientName('');
+    setPremesisName('');
     setPriority('Medium');
     setDeviceReplace('No');
-    setOldDevice('-');
-    setNewDevice('-');
+    setOldDevice('');
+    setNewDevice('');
     setClientReportingTime('');
     setResponseTime('');
     setAccessories('');
     setProduct('');
-    setDistrict('Dhaka');
+    setDistrict('');
     setAddress('');
     setContactPerson('');
     setNumber('');
-    setDeliveryOption('Hand Delivery');
-    setServiceType('On-Site');
+    setDeliveryOption('');
+    setServiceType('');
     setKam('');
-    setSegment('Enterprise');
-    setInvoiceHandover('Pending');
-    setCollectionAmount('0');
-    setPaymentMethod('Bank Transfer');
-    setVendorBillAmount('0');
-    setInstallationStatus('Pending');
-    setHandedOverTo('Ops Team');
-    setAssignPerson(systemOptions.technicians?.[0] || 'Support Engineer Team');
+    setSegment('');
+    setInvoiceHandover('');
+    setCollectionAmount('');
+    setPaymentMethod('');
+    setVendorBillAmount('');
+    setInstallationStatus('');
+    setHandedOverTo('');
+    setAssignPerson('');
     setHandoverCollected('No');
     setInstallationDate('');
-    setUnitQty(1);
+    setUnitQty('');
     setComments('');
     setRemarks('');
   };
@@ -218,34 +213,34 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
     setIssueLogDate(normalized.issueLogDate || getTodayDate());
     setOdooId(normalized.odooId || '');
     setStatus(normalized.status || 'Open');
-    setClientName(normalized.clientName || 'Brac Bank');
-    setPremesisName(normalized.premesisName || 'ROC');
+    setClientName(normalized.clientName || '');
+    setPremesisName(normalized.premesisName || '');
     setPriority(normalized.priority || 'Medium');
     setDeviceReplace(normalized.deviceReplace === 'Yes' ? 'Yes' : 'No');
-    setOldDevice(normalized.oldDevice || '-');
-    setNewDevice(normalized.newDevice || '-');
+    setOldDevice(normalized.oldDevice === '-' ? '' : normalized.oldDevice || '');
+    setNewDevice(normalized.newDevice === '-' ? '' : normalized.newDevice || '');
     setClientReportingTime(normalized.clientReportingTime || '');
     setResponseTime(normalized.responseTime || '');
     setAccessories(normalized.accessories || '');
     setProduct(normalized.product || '');
-    setDistrict(normalized.district || 'Dhaka');
+    setDistrict(normalized.district || '');
     setAddress(normalized.address || '');
     setContactPerson(normalized.contactPerson || '');
     setNumber(normalized.number || '');
-    setDeliveryOption(normalized.deliveryOption || 'Hand Delivery');
-    setServiceType(normalized.serviceType || 'On-Site');
+    setDeliveryOption(normalized.deliveryOption || '');
+    setServiceType(normalized.serviceType || '');
     setKam(normalized.kam || '');
-    setSegment(normalized.segment || 'Enterprise');
-    setInvoiceHandover(normalized.invoiceHandover || 'Pending');
-    setCollectionAmount(String(normalized.collectionAmount || '0'));
-    setPaymentMethod(normalized.paymentMethod || 'Bank Transfer');
-    setVendorBillAmount(String(normalized.vendorBillAmount || '0'));
-    setInstallationStatus(normalized.installationStatus || 'Pending');
-    setHandedOverTo(normalized.handedOverTo || 'Ops Team');
-    setAssignPerson(normalized.assignPerson || 'Support Engineer Team');
+    setSegment(normalized.segment || '');
+    setInvoiceHandover(normalized.invoiceHandover || '');
+    setCollectionAmount(normalized.collectionAmount ? String(normalized.collectionAmount) : '');
+    setPaymentMethod(normalized.paymentMethod || '');
+    setVendorBillAmount(normalized.vendorBillAmount ? String(normalized.vendorBillAmount) : '');
+    setInstallationStatus(normalized.installationStatus || '');
+    setHandedOverTo(normalized.handedOverTo || '');
+    setAssignPerson(normalized.assignPerson || '');
     setHandoverCollected(normalized.handoverCollected === 'Yes' ? 'Yes' : 'No');
     setInstallationDate(normalized.installationDate || '');
-    setUnitQty(Number(normalized.unitQty) || 1);
+    setUnitQty(normalized.unitQty !== undefined && normalized.unitQty !== null ? String(normalized.unitQty) : '');
     setComments(normalized.comments || '');
     setRemarks(normalized.remarks || '');
 
@@ -433,7 +428,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. S1601"
                   value={odooId}
                   onChange={(e) => setOdooId(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -475,7 +469,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Client Name"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -492,6 +485,7 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                   onChange={(e) => setPremesisName(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
+                  <option value="">Select Premesis</option>
                   {PREMESIS_OPTIONS.map((prem) => (
                     <option key={prem} value={prem}>
                       {prem}
@@ -558,7 +552,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Old Device Serial/ID"
                   disabled={deviceReplace === 'No'}
                   value={oldDevice}
                   onChange={(e) => setOldDevice(e.target.value)}
@@ -575,7 +568,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="New Device Serial/ID"
                   disabled={deviceReplace === 'No'}
                   value={newDevice}
                   onChange={(e) => setNewDevice(e.target.value)}
@@ -644,7 +636,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Power Cord, Adapter, Mount Kit"
                   value={accessories}
                   onChange={(e) => setAccessories(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -658,7 +649,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Router X1, Switch 24P"
                   value={product}
                   onChange={(e) => setProduct(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -680,7 +670,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="District Name"
                   value={district}
                   onChange={(e) => setDistrict(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -694,7 +683,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Full Contact Name"
                   value={contactPerson}
                   onChange={(e) => setContactPerson(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -708,7 +696,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. 01711000000"
                   value={number}
                   onChange={(e) => setNumber(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -723,7 +710,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
               </label>
               <input
                 type="text"
-                placeholder="Full Site Address Location (e.g. Gulshan 1 Branch, Level 4, Plot 12)"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -744,7 +730,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Courier, Hand Delivery"
                   value={deliveryOption}
                   onChange={(e) => setDeliveryOption(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -758,7 +743,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. On-Site, Return, Replacement"
                   value={serviceType}
                   onChange={(e) => setServiceType(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -772,7 +756,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Assigned KAM Name"
                   value={kam}
                   onChange={(e) => setKam(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -786,7 +769,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Enterprise, SME, Corporate"
                   value={segment}
                   onChange={(e) => setSegment(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -800,7 +782,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Pending, Done, Completed"
                   value={invoiceHandover}
                   onChange={(e) => setInvoiceHandover(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -823,7 +804,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 <input
                   type="number"
                   step="0.01"
-                  placeholder="0.00"
                   value={collectionAmount}
                   onChange={(e) => setCollectionAmount(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -837,7 +817,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Cash, Bank Transfer, Cheque"
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -852,7 +831,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 <input
                   type="number"
                   step="0.01"
-                  placeholder="0.00"
                   value={vendorBillAmount}
                   onChange={(e) => setVendorBillAmount(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -874,7 +852,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Pending / In Progress / Completed"
                   value={installationStatus}
                   onChange={(e) => setInstallationStatus(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -888,7 +865,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Person / Department"
                   value={handedOverTo}
                   onChange={(e) => setHandedOverTo(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -902,7 +878,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Assigned Person Name"
                   value={assignPerson}
                   onChange={(e) => setAssignPerson(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -945,9 +920,8 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 <input
                   type="number"
                   min="1"
-                  placeholder="1"
                   value={unitQty}
-                  onChange={(e) => setUnitQty(Number(e.target.value) || 1)}
+                  onChange={(e) => setUnitQty(e.target.value)}
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
@@ -966,7 +940,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Enter detailed issue notes..."
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
                   className="w-full p-3 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-y"
@@ -979,7 +952,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Enter resolution remarks..."
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   className="w-full p-3 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-y"

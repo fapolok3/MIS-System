@@ -81,7 +81,6 @@ export const AddPOModal: React.FC<AddPOModalProps> = ({
               type="text"
               value={poNumber}
               onChange={(e) => setPoNumber(e.target.value)}
-              placeholder="e.g. PO-2026-9901"
               required
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono"
             />

@@ -107,7 +107,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               type="text"
               value={ticketIdInput}
               onChange={(e) => setTicketIdInput(e.target.value)}
-              placeholder="e.g. INV-BBL-20260210001"
               required
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono"
             />
@@ -118,7 +117,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="e.g. Network Disconnection Issue"
               required
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
@@ -129,7 +127,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               type="email"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              placeholder="e.g. support@gouripur.bracbank.com"
               required
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
@@ -204,7 +201,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Gouripur Branch"
               required
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
@@ -215,7 +211,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               type="text"
               value={deviceId}
               onChange={(e) => setDeviceId(e.target.value)}
-              placeholder="e.g. 300101"
               required
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono"
             />
@@ -228,7 +223,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               type="text"
               value={locType}
               onChange={(e) => setLocType(e.target.value)}
-              placeholder="e.g. Main Branch, Sub Branch, SME, Head Office"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>
@@ -252,7 +246,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               type="text"
               value={receivedBy}
               onChange={(e) => setReceivedBy(e.target.value)}
-              placeholder="e.g. System Logged / Name"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>
@@ -290,7 +283,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               type="text"
               value={tech}
               onChange={(e) => setTech(e.target.value)}
-              placeholder="e.g. Rahim Ahmed / Engineer Name & Phone"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>
@@ -320,7 +312,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               type="text"
               value={slaStatus}
               onChange={(e) => setSlaStatus(e.target.value)}
-              placeholder="e.g. WITHIN SLA or SLA BREACH"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>
@@ -332,7 +323,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               rows={2}
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
-              placeholder="e.g. রবি সিমের নেটওয়ার্ক ড্রপ করছে। গ্রামীন সিম কার্ড রিপ্লেস করতে হবে।"
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             ></textarea>
           </div>
@@ -344,7 +334,6 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
               rows={2}
               value={emailDetails}
               onChange={(e) => setEmailDetails(e.target.value)}
-              placeholder="e.g. On-site visit performed by technician."
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             ></textarea>
           </div>

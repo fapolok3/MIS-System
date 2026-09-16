@@ -42,7 +42,6 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Regional Office (ROC)"
               required
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
