@@ -4,7 +4,6 @@ import {
   Clock,
   CheckCircle2,
   RotateCcw,
-  Sparkles,
   ArrowRight,
   Check,
   Search,
@@ -127,27 +126,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
     if (val === 'No') {
       setOldDevice('');
       setNewDevice('');
-    }
-  };
-
-  // Quick Autocomplete from registered Device
-  const handleSelectRegisteredDevice = (deviceId: string) => {
-    if (!deviceId) return;
-    const found = devices.find((d) => d.id === deviceId);
-    if (found) {
-      if (deviceReplace === 'Yes') {
-        setOldDevice(found.id);
-      }
-      if (found.location) {
-        setPremesisName(found.location);
-      }
-      if (found.district) {
-        setDistrict(found.district);
-      }
-      if (found.category) {
-        setSegment(found.category);
-      }
-      showToast(`Device ${found.id} details loaded into form!`);
     }
   };
 
@@ -366,28 +344,6 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
       {/* Main 34 Fields Form Card */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
-          {/* Registered Device Quick Fill Helper (Optional convenience) */}
-          {devices.length > 0 && (
-            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>Quickly prefill from a registered Device MIS inventory record:</span>
-              </div>
-              <select
-                onChange={(e) => handleSelectRegisteredDevice(e.target.value)}
-                defaultValue=""
-                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-semibold focus:outline-none"
-              >
-                <option value="">-- Choose Registered Device --</option>
-                {devices.map((d) => (
-                  <option key={d.sl} value={d.id}>
-                    {d.id} ({d.location || 'Branch'} - {d.category})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
           {/* Group 1: 1. Ticket & Identification Details */}
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-4 py-2.5 rounded-lg border-l-4 border-blue-600 mb-4">
