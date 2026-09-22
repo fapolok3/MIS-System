@@ -669,7 +669,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search across all 34 fields..."
+            placeholder="Search records..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -879,7 +879,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                           <button
                             onClick={() => setViewingIssue(item)}
                             className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
-                            title="View All 34 Fields"
+                            title="View All Details"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
@@ -936,7 +936,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                   SL #{viewingIssue.sl} • Odoo ID: {viewingIssue.odooId || '-'}
                 </span>
                 <h2 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                  Complete Record Details (34 Fields)
+                  Complete Record Details
                 </h2>
               </div>
               <button

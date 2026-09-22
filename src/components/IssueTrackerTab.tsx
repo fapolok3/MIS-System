@@ -302,16 +302,13 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
       {/* Header Banner */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
-              34 Fields Issue Tracker
-            </span>
-            {editingId && (
+          {editingId && (
+            <div className="flex items-center gap-2 mb-1">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
                 Editing Mode
               </span>
-            )}
-          </div>
+            </div>
+          )}
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
             {editingId ? `Edit Issue & Job Entry (SL #${sl})` : 'Add New Issue & Job Entry'}
           </h1>
