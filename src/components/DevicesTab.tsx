@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Cpu, Plus, FileSpreadsheet, Upload, Edit, Trash2, Search, X } from 'lucide-react';
+import { Cpu, Plus, FileSpreadsheet, Upload, Edit2, Trash2, Search, X, Eye } from 'lucide-react';
 import { Device } from '../types';
 import { Pagination } from './Pagination';
+import { ConfirmModal } from './Modals/ConfirmModal';
 import { downloadStyledExcel } from '../utils/excelExport';
 
 interface DevicesTabProps {
@@ -32,6 +33,20 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
   const [localSearch, setLocalSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'LIVE' | 'OFFLINE' | 'MAINTENANCE'>('ALL');
   const [selectedSls, setSelectedSls] = useState<number[]>([]);
+
+  // View Details Modal & Confirm Modal States
+  const [viewingDevice, setViewingDevice] = useState<Device | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Reset page and selections when category, status filter or search query changes
   useEffect(() => {
@@ -98,14 +113,33 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
     );
   };
 
+  const handleDeleteRow = (device: Device) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Device Record',
+      message: `Are you sure you want to delete device "${device.id}" (${device.location})? This action cannot be undone.`,
+      onConfirm: () => {
+        onDeleteDevice(device.sl);
+        setSelectedSls((prev) => prev.filter((id) => id !== device.sl));
+      },
+    });
+  };
+
   const handleBulkDelete = () => {
     if (validSelectedSls.length === 0) return;
-    if (onBulkDeleteDevices) {
-      onBulkDeleteDevices(validSelectedSls);
-    } else {
-      validSelectedSls.forEach((sl) => onDeleteDevice(sl));
-    }
-    setSelectedSls([]);
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Bulk Delete Devices',
+      message: `Are you sure you want to permanently delete the ${validSelectedSls.length} selected devices?`,
+      onConfirm: () => {
+        if (onBulkDeleteDevices) {
+          onBulkDeleteDevices(validSelectedSls);
+        } else {
+          validSelectedSls.forEach((sl) => onDeleteDevice(sl));
+        }
+        setSelectedSls([]);
+      },
+    });
   };
 
   const isHeadOffice = (activeCategory || '').trim().toLowerCase() === 'all head office units';
@@ -287,7 +321,9 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
                   {isHeadOffice ? 'Division' : 'District'}
                 </th>
                 <th className="p-2.5 border-r border-slate-200 dark:border-slate-800">Install Date</th>
-                <th className="p-2.5 text-center">Action</th>
+                <th className="p-2.5 text-center sticky right-0 z-10 bg-slate-50 dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-300 font-mono">
@@ -389,19 +425,28 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
                       <td className="p-2.5 border-r border-slate-200 dark:border-slate-800">
                         {item.installDate || '-'}
                       </td>
-                      <td className="p-2.5 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                      <td className="px-3 py-2.5 text-center sticky right-0 z-10 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 whitespace-nowrap shadow-xs">
+                        <div className="flex items-center justify-center gap-1">
                           <button
-                            onClick={() => onOpenEditDeviceModal(item)}
-                            className="bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:hover:bg-indigo-800 text-indigo-700 dark:text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1 border border-indigo-200 dark:border-transparent transition"
+                            onClick={() => setViewingDevice(item)}
+                            className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+                            title="View All Details"
                           >
-                            <Edit className="w-3 h-3" /> EDIT
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => onDeleteDevice(item.sl)}
-                            className="bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/50 dark:hover:bg-rose-800 text-rose-700 dark:text-rose-200 text-[10px] font-bold px-2 py-0.5 rounded font-sans cursor-pointer flex items-center gap-1 border border-rose-200 dark:border-transparent transition"
+                            onClick={() => onOpenEditDeviceModal(item)}
+                            className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+                            title="Edit Device"
                           >
-                            <Trash2 className="w-3 h-3" /> DELETE
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRow(item)}
+                            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+                            title="Delete Device"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -426,6 +471,96 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* Complete Device Details Modal (Styled like Issue & Job Entry Report) */}
+      {viewingDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-5">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                  SL #{viewingDevice.sl} • Category: {viewingDevice.category}
+                </span>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
+                  Complete Device Details ({viewingDevice.id})
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingDevice(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {[
+                { label: 'Serial No (SL)', val: viewingDevice.sl },
+                { label: 'Category', val: viewingDevice.category },
+                { label: 'Status', val: viewingDevice.status },
+                { label: 'SOL Number', val: viewingDevice.sol },
+                { label: 'Device Location', val: viewingDevice.location },
+                { label: 'Device ID', val: viewingDevice.id },
+                { label: 'SIM Number', val: viewingDevice.sim },
+                { label: 'Operator', val: viewingDevice.operator },
+                { label: 'Floor', val: viewingDevice.floor },
+                { label: 'Placement', val: viewingDevice.placement },
+                { label: 'Access Type', val: viewingDevice.accessType },
+                { label: isHeadOffice ? 'Department' : 'BM', val: viewingDevice.bm },
+                { label: 'Price', val: viewingDevice.price ? `৳${viewingDevice.price}` : '-' },
+                { label: isHeadOffice ? 'Division' : 'District', val: viewingDevice.district },
+                { label: 'Install Date', val: viewingDevice.installDate },
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col justify-between"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {idx + 1}. {item.label}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 mt-1 break-words">
+                    {item.val !== undefined && item.val !== null && item.val !== '' ? String(item.val) : '-'}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const toEdit = viewingDevice;
+                  setViewingDevice(null);
+                  onOpenEditDeviceModal(toEdit);
+                }}
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 cursor-pointer transition"
+              >
+                Edit This Device
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewingDevice(null)}
+                className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer shadow-xs transition"
+              >
+                Close Window
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Device Deletion (Single & Bulk) */}
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={() => {
+          confirmConfig.onConfirm();
+          setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+        }}
+        onCancel={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

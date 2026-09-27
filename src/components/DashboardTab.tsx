@@ -1,9 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
-  ListChecks,
   CheckCircle2,
   Clock,
-  TrendingUp,
   AlertTriangle,
   Calendar,
   ChevronLeft,
@@ -312,49 +310,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 4 Main KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="kpi-card-custom">
-          <div className="kpi-icon-custom bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
-            <ListChecks className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Issues</p>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{totalIssues}</h3>
-          </div>
-        </div>
-
-        <div className="kpi-card-custom">
-          <div className="kpi-icon-custom bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Issues Solved</p>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{issuesSolved}</h3>
-          </div>
-        </div>
-
-        <div className="kpi-card-custom">
-          <div className="kpi-icon-custom bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400">
-            <Clock className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Pending Issues</p>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{pendingIssues}</h3>
-          </div>
-        </div>
-
-        <div className="kpi-card-custom">
-          <div className="kpi-icon-custom bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Service Ratio</p>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{serviceRatio}</h3>
-          </div>
-        </div>
-      </div>
-
       {/* 5 Secondary Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <div
