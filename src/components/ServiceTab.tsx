@@ -556,7 +556,7 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
                   </td>
                 </tr>
               ) : (
-                paginatedTickets.map((t) => {
+                paginatedTickets.map((t, tIdx) => {
                   const isSelected = validSelectedIds.includes(t.id);
                   const priorityUpper = (t.priority || '').toUpperCase();
                   const priorityBadge =
@@ -588,7 +588,7 @@ export const ServiceTab: React.FC<ServiceTabProps> = ({
 
                   return (
                     <tr
-                      key={t.id}
+                      key={`srv-row-${t.id}-${tIdx}`}
                       className={
                         isSelected
                           ? 'bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'

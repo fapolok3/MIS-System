@@ -760,12 +760,12 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                   </td>
                 </tr>
               ) : (
-                displayedIssues.map((item) => {
+                displayedIssues.map((item, index) => {
                   const isSelected = selectedIds.includes(item.id);
 
                   return (
                     <tr
-                      key={item.id}
+                      key={`issue-row-${item.id || 'issue'}-${item.sl || ''}-${(currentPage - 1) * itemsPerPage + index}`}
                       className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
                         isSelected ? 'bg-indigo-50/60 dark:bg-indigo-950/40' : ''
                       }`}

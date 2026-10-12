@@ -9,6 +9,7 @@ import {
   SystemOptions,
   AppSettings,
   IssueTrackerItem,
+  DeviceSupportTicket,
   LiveActiveUser,
 } from './types';
 import {
@@ -17,6 +18,7 @@ import {
   initialPOs,
   initialSIMs,
   initialIssues,
+  initialDeviceSupportTickets,
   initialCategoryGroups,
   initialSystemOptions,
 } from './data/initialData';
@@ -34,6 +36,7 @@ import {
   bulkDeleteSupabaseTickets,
   fetchSupabasePOs,
   insertSupabasePO,
+  bulkInsertSupabasePOs,
   deleteSupabasePO,
   bulkDeleteSupabasePOs,
   fetchSupabaseSIMs,
@@ -48,11 +51,18 @@ import {
   saveSupabaseSystemOptions,
   fetchSupabaseAppSettings,
   saveSupabaseAppSettings,
+  saveSupabaseHiddenModules,
+  fetchSupabaseHiddenModules,
   fetchSupabaseIssues,
   insertSupabaseIssue,
   deleteSupabaseIssue,
   bulkInsertSupabaseIssues,
   bulkDeleteSupabaseIssues,
+  fetchSupabaseDeviceSupportTickets,
+  insertSupabaseDeviceSupportTicket,
+  deleteSupabaseDeviceSupportTicket,
+  bulkDeleteSupabaseDeviceSupportTickets,
+  bulkInsertSupabaseDeviceSupportTickets,
   subscribeToSupabaseLiveSync,
   defaultAppSettings,
 } from './lib/supabase';
@@ -60,6 +70,8 @@ import {
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { DashboardTab } from './components/DashboardTab';
+import { DeviceIssueTrackerTab } from './components/DeviceIssueTrackerTab';
+import { DeviceIssueReportTab } from './components/DeviceIssueReportTab';
 import { IssueTrackerTab } from './components/IssueTrackerTab';
 import { IssueReportTab } from './components/IssueReportTab';
 import { DevicesTab } from './components/DevicesTab';
@@ -90,11 +102,14 @@ import { AddSIMModal } from './components/Modals/AddSIMModal';
 import { EditSIMModal } from './components/Modals/EditSIMModal';
 import { ExcelUploadModal } from './components/Modals/ExcelUploadModal';
 import { TicketExcelUploadModal } from './components/Modals/TicketExcelUploadModal';
+import { POExcelUploadModal } from './components/Modals/POExcelUploadModal';
 import { ConfirmModal } from './components/Modals/ConfirmModal';
 import { Toast, ToastData } from './components/Toast';
 
 const pathToTab = (path: string): TabType => {
   const cleanPath = path.toLowerCase().replace(/\/$/, '') || '/';
+  if (cleanPath === '/device-issue-tracker' || cleanPath === '/device-issues') return 'device_issue_tracker';
+  if (cleanPath === '/device-issue-report' || cleanPath === '/device-reports') return 'device_issue_report';
   if (cleanPath === '/issue-tracker' || cleanPath === '/tracker' || cleanPath === '/issues') return 'issue_tracker';
   if (cleanPath === '/issue-report' || cleanPath === '/issue-analytics' || cleanPath === '/reports') return 'issue_report';
   if (cleanPath === '/devices') return 'devices';
@@ -110,6 +125,8 @@ const pathToTab = (path: string): TabType => {
 
 const tabToPath = (tab: TabType): string => {
   switch (tab) {
+    case 'device_issue_tracker': return '/device-issue-tracker';
+    case 'device_issue_report': return '/device-issue-report';
     case 'issue_tracker': return '/issue-tracker';
     case 'issue_report': return '/issue-report';
     case 'devices': return '/devices';
@@ -363,13 +380,23 @@ export default function App() {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
             const demoIds = new Set(['ISSUE-1001', 'ISSUE-1002', 'ISSUE-1003', 'ISSUE-1004']);
+            const seen = new Set<string>();
             return parsed.filter(
-              (item: IssueTrackerItem) =>
-                item &&
-                item.id &&
-                !demoIds.has(item.id) &&
-                !item.id.startsWith('issue-seed-') &&
-                !item.id.startsWith('demo-')
+              (item: IssueTrackerItem) => {
+                if (
+                  !item ||
+                  !item.id ||
+                  demoIds.has(item.id) ||
+                  item.id.startsWith('issue-seed-') ||
+                  item.id.startsWith('demo-')
+                ) {
+                  return false;
+                }
+                const key = String(item.id).trim();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+              }
             );
           }
         }
@@ -378,6 +405,30 @@ export default function App() {
       }
     }
     return initialIssues;
+  });
+
+  const [deviceSupportTickets, setDeviceSupportTickets] = useState<DeviceSupportTicket[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('deviceSupportTicketsData');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const seen = new Set<string>();
+            return parsed.filter((t: DeviceSupportTicket) => {
+              if (!t || !t.id) return false;
+              const key = String(t.id).trim();
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('localStorage parse error', e);
+      }
+    }
+    return initialDeviceSupportTickets;
   });
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>(() => {
     if (typeof window !== 'undefined') {
@@ -434,6 +485,66 @@ export default function App() {
     return defaultAppSettings;
   });
 
+  // Module Controller: Hidden sidebar modules state
+  const [hiddenModules, setHiddenModules] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('bbl_hidden_modules');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('localStorage parse bbl_hidden_modules error', e);
+    }
+    return [];
+  });
+
+  const handleSaveHiddenModules = async (modulesToHide: string[]) => {
+    // 1. Immediately apply to local state & local storage (zero lag for current user)
+    setHiddenModules(modulesToHide);
+    try {
+      localStorage.setItem('bbl_hidden_modules', JSON.stringify(modulesToHide));
+    } catch (e) {}
+
+    // 2. Persist to Supabase so other users/devices will automatically receive it on refresh or login
+    try {
+      await saveSupabaseHiddenModules(modulesToHide);
+      // Also update in AppSettings row if possible
+      saveSupabaseAppSettings({
+        ...appSettings,
+        hiddenModules: modulesToHide,
+      }).catch(() => {});
+    } catch (e) {
+      console.warn('Failed to save hidden modules to Supabase:', e);
+    }
+
+    showToast('Module visibility settings saved successfully! Changes are synced across all devices.');
+  };
+
+  const handleToggleModule = (moduleId: string) => {
+    setHiddenModules((prev) => {
+      const next = prev.includes(moduleId)
+        ? prev.filter((id) => id !== moduleId)
+        : [...prev, moduleId];
+      try {
+        localStorage.setItem('bbl_hidden_modules', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const handleResetModules = async () => {
+    setHiddenModules([]);
+    try {
+      localStorage.removeItem('bbl_hidden_modules');
+    } catch (e) {}
+    try {
+      await saveSupabaseHiddenModules([]);
+      saveSupabaseAppSettings({
+        ...appSettings,
+        hiddenModules: [],
+      }).catch(() => {});
+    } catch (e) {}
+    showToast('All modules are now visible in the sidebar.');
+  };
+
   // Modals Visibility State
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isAddDeviceOpen, setIsAddDeviceOpen] = useState(false);
@@ -446,6 +557,7 @@ export default function App() {
   const [editingSIM, setEditingSIM] = useState<SIMItem | null>(null);
   const [isExcelUploadOpen, setIsExcelUploadOpen] = useState(false);
   const [isTicketExcelUploadOpen, setIsTicketExcelUploadOpen] = useState(false);
+  const [isPOExcelUploadOpen, setIsPOExcelUploadOpen] = useState(false);
 
   // Global Toast & Confirm Notification State
   const [toast, setToast] = useState<ToastData | null>(null);
@@ -514,6 +626,13 @@ export default function App() {
     };
   }, [activeTab]);
 
+  // If currently active tab is hidden via Module Controller, fallback to dashboard
+  useEffect(() => {
+    if (hiddenModules.includes(activeTab) && activeTab !== 'settings') {
+      setActiveTab('dashboard');
+    }
+  }, [hiddenModules, activeTab]);
+
   const handleCloseToast = React.useCallback(() => {
     setToast(null);
   }, []);
@@ -550,6 +669,7 @@ export default function App() {
         dbCategoryGroups,
         dbSystemOptions,
         dbAppSettings,
+        dbDeviceSupportTickets,
       ] = await Promise.all([
         fetchSupabaseDevices(),
         fetchSupabaseTickets(),
@@ -559,6 +679,7 @@ export default function App() {
         fetchSupabaseCategoryGroups(),
         fetchSupabaseSystemOptions(),
         fetchSupabaseAppSettings(),
+        fetchSupabaseDeviceSupportTickets(),
       ]);
 
       // 1. Devices (Supabase is authoritative, never resurrect deleted items)
@@ -616,13 +737,23 @@ export default function App() {
 
       // 5. Issues (Issue Tracker)
       if (dbIssues !== null) {
+        const seen = new Set<string>();
         const cleanDbIssues = dbIssues.filter(
-          (item: IssueTrackerItem) =>
-            item &&
-            item.id &&
-            !item.id.startsWith('issue-seed-') &&
-            !item.id.startsWith('demo-') &&
-            !['ISSUE-1001', 'ISSUE-1002', 'ISSUE-1003', 'ISSUE-1004'].includes(item.id)
+          (item: IssueTrackerItem) => {
+            if (
+              !item ||
+              !item.id ||
+              item.id.startsWith('issue-seed-') ||
+              item.id.startsWith('demo-') ||
+              ['ISSUE-1001', 'ISSUE-1002', 'ISSUE-1003', 'ISSUE-1004'].includes(item.id)
+            ) {
+              return false;
+            }
+            const key = String(item.id).trim();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          }
         );
         setIssues(cleanDbIssues);
         try {
@@ -652,13 +783,49 @@ export default function App() {
         }
       }
 
-      // 8. App Settings
+      // 8. App Settings & Global Module Visibility
       if (dbAppSettings !== null) {
         setAppSettings(dbAppSettings);
         try {
           localStorage.setItem('appSettings', JSON.stringify(dbAppSettings));
         } catch (e) {
           console.warn('localStorage save appSettings error', e);
+        }
+
+        if (Array.isArray(dbAppSettings.hiddenModules)) {
+          setHiddenModules(dbAppSettings.hiddenModules);
+          try {
+            localStorage.setItem('bbl_hidden_modules', JSON.stringify(dbAppSettings.hiddenModules));
+          } catch (e) {}
+        }
+      }
+
+      // Also check explicit fetchSupabaseHiddenModules fallback
+      try {
+        const cloudHidden = await fetchSupabaseHiddenModules();
+        if (cloudHidden !== null && Array.isArray(cloudHidden)) {
+          setHiddenModules(cloudHidden);
+          try {
+            localStorage.setItem('bbl_hidden_modules', JSON.stringify(cloudHidden));
+          } catch (e) {}
+        }
+      } catch (e) {}
+
+      // 9. Device Support Tickets (Device Issue Tracker & Report)
+      if (dbDeviceSupportTickets !== null) {
+        const seen = new Set<string>();
+        const cleanDbTickets = dbDeviceSupportTickets.filter((t: DeviceSupportTicket) => {
+          if (!t || !t.id) return false;
+          const key = String(t.id).trim();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setDeviceSupportTickets(cleanDbTickets);
+        try {
+          localStorage.setItem('deviceSupportTicketsData', JSON.stringify(cleanDbTickets));
+        } catch (e) {
+          console.warn('localStorage save device support tickets error', e);
         }
       }
     } catch (err) {
@@ -1151,6 +1318,22 @@ export default function App() {
   };
 
   // PO & SIM Handlers
+  const handleImportPOs = async (newPOs: PurchaseOrder[]) => {
+    setPos((prev) => {
+      const updated = [...newPOs, ...prev];
+      try {
+        localStorage.setItem('purchaseOrdersData', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    const success = await bulkInsertSupabasePOs(newPOs);
+    if (success) {
+      showToast(`${newPOs.length} Purchase Order(s) imported & saved to Supabase!`);
+    } else {
+      showToast(`${newPOs.length} Purchase Order(s) imported locally!`);
+    }
+  };
+
   const handleSaveNewPO = (newPO: PurchaseOrder) => {
     setPos((prev) => [newPO, ...prev]);
     insertSupabasePO(newPO);
@@ -1415,6 +1598,49 @@ export default function App() {
     await bulkDeleteSupabaseIssues(ids);
   };
 
+  const handleSaveDeviceSupportTicket = async (ticket: DeviceSupportTicket) => {
+    setDeviceSupportTickets((prev) => {
+      const exists = prev.some((t) => t.id === ticket.id);
+      const updated = exists ? prev.map((t) => (t.id === ticket.id ? ticket : t)) : [ticket, ...prev];
+      try {
+        localStorage.setItem('deviceSupportTicketsData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save error', e);
+      }
+      return updated;
+    });
+    showToast('Device Support Ticket saved successfully!');
+    await insertSupabaseDeviceSupportTicket(ticket);
+  };
+
+  const handleDeleteDeviceSupportTicket = async (id: string) => {
+    setDeviceSupportTickets((prev) => {
+      const updated = prev.filter((t) => t.id !== id);
+      try {
+        localStorage.setItem('deviceSupportTicketsData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save error', e);
+      }
+      return updated;
+    });
+    showToast('Device Support Ticket deleted.');
+    await deleteSupabaseDeviceSupportTicket(id);
+  };
+
+  const handleBulkDeleteDeviceSupportTickets = async (ids: string[]) => {
+    setDeviceSupportTickets((prev) => {
+      const updated = prev.filter((t) => !ids.includes(t.id));
+      try {
+        localStorage.setItem('deviceSupportTicketsData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save error', e);
+      }
+      return updated;
+    });
+    showToast(`${ids.length} Device Support Ticket(s) deleted.`);
+    await bulkDeleteSupabaseDeviceSupportTickets(ids);
+  };
+
   // Backup Restore Handler
   const handleRestoreData = (restored: {
     devices?: Device[];
@@ -1422,6 +1648,7 @@ export default function App() {
     pos?: PurchaseOrder[];
     sims?: SIMItem[];
     issues?: IssueTrackerItem[];
+    deviceSupportTickets?: DeviceSupportTicket[];
     categoryGroups?: CategoryGroup[];
     systemOptions?: SystemOptions;
     appSettings?: AppSettings;
@@ -1473,6 +1700,15 @@ export default function App() {
           bulkInsertSupabaseIssues(restored.issues);
           try {
             localStorage.setItem('issueTrackerData', JSON.stringify(restored.issues));
+          } catch (e) {
+            console.warn('localStorage save error', e);
+          }
+        }
+        if (restored.deviceSupportTickets && Array.isArray(restored.deviceSupportTickets)) {
+          setDeviceSupportTickets(restored.deviceSupportTickets);
+          bulkInsertSupabaseDeviceSupportTickets(restored.deviceSupportTickets);
+          try {
+            localStorage.setItem('deviceSupportTicketsData', JSON.stringify(restored.deviceSupportTickets));
           } catch (e) {
             console.warn('localStorage save error', e);
           }
@@ -1581,6 +1817,7 @@ export default function App() {
           onOpenExcelUploadModal={() => setIsExcelUploadOpen(true)}
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+          hiddenModules={hiddenModules}
         />
 
         {/* Dynamic Tab Content Area */}
@@ -1591,7 +1828,29 @@ export default function App() {
               devices={devices}
               pos={pos}
               sims={sims}
+              issues={issues}
+              deviceSupportTickets={deviceSupportTickets}
               onSwitchTab={setActiveTab}
+            />
+          )}
+
+          {activeTab === 'device_issue_tracker' && (
+            <DeviceIssueTrackerTab
+              tickets={deviceSupportTickets}
+              onSaveTicket={handleSaveDeviceSupportTicket}
+              onDeleteTicket={handleDeleteDeviceSupportTicket}
+              devices={devices}
+              onNavigateToReport={() => setActiveTab('device_issue_report')}
+            />
+          )}
+
+          {activeTab === 'device_issue_report' && (
+            <DeviceIssueReportTab
+              tickets={deviceSupportTickets}
+              onSaveTicket={handleSaveDeviceSupportTicket}
+              onDeleteTicket={handleDeleteDeviceSupportTicket}
+              onBulkDeleteTickets={handleBulkDeleteDeviceSupportTickets}
+              onNavigateToTracker={() => setActiveTab('device_issue_tracker')}
             />
           )}
 
@@ -1642,6 +1901,7 @@ export default function App() {
               onOpenEditPOModal={(po) => setEditingPO(po)}
               onDeletePO={handleDeletePO}
               onBulkDeletePOs={handleBulkDeletePOs}
+              onOpenExcelUploadModal={() => setIsPOExcelUploadOpen(true)}
             />
           )}
 
@@ -1692,6 +1952,7 @@ export default function App() {
                 pos,
                 sims,
                 issues,
+                deviceSupportTickets,
                 categoryGroups,
                 systemOptions,
                 appSettings,
@@ -1719,6 +1980,10 @@ export default function App() {
               setSystemOptions={setSystemOptions}
               appSettings={appSettings}
               setAppSettings={setAppSettings}
+              hiddenModules={hiddenModules}
+              onToggleModule={handleToggleModule}
+              onSaveHiddenModules={handleSaveHiddenModules}
+              onResetModules={handleResetModules}
             />
           )}
         </main>
@@ -1813,6 +2078,15 @@ export default function App() {
         onImportTickets={handleImportTickets}
         systemOptions={systemOptions}
         ticketCount={tickets.length}
+      />
+
+      <POExcelUploadModal
+        isOpen={isPOExcelUploadOpen}
+        onClose={() => setIsPOExcelUploadOpen(false)}
+        onImportPOs={handleImportPOs}
+        systemOptions={systemOptions}
+        categoryGroups={categoryGroups}
+        poCount={pos.length}
       />
 
       {/* Global Toast Notification */}

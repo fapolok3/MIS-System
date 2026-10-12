@@ -8,6 +8,7 @@ import {
   SystemOptions,
   AppSettings,
   IssueTrackerItem,
+  DeviceSupportTicket,
 } from '../types';
 import { initialSystemOptions } from '../data/initialData';
 
@@ -68,6 +69,7 @@ export async function fetchSupabaseDevices(): Promise<Device[] | null> {
       price: d.price || '',
       district: d.district || '',
       installDate: d.install_date || '',
+      remarks: d.bm || d.district || '',
     }));
   } catch (err) {
     console.warn('Supabase fetchDevices catch error:', err);
@@ -77,6 +79,7 @@ export async function fetchSupabaseDevices(): Promise<Device[] | null> {
 
 export async function insertSupabaseDevice(device: Device): Promise<boolean> {
   try {
+    const remarksVal = device.remarks !== undefined ? device.remarks : device.bm;
     const row = {
       sl: device.sl,
       category: device.category,
@@ -86,12 +89,12 @@ export async function insertSupabaseDevice(device: Device): Promise<boolean> {
       id: device.id,
       sim: device.sim,
       operator: device.operator,
-      floor: device.floor,
-      placement: device.placement,
+      floor: device.floor || '',
+      placement: device.placement || '',
       access_type: device.accessType,
-      bm: device.bm,
+      bm: remarksVal || '',
       price: device.price,
-      district: device.district,
+      district: device.district || remarksVal || '',
       install_date: device.installDate,
     };
     const { error } = await supabase.from('devices').upsert([row]);
@@ -108,23 +111,26 @@ export async function insertSupabaseDevice(device: Device): Promise<boolean> {
 
 export async function bulkInsertSupabaseDevices(devices: Device[]): Promise<boolean> {
   try {
-    const rows = devices.map((device) => ({
-      sl: device.sl,
-      category: device.category,
-      status: device.status,
-      sol: device.sol,
-      location: device.location,
-      id: device.id,
-      sim: device.sim,
-      operator: device.operator,
-      floor: device.floor,
-      placement: device.placement,
-      access_type: device.accessType,
-      bm: device.bm,
-      price: device.price,
-      district: device.district,
-      install_date: device.installDate,
-    }));
+    const rows = devices.map((device) => {
+      const remarksVal = device.remarks !== undefined ? device.remarks : device.bm;
+      return {
+        sl: device.sl,
+        category: device.category,
+        status: device.status,
+        sol: device.sol,
+        location: device.location,
+        id: device.id,
+        sim: device.sim,
+        operator: device.operator,
+        floor: device.floor || '',
+        placement: device.placement || '',
+        access_type: device.accessType,
+        bm: remarksVal || '',
+        price: device.price,
+        district: device.district || remarksVal || '',
+        install_date: device.installDate,
+      };
+    });
     const { error } = await supabase.from('devices').upsert(rows);
     if (error) {
       console.warn('Supabase bulkInsertDevices error:', error.message);
@@ -481,6 +487,30 @@ export async function insertSupabasePO(po: PurchaseOrder): Promise<boolean> {
     return true;
   } catch (err) {
     console.warn('Supabase insertPO catch error:', err);
+    return false;
+  }
+}
+
+export async function bulkInsertSupabasePOs(pos: PurchaseOrder[]): Promise<boolean> {
+  try {
+    const rows = pos.map((po) => ({
+      id: po.id,
+      po_number: po.poNumber,
+      vendor: po.vendor,
+      category: po.category,
+      qty: po.qty,
+      total_price: po.totalPrice,
+      issue_date: po.issueDate,
+      status: po.status,
+    }));
+    const { error } = await supabase.from('purchase_orders').upsert(rows);
+    if (error) {
+      console.warn('Supabase bulkInsertPOs error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkInsertPOs catch error:', err);
     return false;
   }
 }
@@ -974,10 +1004,24 @@ export async function fetchSupabaseAppSettings(): Promise<AppSettings | null> {
 
     if (!data) return null;
 
+    let parsedHiddenModules: string[] | undefined = undefined;
+    if (data.hidden_modules) {
+      if (Array.isArray(data.hidden_modules)) {
+        parsedHiddenModules = data.hidden_modules;
+      } else if (typeof data.hidden_modules === 'string') {
+        try {
+          parsedHiddenModules = JSON.parse(data.hidden_modules);
+        } catch (e) {
+          parsedHiddenModules = data.hidden_modules.split(',').map((s: string) => s.trim()).filter(Boolean);
+        }
+      }
+    }
+
     return {
       appName: data.app_name || defaultAppSettings.appName,
       appLogo: data.app_logo || '',
       tagline: data.tagline || defaultAppSettings.tagline,
+      hiddenModules: parsedHiddenModules,
     };
   } catch (err) {
     console.warn('Supabase fetchAppSettings catch error:', err);
@@ -987,23 +1031,111 @@ export async function fetchSupabaseAppSettings(): Promise<AppSettings | null> {
 
 export async function saveSupabaseAppSettings(settings: AppSettings): Promise<boolean> {
   try {
-    const row = {
+    const fullRow = {
       id: 'global',
       app_name: settings.appName || defaultAppSettings.appName,
       app_logo: settings.appLogo || '',
       tagline: settings.tagline || defaultAppSettings.tagline,
+      hidden_modules: settings.hiddenModules || [],
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from('app_settings').upsert([row]);
+    const { error } = await supabase.from('app_settings').upsert([fullRow]);
     if (error) {
-      console.warn('Supabase saveAppSettings error:', error.message);
-      return false;
+      console.warn('Supabase saveAppSettings full attempt warning:', error.message);
+      // Fallback: in case column hidden_modules doesn't exist as array, try stringifying or basic upsert
+      const fallbackRow = {
+        id: 'global',
+        app_name: settings.appName || defaultAppSettings.appName,
+        app_logo: settings.appLogo || '',
+        tagline: settings.tagline || defaultAppSettings.tagline,
+        updated_at: new Date().toISOString(),
+      };
+      const { error: fallbackErr } = await supabase.from('app_settings').upsert([fallbackRow]);
+      if (fallbackErr) {
+        console.warn('Supabase saveAppSettings fallback error:', fallbackErr.message);
+        return false;
+      }
     }
     return true;
   } catch (err) {
     console.warn('Supabase saveAppSettings catch error:', err);
     return false;
+  }
+}
+
+// Dedicated helper to persist hidden modules globally in Supabase (with multi-table fallback)
+export async function saveSupabaseHiddenModules(hiddenModules: string[]): Promise<boolean> {
+  try {
+    // 1. First save to app_settings
+    const appSettingsRes = await supabase.from('app_settings').upsert([
+      {
+        id: 'global',
+        hidden_modules: hiddenModules,
+        updated_at: new Date().toISOString(),
+      },
+    ]);
+
+    // 2. Also save to system_options table under id 'module_controller' or inside 'options' column
+    // as an extra resilient backup so any user/device gets it regardless of schema migration
+    try {
+      await supabase.from('system_options').upsert([
+        {
+          id: 'module_controller',
+          options: { hiddenModules },
+          updated_at: new Date().toISOString(),
+        },
+      ], { onConflict: 'id' });
+    } catch (e) {
+      // ignore secondary table failure if table is restricted
+    }
+
+    if (appSettingsRes.error) {
+      console.warn('Supabase saveHiddenModules error:', appSettingsRes.error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase saveHiddenModules catch error:', err);
+    return false;
+  }
+}
+
+export async function fetchSupabaseHiddenModules(): Promise<string[] | null> {
+  try {
+    // Try app_settings first
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('hidden_modules')
+      .eq('id', 'global')
+      .maybeSingle();
+
+    if (!error && data && data.hidden_modules) {
+      if (Array.isArray(data.hidden_modules)) return data.hidden_modules;
+      if (typeof data.hidden_modules === 'string') {
+        try {
+          return JSON.parse(data.hidden_modules);
+        } catch (e) {
+          return data.hidden_modules.split(',').map((s: string) => s.trim()).filter(Boolean);
+        }
+      }
+    }
+
+    // Try secondary system_options backup
+    const { data: optData } = await supabase
+      .from('system_options')
+      .select('options')
+      .eq('id', 'module_controller')
+      .maybeSingle();
+
+    if (optData && optData.options && Array.isArray(optData.options.hiddenModules)) {
+      return optData.options.hiddenModules;
+    }
+
+    return null;
+  } catch (e) {
+    console.warn('fetchSupabaseHiddenModules error:', e);
+    return null;
   }
 }
 
@@ -1254,6 +1386,147 @@ export async function bulkDeleteSupabaseIssues(issueIds: string[]): Promise<bool
     return true;
   } catch (err) {
     console.warn('Supabase bulkDeleteIssues catch error:', err);
+    return false;
+  }
+}
+
+// -------------------------------------------------------------
+// DEVICE SUPPORT TICKETS (Device Issue Tracker & Report)
+// -------------------------------------------------------------
+function mapRowToDeviceSupportTicket(d: any, index: number = 0): DeviceSupportTicket {
+  return {
+    id: String(d.id || `DST-${Date.now()}-${index}`),
+    slNo: d.sl_no !== undefined ? Number(d.sl_no) : (d.slNo !== undefined ? Number(d.slNo) : index + 1),
+    deviceId: d.device_id || d.deviceId || '',
+    contactDate: d.contact_date || d.contactDate || '',
+    lastCommunication: d.last_communication || d.lastCommunication || '',
+    deviceLocation: d.device_location || d.deviceLocation || '',
+    issueType: d.issue_type || d.issueType || '',
+    responsibility: d.responsibility || 'ITL',
+    probableSolvingDate: d.probable_solving_date || d.probableSolvingDate || '',
+    ticketStatus: d.ticket_status || d.ticketStatus || 'No',
+    odooId: d.odoo_id || d.odooId || '',
+    remarks: d.remarks || '',
+    createdAt: d.created_at || d.createdAt || new Date().toISOString(),
+    updatedAt: d.updated_at || d.updatedAt || new Date().toISOString(),
+  };
+}
+
+function mapDeviceSupportTicketToRow(ticket: DeviceSupportTicket) {
+  return {
+    id: ticket.id,
+    sl_no: ticket.slNo !== undefined ? Number(ticket.slNo) : 1,
+    device_id: ticket.deviceId || '',
+    contact_date: ticket.contactDate || '',
+    last_communication: ticket.lastCommunication || '',
+    device_location: ticket.deviceLocation || '',
+    issue_type: ticket.issueType || '',
+    responsibility: ticket.responsibility || 'ITL',
+    probable_solving_date: ticket.probableSolvingDate || '',
+    ticket_status: ticket.ticketStatus || 'No',
+    odoo_id: ticket.odooId || '',
+    remarks: ticket.remarks || '',
+    created_at: ticket.createdAt || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export async function fetchSupabaseDeviceSupportTickets(): Promise<DeviceSupportTicket[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('device_support_tickets')
+      .select('*')
+      .order('sl_no', { ascending: false });
+
+    if (error) {
+      console.warn('Supabase fetchDeviceSupportTickets warning:', error.message);
+      // Fallback query without sorting in case index/schema differs
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('device_support_tickets')
+        .select('*');
+      if (fallbackError) {
+        return null;
+      }
+      if (!fallbackData) return [];
+      return fallbackData.map((d: any, idx: number) => mapRowToDeviceSupportTicket(d, idx));
+    }
+
+    if (!data) return [];
+    return data.map((d: any, idx: number) => mapRowToDeviceSupportTicket(d, idx));
+  } catch (err) {
+    console.warn('Supabase fetchDeviceSupportTickets catch error:', err);
+    return null;
+  }
+}
+
+export async function insertSupabaseDeviceSupportTicket(ticket: DeviceSupportTicket): Promise<boolean> {
+  try {
+    const row = mapDeviceSupportTicketToRow(ticket);
+    const { error } = await supabase
+      .from('device_support_tickets')
+      .upsert([row], { onConflict: 'id' });
+
+    if (error) {
+      console.warn('Supabase insertDeviceSupportTicket error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase insertDeviceSupportTicket catch error:', err);
+    return false;
+  }
+}
+
+export async function bulkInsertSupabaseDeviceSupportTickets(tickets: DeviceSupportTicket[]): Promise<boolean> {
+  try {
+    const rows = tickets.map((t) => mapDeviceSupportTicketToRow(t));
+    const { error } = await supabase
+      .from('device_support_tickets')
+      .upsert(rows, { onConflict: 'id' });
+
+    if (error) {
+      console.warn('Supabase bulkInsertDeviceSupportTickets error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkInsertDeviceSupportTickets catch error:', err);
+    return false;
+  }
+}
+
+export async function deleteSupabaseDeviceSupportTicket(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('device_support_tickets')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.warn('Supabase deleteDeviceSupportTicket error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase deleteDeviceSupportTicket catch error:', err);
+    return false;
+  }
+}
+
+export async function bulkDeleteSupabaseDeviceSupportTickets(ids: string[]): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('device_support_tickets')
+      .delete()
+      .in('id', ids);
+
+    if (error) {
+      console.warn('Supabase bulkDeleteDeviceSupportTickets error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkDeleteDeviceSupportTickets catch error:', err);
     return false;
   }
 }

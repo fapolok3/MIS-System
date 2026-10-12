@@ -453,11 +453,11 @@ export const SIMTab: React.FC<SIMTabProps> = ({
                   </td>
                 </tr>
               ) : (
-                paginatedSIMs.map((sim) => {
+                paginatedSIMs.map((sim, simIdx) => {
                   const isSelected = validSelectedIds.includes(sim.id);
                   return (
                     <tr
-                      key={sim.id}
+                      key={`sim-row-${sim.id}-${sim.simNumber || ''}-${simIdx}`}
                       className={
                         isSelected
                           ? 'bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'

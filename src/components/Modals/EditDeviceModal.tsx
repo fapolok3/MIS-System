@@ -187,17 +187,6 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
             </select>
           </div>
           <div>
-            <label className="block text-slate-700 dark:text-slate-400 mb-1 font-semibold">
-              {isHeadOffice ? 'Department' : 'BM'}
-            </label>
-            <input
-              type="text"
-              value={formData.bm}
-              onChange={(e) => handleChange('bm', e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-          <div>
             <label className="block text-slate-700 dark:text-slate-400 mb-1 font-semibold">Price</label>
             <input
               type="text"
@@ -208,12 +197,18 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
           </div>
           <div>
             <label className="block text-slate-700 dark:text-slate-400 mb-1 font-semibold">
-              {isHeadOffice ? 'Division' : 'District'}
+              Remarks
             </label>
             <input
               type="text"
-              value={formData.district}
-              onChange={(e) => handleChange('district', e.target.value)}
+              placeholder="Enter remarks"
+              value={formData.remarks || formData.bm || formData.district || ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                handleChange('bm', val);
+                handleChange('district', val);
+                handleChange('remarks', val);
+              }}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>

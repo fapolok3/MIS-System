@@ -112,9 +112,9 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
           const floorVal = findVal('Floor', 'Floor Level') || 'Ground Floor';
           const placementVal = findVal('Placement', 'Placement Area', 'Position') || 'Main Gate';
           const accessTypeVal = findVal('Access Type', 'Access') || 'ENTRY/EXIT';
-          const bmVal = findVal('Department', 'Dept', 'BM', 'Branch Manager') || '-';
+          const remarksVal = findVal('Remarks', 'Remark', 'Notes', 'Note', 'Department', 'Dept', 'BM', 'Branch Manager') || '-';
           const priceVal = findVal('Price', 'Device Price', 'Cost') || '৳ 65,000';
-          const districtVal = findVal('Division', 'Div', 'District', 'City', 'Region') || 'Dhaka';
+          const districtVal = findVal('Division', 'Div', 'District', 'City', 'Region') || remarksVal;
           const installDateVal = findVal('Install Date', 'Date', 'Installation Date') || new Date().toISOString().split('T')[0];
 
           return {
@@ -128,10 +128,11 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
             floor: floorVal,
             placement: placementVal,
             accessType: accessTypeVal,
-            bm: bmVal,
+            bm: remarksVal,
             price: priceVal,
             district: districtVal,
             installDate: installDateVal,
+            remarks: remarksVal,
           };
         });
 
@@ -239,9 +240,10 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
       floor: d.floor || 'Ground Floor',
       placement: d.placement || 'Main Area',
       accessType: d.accessType || 'ENTRY/EXIT',
-      bm: d.bm || '-',
+      bm: d.remarks || d.bm || '-',
       price: d.price || '৳ 0',
-      district: d.district || 'Dhaka',
+      district: d.district || d.remarks || d.bm || 'Dhaka',
+      remarks: d.remarks || d.bm || '-',
       installDate: d.installDate || new Date().toISOString().split('T')[0],
     }));
 

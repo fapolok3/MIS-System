@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Plus, Trash2, Edit2, FileSpreadsheet, Search, X, Eye } from 'lucide-react';
+import { FileText, Plus, Trash2, Edit2, FileSpreadsheet, Search, X, Eye, Upload } from 'lucide-react';
 import { PurchaseOrder } from '../types';
 import { Pagination } from './Pagination';
 import { ConfirmModal } from './Modals/ConfirmModal';
@@ -13,6 +13,7 @@ interface POTabProps {
   onOpenEditPOModal?: (po: PurchaseOrder) => void;
   onDeletePO: (id: string) => void;
   onBulkDeletePOs?: (ids: string[]) => void;
+  onOpenExcelUploadModal?: () => void;
 }
 
 export const POTab: React.FC<POTabProps> = ({
@@ -23,6 +24,7 @@ export const POTab: React.FC<POTabProps> = ({
   onOpenEditPOModal,
   onDeletePO,
   onBulkDeletePOs,
+  onOpenExcelUploadModal,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
@@ -201,6 +203,16 @@ export const POTab: React.FC<POTabProps> = ({
             </button>
           )}
 
+          {onOpenExcelUploadModal && (
+            <button
+              onClick={onOpenExcelUploadModal}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded transition shadow flex items-center gap-1 cursor-pointer"
+              title="Bulk import purchase orders from Excel file (.xlsx, .xls, .csv)"
+            >
+              <Upload className="w-3.5 h-3.5" /> Upload from Excel
+            </button>
+          )}
+
           <button
             onClick={handleExportExcel}
             className="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-transparent text-xs font-semibold px-3 py-1.5 rounded transition flex items-center gap-1 cursor-pointer"
@@ -273,11 +285,11 @@ export const POTab: React.FC<POTabProps> = ({
                   </td>
                 </tr>
               ) : (
-                paginatedPOs.map((po) => {
+                paginatedPOs.map((po, poIdx) => {
                   const isSelected = validSelectedIds.includes(po.id);
                   return (
                     <tr
-                      key={po.id}
+                      key={`po-row-${po.id}-${poIdx}`}
                       className={
                         isSelected
                           ? 'bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'

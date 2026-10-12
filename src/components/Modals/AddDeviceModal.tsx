@@ -29,9 +29,8 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   const [floor, setFloor] = useState('');
   const [placement, setPlacement] = useState('');
   const [accessType, setAccessType] = useState<string>(systemOptions.accessTypes?.[0] || 'ENTRY/EXIT');
-  const [bm, setBm] = useState('-');
+  const [remarks, setRemarks] = useState('');
   const [price, setPrice] = useState('৳ 65,000');
-  const [district, setDistrict] = useState('');
   const [installDate, setInstallDate] = useState(
     new Date().toISOString().split('T')[0]
   );
@@ -57,9 +56,10 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
       floor,
       placement,
       accessType,
-      bm,
+      bm: remarks || '-',
       price,
-      district,
+      district: remarks || '',
+      remarks,
       installDate,
     });
     onClose?.();
@@ -200,17 +200,6 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
             </select>
           </div>
           <div>
-            <label className="block text-slate-700 dark:text-slate-400 mb-1 font-semibold">
-              {isHeadOffice ? 'Department' : 'BM'}
-            </label>
-            <input
-              type="text"
-              value={bm}
-              onChange={(e) => setBm(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-          <div>
             <label className="block text-slate-700 dark:text-slate-400 mb-1 font-semibold">Price</label>
             <input
               type="text"
@@ -221,12 +210,13 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
           </div>
           <div>
             <label className="block text-slate-700 dark:text-slate-400 mb-1 font-semibold">
-              {isHeadOffice ? 'Division' : 'District'}
+              Remarks
             </label>
             <input
               type="text"
-              value={district}
-              onChange={(e) => setDistrict(e.target.value)}
+              placeholder="Enter remarks"
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             />
           </div>

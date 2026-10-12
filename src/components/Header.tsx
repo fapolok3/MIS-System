@@ -247,9 +247,9 @@ export const Header: React.FC<HeaderProps> = ({
                         <span>Devices ({matchedDevices.length})</span>
                       </div>
                       <div className="space-y-1">
-                        {matchedDevices.slice(0, 5).map((dev) => (
+                        {matchedDevices.slice(0, 5).map((dev, idx) => (
                           <div
-                            key={dev.id}
+                            key={`${dev.id || 'dev'}-${dev.sl || idx}`}
                             onClick={() => handleSelect('device', dev)}
                             className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition flex items-center justify-between text-xs group border border-slate-200/60 dark:border-transparent hover:border-indigo-400 dark:hover:border-indigo-500/30"
                           >
@@ -306,9 +306,9 @@ export const Header: React.FC<HeaderProps> = ({
                         <span>Branches & Categories ({matchedCategories.length})</span>
                       </div>
                       <div className="space-y-1">
-                        {matchedCategories.slice(0, 5).map((cat) => (
+                        {matchedCategories.slice(0, 5).map((cat, cIdx) => (
                           <div
-                            key={cat.name}
+                            key={`srch-cat-${cat.name}-${cIdx}`}
                             onClick={() => handleSelect('category', cat.name)}
                             className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition flex items-center justify-between text-xs group border border-slate-200/60 dark:border-transparent hover:border-amber-400 dark:hover:border-amber-500/30"
                           >
@@ -333,9 +333,9 @@ export const Header: React.FC<HeaderProps> = ({
                         <span>SIM Cards ({matchedSims.length})</span>
                       </div>
                       <div className="space-y-1">
-                        {matchedSims.slice(0, 5).map((sim) => (
+                        {matchedSims.slice(0, 5).map((sim, sIdx) => (
                           <div
-                            key={sim.id}
+                            key={`${sim.id || 'sim'}-${sIdx}`}
                             onClick={() => handleSelect('sim', sim)}
                             className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition flex items-center justify-between text-xs group border border-slate-200/60 dark:border-transparent hover:border-emerald-400 dark:hover:border-emerald-500/30"
                           >
@@ -375,9 +375,9 @@ export const Header: React.FC<HeaderProps> = ({
                         <span>Service Tickets ({matchedTickets.length})</span>
                       </div>
                       <div className="space-y-1">
-                        {matchedTickets.slice(0, 5).map((t) => (
+                        {matchedTickets.slice(0, 5).map((t, tIdx) => (
                           <div
-                            key={t.id}
+                            key={`${t.id || 'ticket'}-${tIdx}`}
                             onClick={() => handleSelect('ticket', t)}
                             className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition flex items-center justify-between text-xs group border border-slate-200/60 dark:border-transparent hover:border-rose-400 dark:hover:border-rose-500/30"
                           >
@@ -422,9 +422,9 @@ export const Header: React.FC<HeaderProps> = ({
                         <span>Purchase Orders ({matchedPOs.length})</span>
                       </div>
                       <div className="space-y-1">
-                        {matchedPOs.slice(0, 5).map((po) => (
+                        {matchedPOs.slice(0, 5).map((po, pIdx) => (
                           <div
-                            key={po.id}
+                            key={`${po.id || 'po'}-${pIdx}`}
                             onClick={() => handleSelect('po', po)}
                             className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition flex items-center justify-between text-xs group border border-slate-200/60 dark:border-transparent hover:border-cyan-400 dark:hover:border-cyan-500/30"
                           >

@@ -1,5 +1,7 @@
 export type TabType =
   | 'dashboard'
+  | 'device_issue_tracker'
+  | 'device_issue_report'
   | 'issue_tracker'
   | 'issue_report'
   | 'devices'
@@ -10,6 +12,23 @@ export type TabType =
   | 'ticket_generator'
   | 'settings'
   | 'backup';
+
+export interface DeviceSupportTicket {
+  id: string;
+  slNo: number;
+  deviceId: string;
+  contactDate: string;
+  lastCommunication: string;
+  deviceLocation: string;
+  issueType: string;
+  responsibility: 'BBPLC' | 'ITL' | string;
+  probableSolvingDate: string;
+  ticketStatus: 'Yes' | 'No' | string;
+  odooId: string;
+  remarks: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface IssueTrackerItem {
   id: string;
@@ -99,6 +118,7 @@ export interface Device {
   price: string;
   district: string;
   installDate: string;
+  remarks?: string;
 }
 
 export interface Ticket {
@@ -156,6 +176,7 @@ export interface AppSettings {
   appName: string;
   appLogo: string; // base64 data URL or web image URL
   tagline?: string;
+  hiddenModules?: string[];
 }
 
 export interface SystemAccessLog {

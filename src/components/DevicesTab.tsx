@@ -366,7 +366,7 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
 
                   return (
                     <tr
-                      key={item.sl}
+                      key={`dev-row-${item.sl}-${item.id || ''}-${globalIdx}`}
                       className={
                         isSelected
                           ? 'bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'

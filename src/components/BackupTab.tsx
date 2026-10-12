@@ -24,6 +24,7 @@ import {
   SystemOptions,
   AppSettings,
   IssueTrackerItem,
+  DeviceSupportTicket,
 } from '../types';
 
 interface BackupTabProps {
@@ -33,6 +34,7 @@ interface BackupTabProps {
     pos: PurchaseOrder[];
     sims: SIMItem[];
     issues?: IssueTrackerItem[];
+    deviceSupportTickets?: DeviceSupportTicket[];
     categoryGroups: CategoryGroup[];
     systemOptions?: SystemOptions;
     appSettings?: AppSettings;
@@ -43,6 +45,7 @@ interface BackupTabProps {
     pos?: PurchaseOrder[];
     sims?: SIMItem[];
     issues?: IssueTrackerItem[];
+    deviceSupportTickets?: DeviceSupportTicket[];
     categoryGroups?: CategoryGroup[];
     systemOptions?: SystemOptions;
     appSettings?: AppSettings;
@@ -84,6 +87,7 @@ export const BackupTab: React.FC<BackupTabProps> = ({
       const posCount = data.pos?.length || 0;
       const simsCount = data.sims?.length || 0;
       const issuesCount = data.issues?.length || 0;
+      const deviceSupportTicketsCount = data.deviceSupportTickets?.length || 0;
       const groupsCount = data.categoryGroups?.length || 0;
 
       const backupObj = {
@@ -101,6 +105,7 @@ export const BackupTab: React.FC<BackupTabProps> = ({
           purchaseOrders: posCount,
           simCards: simsCount,
           issueTracker: issuesCount,
+          deviceSupportTickets: deviceSupportTicketsCount,
           categoryGroups: groupsCount,
         },
         data: {
@@ -109,6 +114,7 @@ export const BackupTab: React.FC<BackupTabProps> = ({
           pos: data.pos || [],
           sims: data.sims || [],
           issues: data.issues || [],
+          deviceSupportTickets: data.deviceSupportTickets || [],
           categoryGroups: data.categoryGroups || [],
           systemOptions: data.systemOptions || null,
           appSettings: data.appSettings || null,
@@ -170,9 +176,10 @@ export const BackupTab: React.FC<BackupTabProps> = ({
             purchaseOrders: payloadData.pos?.length || 0,
             simCards: payloadData.sims?.length || 0,
             issueTracker: payloadData.issues?.length || 0,
+            deviceSupportTickets: payloadData.deviceSupportTickets?.length || 0,
             categoryGroups: payloadData.categoryGroups?.length || 0,
           };
-        } else if (parsed && (parsed.devices || parsed.tickets || parsed.pos || parsed.sims)) {
+        } else if (parsed && (parsed.devices || parsed.tickets || parsed.pos || parsed.sims || parsed.deviceSupportTickets)) {
           // Direct un-enveloped dump
           payloadData = parsed;
           counts = {
@@ -181,6 +188,7 @@ export const BackupTab: React.FC<BackupTabProps> = ({
             purchaseOrders: parsed.pos?.length || 0,
             simCards: parsed.sims?.length || 0,
             issueTracker: parsed.issues?.length || 0,
+            deviceSupportTickets: parsed.deviceSupportTickets?.length || 0,
             categoryGroups: parsed.categoryGroups?.length || 0,
           };
         } else {

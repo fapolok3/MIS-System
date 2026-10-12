@@ -103,12 +103,13 @@ export const BranchReportTab: React.FC<BranchReportTabProps> = ({
       (d.location || '').toLowerCase().includes(q) ||
       (d.category || '').toLowerCase().includes(q) ||
       (d.sim || '').toLowerCase().includes(q) ||
+      (d.remarks || '').toLowerCase().includes(q) ||
+      (d.bm || '').toLowerCase().includes(q) ||
       (d.district || '').toLowerCase().includes(q) ||
       (d.operator || '').toLowerCase().includes(q) ||
       (d.status || '').toLowerCase().includes(q) ||
       (d.floor || '').toLowerCase().includes(q) ||
-      (d.placement || '').toLowerCase().includes(q) ||
-      (d.bm || '').toLowerCase().includes(q)
+      (d.placement || '').toLowerCase().includes(q)
     );
   });
 
@@ -126,12 +127,9 @@ export const BranchReportTab: React.FC<BranchReportTabProps> = ({
       'Device ID',
       'SIM No',
       'Operator',
-      'Floor',
-      'Placement',
       'Access Type',
-      'BM',
       'Price',
-      'District',
+      'Remarks',
       'Install Date',
     ];
 
@@ -144,12 +142,9 @@ export const BranchReportTab: React.FC<BranchReportTabProps> = ({
       d.id,
       d.sim,
       d.operator,
-      d.floor,
-      d.placement,
       d.accessType,
-      d.bm,
       d.price,
-      d.district,
+      d.remarks || d.bm || d.district || '',
       d.installDate,
     ]);
 
@@ -395,8 +390,7 @@ export const BranchReportTab: React.FC<BranchReportTabProps> = ({
                 <th className="px-3 py-3">Device ID</th>
                 <th className="px-3 py-3">SIM No</th>
                 <th className="px-3 py-3">Operator</th>
-                <th className="px-3 py-3">Floor / Placement</th>
-                <th className="px-3 py-3">BM / District</th>
+                <th className="px-3 py-3">Remarks</th>
                 {(onOpenEditDeviceModal || onDeleteDevice) && (
                   <th className="px-3 py-3 text-center sticky right-0 z-10 bg-slate-100 dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800">
                     Actions
@@ -408,7 +402,7 @@ export const BranchReportTab: React.FC<BranchReportTabProps> = ({
               {paginatedDevices.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={11}
+                    colSpan={10}
                     className="px-4 py-8 text-center text-slate-400 dark:text-slate-500 font-medium"
                   >
                     No branch device entries found matching the filter criteria.
@@ -417,7 +411,7 @@ export const BranchReportTab: React.FC<BranchReportTabProps> = ({
               ) : (
                 paginatedDevices.map((d, index) => (
                   <tr
-                    key={d.sl || `${d.id}-${index}`}
+                    key={`br-dev-${d.sl || 'nosl'}-${d.id || 'noid'}-${startIndex + index}`}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
                     <td className="px-3 py-2.5 text-center font-mono text-slate-400 dark:text-slate-500">
@@ -444,11 +438,8 @@ export const BranchReportTab: React.FC<BranchReportTabProps> = ({
                         {d.operator || '-'}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400">
-                      {d.floor || '-'} / {d.placement || '-'}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400">
-                      {d.bm || '-'} {d.district ? `(${d.district})` : ''}
+                    <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400 max-w-[180px] truncate" title={d.remarks || d.bm || d.district || ''}>
+                      {d.remarks || d.bm || d.district || '-'}
                     </td>
                     {(onOpenEditDeviceModal || onDeleteDevice) && (
                       <td className="px-3 py-2.5 text-center sticky right-0 z-10 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 whitespace-nowrap shadow-xs">
@@ -533,12 +524,9 @@ export const BranchReportTab: React.FC<BranchReportTabProps> = ({
                 { label: 'Device ID', val: viewingDevice.id },
                 { label: 'SIM Number', val: viewingDevice.sim },
                 { label: 'Operator', val: viewingDevice.operator },
-                { label: 'Floor', val: viewingDevice.floor },
-                { label: 'Placement', val: viewingDevice.placement },
                 { label: 'Access Type', val: viewingDevice.accessType },
-                { label: 'BM / Department', val: viewingDevice.bm },
                 { label: 'Price', val: viewingDevice.price ? `৳${viewingDevice.price}` : '-' },
-                { label: 'District / Division', val: viewingDevice.district },
+                { label: 'Remarks', val: viewingDevice.remarks || viewingDevice.bm || viewingDevice.district },
                 { label: 'Install Date', val: viewingDevice.installDate },
               ].map((item, idx) => (
                 <div

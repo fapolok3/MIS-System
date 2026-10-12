@@ -26,6 +26,20 @@ import {
   AlertCircle,
   Headphones,
   Clock,
+  Lock,
+  Unlock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  PieChart,
+  FileBarChart2,
+  FileText,
+  Smartphone,
+  GitBranch,
+  Ticket,
+  Database,
+  Save,
+  Check,
 } from 'lucide-react';
 import { CategoryGroup, SystemOptions, AppSettings } from '../types';
 import { ConfirmModal } from './Modals/ConfirmModal';
@@ -45,6 +59,10 @@ interface SettingsTabProps {
   appSettings?: AppSettings;
   setAppSettings?: React.Dispatch<React.SetStateAction<AppSettings>>;
   onResetOptions?: () => void;
+  hiddenModules?: string[];
+  onToggleModule?: (moduleId: string) => void;
+  onSaveHiddenModules?: (hiddenModules: string[]) => Promise<void> | void;
+  onResetModules?: () => void;
 }
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({
@@ -55,7 +73,164 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   appSettings = defaultAppSettings,
   setAppSettings,
   onResetOptions,
+  hiddenModules = [],
+  onToggleModule,
+  onSaveHiddenModules,
+  onResetModules,
 }) => {
+  // Module Controller State (Password Protected with Iamfapolok@1)
+  const [isModuleControllerUnlocked, setIsModuleControllerUnlocked] = useState(false);
+  const [controllerPassword, setControllerPassword] = useState('');
+  const [controllerPasswordError, setControllerPasswordError] = useState('');
+  const [showControllerPassword, setShowControllerPassword] = useState(false);
+
+  // Local pending state for hiding/unhiding modules until user clicks Save
+  const [pendingHiddenModules, setPendingHiddenModules] = useState<string[]>(hiddenModules);
+  const [isSavingModules, setIsSavingModules] = useState(false);
+
+  // Synchronize pending state when external hiddenModules changes
+  useEffect(() => {
+    setPendingHiddenModules(hiddenModules);
+  }, [hiddenModules]);
+
+  const hasUnsavedModuleChanges = useMemo(() => {
+    if (pendingHiddenModules.length !== hiddenModules.length) return true;
+    const currentSet = new Set(hiddenModules);
+    return pendingHiddenModules.some((id) => !currentSet.has(id));
+  }, [pendingHiddenModules, hiddenModules]);
+
+  const handleTogglePendingModule = (moduleId: string) => {
+    setPendingHiddenModules((prev) =>
+      prev.includes(moduleId) ? prev.filter((id) => id !== moduleId) : [...prev, moduleId]
+    );
+  };
+
+  const handleSaveModuleVisibility = async () => {
+    setIsSavingModules(true);
+    try {
+      if (onSaveHiddenModules) {
+        await onSaveHiddenModules(pendingHiddenModules);
+      } else if (onToggleModule) {
+        // Fallback
+        setPendingHiddenModules(pendingHiddenModules);
+      }
+    } finally {
+      setIsSavingModules(false);
+    }
+  };
+
+  const handleDiscardModuleChanges = () => {
+    setPendingHiddenModules(hiddenModules);
+  };
+
+  const CONTROLLER_ACCESS_KEY = 'Iamfapolok@1';
+
+  const handleUnlockController = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (controllerPassword === CONTROLLER_ACCESS_KEY) {
+      setIsModuleControllerUnlocked(true);
+      setControllerPasswordError('');
+      setControllerPassword('');
+      setPendingHiddenModules(hiddenModules);
+    } else {
+      setControllerPasswordError('Invalid password! Access denied. (ভুল পাসওয়ার্ড)');
+    }
+  };
+
+  const handleLockController = () => {
+    setIsModuleControllerUnlocked(false);
+    setControllerPassword('');
+    setControllerPasswordError('');
+    setPendingHiddenModules(hiddenModules);
+  };
+
+  const ALL_MODULES = [
+    {
+      id: 'dashboard',
+      name: 'Dashboard',
+      description: 'System overview, statistics, and quick metrics',
+      icon: PieChart,
+      badgeColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-800',
+    },
+    {
+      id: 'device_issue_tracker',
+      name: 'Device Issue Tracker',
+      description: 'Add new ticket entry, contact date, and issue logging with SLA',
+      icon: Cpu,
+      badgeColor: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800',
+    },
+    {
+      id: 'device_issue_report',
+      name: 'Device Issue Report',
+      description: 'Interactive analytics cards, filterable issue list, and Excel export',
+      icon: Layers,
+      badgeColor: 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/50 border-teal-200 dark:border-teal-800',
+    },
+    {
+      id: 'issue_tracker',
+      name: 'Issue Tracker',
+      description: 'Standard device issue tracking and registration',
+      icon: AlertCircle,
+      badgeColor: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800',
+    },
+    {
+      id: 'issue_report',
+      name: 'Issue & Job Entry Report',
+      description: 'Comprehensive 34-field issue logging and SLA tracking',
+      icon: FileBarChart2,
+      badgeColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800',
+    },
+    {
+      id: 'po',
+      name: 'Purchase Orders (PO)',
+      description: 'Procurement tracking, vendor POs, and bulk excel upload',
+      icon: FileText,
+      badgeColor: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-800',
+    },
+    {
+      id: 'service',
+      name: 'Service Ticket & SLA Tracker',
+      description: 'Customer and branch support tickets with response metrics',
+      icon: Headphones,
+      badgeColor: 'text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/50 border-cyan-200 dark:border-cyan-800',
+    },
+    {
+      id: 'sim',
+      name: 'SIM Management',
+      description: 'Telco SIM cards, active MSISDNs, and device pairing',
+      icon: Smartphone,
+      badgeColor: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 border-violet-200 dark:border-violet-800',
+    },
+    {
+      id: 'branch_report',
+      name: 'All Branch Device Report',
+      description: 'Consolidated report of all branch terminals and remarks',
+      icon: GitBranch,
+      badgeColor: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800',
+    },
+    {
+      id: 'ticket_generator',
+      name: 'Support Ticket Generator',
+      description: 'Instant ticket printout and issue dispatch sheets',
+      icon: Ticket,
+      badgeColor: 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/50 border-orange-200 dark:border-orange-800',
+    },
+    {
+      id: 'backup',
+      name: 'Backup & Restore',
+      description: 'Cloud snapshots, JSON export/import data preservation',
+      icon: Database,
+      badgeColor: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 border-purple-200 dark:border-purple-800',
+    },
+    {
+      id: 'category_groups',
+      name: 'Device MIS Tree (Categories)',
+      description: 'Sidebar branches, security, infra, and head office groups',
+      icon: Layers,
+      badgeColor: 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/50 border-teal-200 dark:border-teal-800',
+    },
+  ];
+
   // Brand & Logo Form State
   const [appNameInput, setAppNameInput] = useState(appSettings.appName || 'BBL DM System');
   const [taglineInput, setTaglineInput] = useState(appSettings.tagline || 'Enterprise Management Suite');
@@ -864,8 +1039,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   onChange={(e) => setSelectedGroupId(e.target.value)}
                   className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                 >
-                  {categoryGroups.map((group) => (
-                    <option key={group.id} value={group.id}>
+                  {categoryGroups.map((group, gIdx) => (
+                    <option key={`cg-opt-${group.id || 'grp'}-${gIdx}`} value={group.id}>
                       {group.title} ({group.items.length} items)
                     </option>
                   ))}
@@ -954,9 +1129,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </h4>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {categoryGroups.map((group) => (
+            {categoryGroups.map((group, gIdx) => (
               <div
-                key={group.id}
+                key={`cg-box-${group.id || 'grp'}-${gIdx}`}
                 className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 space-y-3"
               >
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
@@ -985,9 +1160,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       No categories yet. Add one above!
                     </span>
                   ) : (
-                    group.items.map((item) => (
+                    group.items.map((item, iIdx) => (
                       <span
-                        key={item}
+                        key={`cg-item-${group.id}-${item}-${iIdx}`}
                         className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition shadow-2xs"
                       >
                         <span className="font-medium">{item}</span>
@@ -1175,9 +1350,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                           No options available.
                         </span>
                       ) : (
-                        list.map((item) => (
+                        list.map((item, iIdx) => (
                           <span
-                            key={item}
+                            key={`sys-opt-${section.key}-${item}-${iIdx}`}
                             className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${section.badgeColor}`}
                           >
                             {item}
@@ -1234,6 +1409,340 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               );
             })}
         </div>
+      </div>
+
+      {/* ============================================================== */}
+      {/* MODULE CONTROLLER (PASSWORD PROTECTED: Iamfapolok@1) */}
+      {/* ============================================================== */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs transition-all">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60">
+              <Sliders className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Module Controller
+                </h3>
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                    isModuleControllerUnlocked
+                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                      : 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                  }`}
+                >
+                  {isModuleControllerUnlocked ? (
+                    <>
+                      <Unlock className="w-3 h-3" /> Unlocked
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3 h-3" /> Password Protected
+                    </>
+                  )}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Hide or unhide sidebar modules in real-time. Requires security authentication.
+              </p>
+            </div>
+          </div>
+
+          {isModuleControllerUnlocked && (
+            <div className="flex flex-wrap items-center gap-2">
+              {hasUnsavedModuleChanges && (
+                <button
+                  type="button"
+                  onClick={handleDiscardModuleChanges}
+                  disabled={isSavingModules}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition flex items-center gap-1.5"
+                  title="Discard pending module visibility changes"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Discard
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSaveModuleVisibility}
+                disabled={isSavingModules || !hasUnsavedModuleChanges}
+                className={`px-4 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1.5 shadow-xs ${
+                  hasUnsavedModuleChanges
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white animate-pulse'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-70'
+                }`}
+                title="Save changes to database so other laptops see updated sidebar on refresh/login"
+              >
+                {isSavingModules ? (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5 animate-spin" /> Saving Changes...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" /> Save Changes
+                  </>
+                )}
+              </button>
+
+              {onResetModules && pendingHiddenModules.length > 0 && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setPendingHiddenModules([]);
+                    if (onResetModules) onResetModules();
+                  }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition flex items-center gap-1.5"
+                  title="Reset all modules to visible"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Show All
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleLockController}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 cursor-pointer transition flex items-center gap-1.5"
+                title="Lock Module Controller"
+              >
+                <Lock className="w-3.5 h-3.5" /> Lock Controller
+              </button>
+            </div>
+          )}
+        </div>
+
+        {!isModuleControllerUnlocked ? (
+          <div className="pt-5 flex flex-col items-center justify-center text-center py-6">
+            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 mb-3 border border-slate-200 dark:border-slate-700">
+              <Lock className="w-6 h-6 text-amber-500" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1">
+              Authentication Required
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mb-4">
+              Module controller is locked to prevent unauthorized alterations to the sidebar layout. Please provide the administrator access key to proceed.
+            </p>
+
+            <form
+              onSubmit={handleUnlockController}
+              className="w-full max-w-sm space-y-3 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-left shadow-xs"
+            >
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5 flex items-center justify-between">
+                  <span>Module Controller Password</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Security Key</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showControllerPassword ? 'text' : 'password'}
+                    value={controllerPassword}
+                    onChange={(e) => {
+                      setControllerPassword(e.target.value);
+                      if (controllerPasswordError) setControllerPasswordError('');
+                    }}
+                    placeholder="Enter password to unlock..."
+                    autoComplete="off"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 pr-10 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowControllerPassword(!showControllerPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    title={showControllerPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showControllerPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {controllerPasswordError && (
+                <div className="p-2 rounded bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-[11px] font-medium flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                  <span>{controllerPasswordError}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs cursor-pointer shadow-xs transition flex items-center justify-center gap-1.5"
+              >
+                <Unlock className="w-3.5 h-3.5" /> Unlock Module Controller
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="pt-4 space-y-4">
+            {/* Status & Unsaved Changes Alert Bar */}
+            <div className={`flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl border text-xs transition ${
+              hasUnsavedModuleChanges
+                ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/80 text-amber-900 dark:text-amber-200 shadow-xs'
+                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+            }`}>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">
+                  Controlled Modules: <strong className="text-slate-900 dark:text-white">{ALL_MODULES.length}</strong>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <span className="font-semibold text-rose-600 dark:text-rose-400">
+                  Hidden: <strong>{pendingHiddenModules.length}</strong>
+                </span>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  Visible: <strong>{ALL_MODULES.length - pendingHiddenModules.length}</strong>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {hasUnsavedModuleChanges ? (
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5" /> Unsaved Changes! Click "Save Changes" to apply globally.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSaveModuleVisibility}
+                      disabled={isSavingModules}
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs cursor-pointer shadow-xs transition flex items-center gap-1"
+                    >
+                      {isSavingModules ? <RotateCcw className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                      Save Now
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                    <Check className="w-3 h-3 text-emerald-500" /> All changes are saved and synced across all devices.
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {ALL_MODULES.map((mod, mIdx) => {
+                const isHidden = pendingHiddenModules.includes(mod.id);
+                const isCurrentlyActiveHidden = hiddenModules.includes(mod.id);
+                const isModified = isHidden !== isCurrentlyActiveHidden;
+                const IconComponent = mod.icon;
+
+                return (
+                  <div
+                    key={`mod-ctrl-${mod.id}-${mIdx}`}
+                    className={`p-3.5 rounded-xl border transition flex items-center justify-between gap-3 ${
+                      isModified
+                        ? 'border-amber-400 dark:border-amber-600 bg-amber-50/30 dark:bg-amber-950/20 shadow-xs'
+                        : isHidden
+                        ? 'bg-slate-50/60 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800/80 opacity-75'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xs'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`p-2 rounded-lg border shrink-0 ${mod.badgeColor}`}>
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {mod.name}
+                          </h4>
+                          {isHidden ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-900">
+                              <EyeOff className="w-2.5 h-2.5" /> Hidden
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900">
+                              <Eye className="w-2.5 h-2.5" /> Visible
+                            </span>
+                          )}
+                          {isModified && (
+                            <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/60 px-1 rounded">
+                              Pending Save
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                          {mod.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePendingModule(mod.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 border ${
+                        isHidden
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-600 shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-slate-700 dark:text-slate-300 hover:text-rose-700 dark:hover:text-rose-400 border-slate-200 dark:border-slate-700 hover:border-rose-300 dark:hover:border-rose-800'
+                      }`}
+                      title={isHidden ? `Unhide ${mod.name} (Click Save to apply)` : `Hide ${mod.name} (Click Save to apply)`}
+                    >
+                      {isHidden ? (
+                        <>
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Unhide</span>
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="w-3.5 h-3.5" />
+                          <span>Hide</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom Save Bar */}
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="text-slate-600 dark:text-slate-400">
+                  <strong>Permanent Cloud Synchronization:</strong> When you click <strong className="text-emerald-600 dark:text-emerald-400">Save Changes</strong>, the settings are instantly saved in Supabase. Your changes take effect immediately on your device without any refresh, and other users will automatically see the changes when they refresh or log in.
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {hasUnsavedModuleChanges && (
+                  <button
+                    type="button"
+                    onClick={handleDiscardModuleChanges}
+                    disabled={isSavingModules}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition"
+                  >
+                    Discard Changes
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSaveModuleVisibility}
+                  disabled={isSavingModules || !hasUnsavedModuleChanges}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1.5 shadow-xs ${
+                    hasUnsavedModuleChanges
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-70'
+                  }`}
+                >
+                  {isSavingModules ? (
+                    <>
+                      <RotateCcw className="w-3.5 h-3.5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" /> Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-lg flex items-center justify-between text-xs text-indigo-900 dark:text-indigo-300">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <span>
+                  <strong>Note:</strong> System Settings remains permanently available so administrators can access this Module Controller anytime.
+                </span>
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Confirmation Modal */}
