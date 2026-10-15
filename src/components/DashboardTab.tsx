@@ -135,52 +135,25 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
     return tickets.slice(start, start + TICKETS_PER_PAGE);
   }, [tickets, ticketPage]);
 
-  // Aggregate Total Issues, Issues Solved, Pending Issues
+  // Total Issues, Issues Solved, Pending Issues (strictly from Device Issue Report)
   const { combinedTotalIssues, combinedSolvedIssues, combinedPendingIssues } = useMemo(() => {
-    // 1. Device Support Tickets
+    const total = deviceSupportTickets.length;
     let dstSolved = 0;
     deviceSupportTickets.forEach((dst) => {
-      const st = (dst.ticketStatus || '').toLowerCase();
+      const st = (dst.ticketStatus || '').toLowerCase().trim();
       if (st === 'yes' || st === 'solved' || st === 'resolved' || st === 'done' || st === 'closed') {
         dstSolved += 1;
       }
     });
 
-    // 2. Issue Tracker / 34-field Issues
-    let issuesSolvedCount = 0;
-    issues.forEach((it) => {
-      const st = (it.status || '').toLowerCase();
-      if (st === 'done' || st === 'resolved' || st === 'solved' || st === 'closed') {
-        issuesSolvedCount += 1;
-      }
-    });
-
-    // 3. Service Tickets
-    let serviceTicketsSolved = 0;
-    tickets.forEach((t) => {
-      const st = (t.status || '').toLowerCase();
-      if (st === 'solved' || st === 'resolved' || st === 'closed' || st === 'done') {
-        serviceTicketsSolved += 1;
-      }
-    });
-
-    // Determine primary source: if issues or deviceSupportTickets exist, aggregate them.
-    // Otherwise fallback to service tickets.
-    const hasCustomIssues = issues.length > 0 || deviceSupportTickets.length > 0;
-    const total = hasCustomIssues
-      ? issues.length + deviceSupportTickets.length
-      : tickets.length;
-    const solved = hasCustomIssues
-      ? issuesSolvedCount + dstSolved
-      : serviceTicketsSolved;
-    const pending = Math.max(0, total - solved);
+    const pending = Math.max(0, total - dstSolved);
 
     return {
       combinedTotalIssues: total,
-      combinedSolvedIssues: solved,
+      combinedSolvedIssues: dstSolved,
       combinedPendingIssues: pending,
     };
-  }, [issues, deviceSupportTickets, tickets]);
+  }, [deviceSupportTickets]);
 
   // Collect available years from tickets and current year
   const availableYears = useMemo(() => {
@@ -373,45 +346,35 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Primary Issue Metrics Cards Requested by User */}
+      {/* Primary Issue Metrics Cards (From Device Issue Report) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Total Issues Card */}
         <div
-          onClick={() => onSwitchTab('device_issue_report')}
-          className="bg-gradient-to-br from-indigo-500/10 via-white to-indigo-50/40 dark:from-indigo-950/40 dark:via-slate-900 dark:to-indigo-900/20 border border-indigo-200/80 dark:border-indigo-800/60 p-4 rounded-xl shadow-xs cursor-pointer hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-600 transition group"
-          title="Click to view all logged Device & System Issues"
+          className="bg-gradient-to-br from-indigo-500/10 via-white to-indigo-50/40 dark:from-indigo-950/40 dark:via-slate-900 dark:to-indigo-900/20 border border-indigo-200/80 dark:border-indigo-800/60 p-4 rounded-xl shadow-xs select-none"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
               <AlertCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              Total Issues
-            </span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 group-hover:bg-indigo-600 group-hover:text-white transition">
-              Overview &rarr;
+              Total Issue
             </span>
           </div>
           <div className="text-3xl font-extrabold text-slate-900 dark:text-white mt-2">
             {combinedTotalIssues}
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-500 dark:text-slate-400">
-            <span>All registered issue tickets</span>
+            <span>Device Issue Report</span>
             <span className="font-semibold text-indigo-600 dark:text-indigo-400">100% Volume</span>
           </div>
         </div>
 
         {/* Issues Solved Card */}
         <div
-          onClick={() => onSwitchTab('device_issue_report')}
-          className="bg-gradient-to-br from-emerald-500/10 via-white to-emerald-50/40 dark:from-emerald-950/40 dark:via-slate-900 dark:to-emerald-900/20 border border-emerald-200/80 dark:border-emerald-800/60 p-4 rounded-xl shadow-xs cursor-pointer hover:shadow-md hover:border-emerald-400 dark:hover:border-emerald-600 transition group"
-          title="Click to view solved tickets and resolutions"
+          className="bg-gradient-to-br from-emerald-500/10 via-white to-emerald-50/40 dark:from-emerald-950/40 dark:via-slate-900 dark:to-emerald-900/20 border border-emerald-200/80 dark:border-emerald-800/60 p-4 rounded-xl shadow-xs select-none"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              Issues Solved
-            </span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white transition">
-              Resolved &rarr;
+              Issue Solved
             </span>
           </div>
           <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">
@@ -420,24 +383,19 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-emerald-100 dark:border-emerald-900/40 text-[11px] text-slate-500 dark:text-slate-400">
             <span>Successfully completed</span>
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-              {combinedTotalIssues > 0 ? `${Math.round((combinedSolvedIssues / combinedTotalIssues) * 100)}%` : '0%'} Resolved
+              {combinedTotalIssues > 0 ? `${Math.round((combinedSolvedIssues / combinedTotalIssues) * 100)}%` : '0%'}
             </span>
           </div>
         </div>
 
         {/* Pending Issues Card */}
         <div
-          onClick={() => onSwitchTab('device_issue_tracker')}
-          className="bg-gradient-to-br from-amber-500/10 via-white to-amber-50/40 dark:from-amber-950/40 dark:via-slate-900 dark:to-amber-900/20 border border-amber-200/80 dark:border-amber-800/60 p-4 rounded-xl shadow-xs cursor-pointer hover:shadow-md hover:border-amber-400 dark:hover:border-amber-600 transition group"
-          title="Click to view and handle pending issue tickets"
+          className="bg-gradient-to-br from-amber-500/10 via-white to-amber-50/40 dark:from-amber-950/40 dark:via-slate-900 dark:to-amber-900/20 border border-amber-200/80 dark:border-amber-800/60 p-4 rounded-xl shadow-xs select-none"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              Pending Issues
-            </span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 group-hover:bg-amber-600 group-hover:text-white transition">
-              Action Required &rarr;
+              Issue Pending
             </span>
           </div>
           <div className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-2">
@@ -446,7 +404,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-amber-100 dark:border-amber-900/40 text-[11px] text-slate-500 dark:text-slate-400">
             <span>Active & in-progress</span>
             <span className="font-semibold text-amber-600 dark:text-amber-400">
-              {combinedTotalIssues > 0 ? `${Math.round((combinedPendingIssues / combinedTotalIssues) * 100)}%` : '0%'} Pending
+              {combinedTotalIssues > 0 ? `${Math.round((combinedPendingIssues / combinedTotalIssues) * 100)}%` : '0%'}
             </span>
           </div>
         </div>
