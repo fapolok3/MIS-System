@@ -4,7 +4,9 @@ import fs from 'fs';
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  // Dev server must run on port 3000 in AI Studio development
+  const isProduction = process.env.NODE_ENV === 'production';
+  const PORT = isProduction ? (Number(process.env.PORT) || 8080) : 3000;
 
   app.use(express.json());
 
@@ -14,18 +16,18 @@ async function startServer() {
   });
 
   const distPath = path.join(process.cwd(), 'dist');
-  const hasDist = fs.existsSync(path.join(distPath, 'index.html'));
-  const isProduction = process.env.NODE_ENV === 'production' || hasDist;
 
-  if (isProduction && hasDist) {
-    app.use(express.static(distPath));
+  if (isProduction) {
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+    }
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   } else {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true, host: '0.0.0.0', port: PORT },
+      server: { middlewareMode: true, hmr: false },
       appType: 'spa',
     });
     app.use(vite.middlewares);

@@ -20,6 +20,10 @@ import {
   Ticket,
   Cpu,
   Layers,
+  Receipt,
+  FileSpreadsheet,
+  Wrench,
+  ClipboardList,
 } from 'lucide-react';
 import { TabType, CategoryGroup } from '../types';
 
@@ -122,6 +126,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               <Layers className="w-5 h-5" />
+            </button>
+          )}
+          {!hiddenModules.includes('service_ticket_tracker') && (
+            <button
+              onClick={() => setActiveTab('service_ticket_tracker')}
+              title="Service Ticket Tracker"
+              className={`p-2.5 rounded-lg flex items-center justify-center transition cursor-pointer ${
+                activeTab === 'service_ticket_tracker'
+                  ? 'bg-indigo-50 dark:bg-indigo-600/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Wrench className="w-5 h-5" />
+            </button>
+          )}
+          {!hiddenModules.includes('service_ticket_report') && (
+            <button
+              onClick={() => setActiveTab('service_ticket_report')}
+              title="Service Ticket Report"
+              className={`p-2.5 rounded-lg flex items-center justify-center transition cursor-pointer ${
+                activeTab === 'service_ticket_report'
+                  ? 'bg-indigo-50 dark:bg-indigo-600/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <ClipboardList className="w-5 h-5" />
+            </button>
+          )}
+          {!hiddenModules.includes('bill_tracker') && (
+            <button
+              onClick={() => setActiveTab('bill_tracker')}
+              title="Bill Tracker"
+              className={`p-2.5 rounded-lg flex items-center justify-center transition cursor-pointer ${
+                activeTab === 'bill_tracker'
+                  ? 'bg-indigo-50 dark:bg-indigo-600/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Receipt className="w-5 h-5" />
+            </button>
+          )}
+          {!hiddenModules.includes('bill_report') && (
+            <button
+              onClick={() => setActiveTab('bill_report')}
+              title="Bill Report"
+              className={`p-2.5 rounded-lg flex items-center justify-center transition cursor-pointer ${
+                activeTab === 'bill_report'
+                  ? 'bg-indigo-50 dark:bg-indigo-600/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <FileSpreadsheet className="w-5 h-5" />
             </button>
           )}
           {!hiddenModules.includes('issue_tracker') && (
@@ -336,6 +392,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <Layers className="w-4 h-4" /> Device Issue Report
+                </button>
+              )}
+              {!hiddenModules.includes('service_ticket_tracker') && (
+                <button
+                  onClick={() => setActiveTab('service_ticket_tracker')}
+                  className={`w-full text-left px-3 py-2 rounded flex items-center gap-2 transition cursor-pointer ${
+                    activeTab === 'service_ticket_tracker'
+                      ? 'bg-indigo-50 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold border-l-2 border-indigo-600 dark:border-indigo-500'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Wrench className="w-4 h-4" /> Service Ticket Tracker
+                </button>
+              )}
+              {!hiddenModules.includes('service_ticket_report') && (
+                <button
+                  onClick={() => setActiveTab('service_ticket_report')}
+                  className={`w-full text-left px-3 py-2 rounded flex items-center gap-2 transition cursor-pointer ${
+                    activeTab === 'service_ticket_report'
+                      ? 'bg-indigo-50 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold border-l-2 border-indigo-600 dark:border-indigo-500'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <ClipboardList className="w-4 h-4" /> Service Ticket Report
+                </button>
+              )}
+              {!hiddenModules.includes('bill_tracker') && (
+                <button
+                  onClick={() => setActiveTab('bill_tracker')}
+                  className={`w-full text-left px-3 py-2 rounded flex items-center gap-2 transition cursor-pointer ${
+                    activeTab === 'bill_tracker'
+                      ? 'bg-indigo-50 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold border-l-2 border-indigo-600 dark:border-indigo-500'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Receipt className="w-4 h-4" /> Bill Tracker
+                </button>
+              )}
+              {!hiddenModules.includes('bill_report') && (
+                <button
+                  onClick={() => setActiveTab('bill_report')}
+                  className={`w-full text-left px-3 py-2 rounded flex items-center gap-2 transition cursor-pointer ${
+                    activeTab === 'bill_report'
+                      ? 'bg-indigo-50 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold border-l-2 border-indigo-600 dark:border-indigo-500'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <FileSpreadsheet className="w-4 h-4" /> Bill Report
                 </button>
               )}
               {!hiddenModules.includes('issue_tracker') && (

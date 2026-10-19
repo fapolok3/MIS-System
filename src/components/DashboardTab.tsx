@@ -10,6 +10,9 @@ import {
   Cpu,
   Layers,
   ArrowRight,
+  Receipt,
+  FileSpreadsheet,
+  Wrench,
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -33,6 +36,8 @@ import {
   TabType,
   IssueTrackerItem,
   DeviceSupportTicket,
+  BillItem,
+  ServiceTicketItem,
 } from '../types';
 import { useTheme } from '../context/ThemeContext';
 
@@ -56,6 +61,8 @@ interface DashboardTabProps {
   sims?: SIMItem[];
   issues?: IssueTrackerItem[];
   deviceSupportTickets?: DeviceSupportTicket[];
+  bills?: BillItem[];
+  serviceTickets?: ServiceTicketItem[];
   onSwitchTab: (tab: TabType) => void;
 }
 
@@ -116,6 +123,8 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
   sims = [],
   issues = [],
   deviceSupportTickets = [],
+  bills = [],
+  serviceTickets = [],
   onSwitchTab,
 }) => {
   const { resolvedTheme } = useTheme();
@@ -134,6 +143,44 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
     const start = (ticketPage - 1) * TICKETS_PER_PAGE;
     return tickets.slice(start, start + TICKETS_PER_PAGE);
   }, [tickets, ticketPage]);
+
+  // Billing Metrics strictly from Billing Report
+  const {
+    totalBillCount,
+    totalBillAmount,
+    paidBillCount,
+    paidBillAmount,
+    pendingBillCount,
+    pendingBillAmount,
+  } = useMemo(() => {
+    let totAmt = 0;
+    let pCount = 0;
+    let pAmt = 0;
+    let pendCount = 0;
+    let pendAmt = 0;
+
+    bills.forEach((b) => {
+      const amt = Number(b.amount) || 0;
+      totAmt += amt;
+      const st = (b.status || '').toLowerCase().trim();
+      if (st === 'paid') {
+        pCount += 1;
+        pAmt += amt;
+      } else if (st === 'pending') {
+        pendCount += 1;
+        pendAmt += amt;
+      }
+    });
+
+    return {
+      totalBillCount: bills.length,
+      totalBillAmount: totAmt,
+      paidBillCount: pCount,
+      paidBillAmount: pAmt,
+      pendingBillCount: pendCount,
+      pendingBillAmount: pendAmt,
+    };
+  }, [bills]);
 
   // Total Issues, Issues Solved, Pending Issues (strictly from Device Issue Report)
   const { combinedTotalIssues, combinedSolvedIssues, combinedPendingIssues } = useMemo(() => {
@@ -410,8 +457,8 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         </div>
       </div>
 
-      {/* 5 Secondary Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      {/* 7 Secondary Stat Cards (including Billing & Service Tickets) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
         <div
           onClick={() => onSwitchTab('devices')}
           className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-lg shadow-xs cursor-pointer hover:border-emerald-500/50 transition"
@@ -464,6 +511,26 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           </span>
         </div>
         <div
+          onClick={() => onSwitchTab('service_ticket_report')}
+          className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-lg shadow-xs cursor-pointer hover:border-indigo-500/50 transition group"
+          title="View Service Ticket Tracker & Report"
+        >
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase flex items-center gap-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              <Wrench className="w-3 h-3 text-indigo-500" /> Service Tickets
+            </span>
+            <span className="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">
+              Live
+            </span>
+          </div>
+          <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
+            {serviceTickets.length}
+          </div>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-0.5 mt-0.5 font-medium truncate">
+            {serviceTickets.filter((t) => t.status === 'Done').length} done | {serviceTickets.filter((t) => t.status !== 'Done').length} active
+          </span>
+        </div>
+        <div
           onClick={() => onSwitchTab('service')}
           className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-lg shadow-xs cursor-pointer hover:border-purple-500/50 transition"
           title="View Service & Maintenance Tickets"
@@ -477,6 +544,125 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <span className="text-[10px] text-amber-600 dark:text-amber-400 block mt-0.5 font-medium">
             Active Pending
           </span>
+        </div>
+        <div
+          onClick={() => onSwitchTab('bill_report')}
+          className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3.5 rounded-lg shadow-xs cursor-pointer hover:border-indigo-500/50 transition group"
+          title="View Billing Management & Audit Report"
+        >
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase flex items-center gap-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              <Receipt className="w-3 h-3 text-indigo-500" /> Bill Report
+            </span>
+            <span className="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">
+              BDT
+            </span>
+          </div>
+          <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
+            {totalBillCount}
+          </div>
+          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 mt-0.5 font-medium truncate font-mono">
+            ৳{paidBillAmount.toLocaleString('en-IN')} paid
+          </span>
+        </div>
+      </div>
+
+      {/* Primary Billing Metrics Cards (From Billing Report) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-0.5">
+          <div className="flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+              Billing Report & Financial Overview
+            </span>
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 font-mono">
+              (Total BDT: ৳{totalBillAmount.toLocaleString('en-IN')})
+            </span>
+          </div>
+          <button
+            onClick={() => onSwitchTab('bill_report')}
+            className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 cursor-pointer transition"
+          >
+            <span>Open Billing Report</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Total Bills Card */}
+          <div
+            onClick={() => onSwitchTab('bill_report')}
+            className="bg-gradient-to-br from-indigo-500/10 via-white to-indigo-50/40 dark:from-indigo-950/40 dark:via-slate-900 dark:to-indigo-900/20 border border-indigo-200/80 dark:border-indigo-800/60 p-4 rounded-xl shadow-xs select-none cursor-pointer hover:border-indigo-500/70 transition"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Receipt className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                Total Bills
+              </span>
+              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800/60">
+                All Records
+              </span>
+            </div>
+            <div className="text-3xl font-extrabold text-slate-900 dark:text-white mt-2">
+              {totalBillCount}
+            </div>
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-500 dark:text-slate-400">
+              <span>Billing Report</span>
+              <span className="font-semibold text-indigo-600 dark:text-indigo-400 font-mono">
+                ৳{totalBillAmount.toLocaleString('en-IN')} (100% Volume)
+              </span>
+            </div>
+          </div>
+
+          {/* Paid Bills Card */}
+          <div
+            onClick={() => onSwitchTab('bill_report')}
+            className="bg-gradient-to-br from-emerald-500/10 via-white to-emerald-50/40 dark:from-emerald-950/40 dark:via-slate-900 dark:to-emerald-900/20 border border-emerald-200/80 dark:border-emerald-800/60 p-4 rounded-xl shadow-xs select-none cursor-pointer hover:border-emerald-500/70 transition"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                Bills Paid
+              </span>
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
+                Cleared
+              </span>
+            </div>
+            <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">
+              {paidBillCount}
+            </div>
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-emerald-100 dark:border-emerald-900/40 text-[11px] text-slate-500 dark:text-slate-400">
+              <span>Successfully completed</span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
+                ৳{paidBillAmount.toLocaleString('en-IN')} ({totalBillCount > 0 ? Math.round((paidBillCount / totalBillCount) * 100) : 0}%)
+              </span>
+            </div>
+          </div>
+
+          {/* Pending Bills Card */}
+          <div
+            onClick={() => onSwitchTab('bill_report')}
+            className="bg-gradient-to-br from-amber-500/10 via-white to-amber-50/40 dark:from-amber-950/40 dark:via-slate-900 dark:to-amber-900/20 border border-amber-200/80 dark:border-amber-800/60 p-4 rounded-xl shadow-xs select-none cursor-pointer hover:border-amber-500/70 transition"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                Bills Pending
+              </span>
+              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/60">
+                In-Progress
+              </span>
+            </div>
+            <div className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-2">
+              {pendingBillCount}
+            </div>
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-amber-100 dark:border-amber-900/40 text-[11px] text-slate-500 dark:text-slate-400">
+              <span>Active & in-progress</span>
+              <span className="font-semibold text-amber-600 dark:text-amber-400 font-mono">
+                ৳{pendingBillAmount.toLocaleString('en-IN')} ({totalBillCount > 0 ? Math.round((pendingBillCount / totalBillCount) * 100) : 0}%)
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

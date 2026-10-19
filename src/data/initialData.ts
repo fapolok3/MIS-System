@@ -1,4 +1,27 @@
-import { Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup, SystemOptions, IssueTrackerItem, DeviceSupportTicket } from '../types';
+import { Device, Ticket, PurchaseOrder, SIMItem, CategoryGroup, SystemOptions, IssueTrackerItem, DeviceSupportTicket, BillItem, ServiceTicketItem } from '../types';
+
+export const initialClients: string[] = ['Black Bank PLC'];
+
+export const initialBillLocations: string[] = [
+  'Gulistan Branch',
+  'Dhanmondi Branch',
+  'Motijheel Branch',
+  'Uttara Branch',
+  'Banani Branch',
+  'Head Office',
+];
+
+export const initialBillCategories: string[] = [
+  'Installation Support',
+  'Location Shift',
+  'Annual Maintenance',
+  'Hardware Repair',
+  'Network Cabling',
+];
+
+export const initialBills: BillItem[] = [];
+
+export const initialServiceTickets: ServiceTicketItem[] = [];
 
 export const initialDevices: Device[] = [];
 

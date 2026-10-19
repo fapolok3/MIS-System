@@ -9,6 +9,8 @@ import {
   AppSettings,
   IssueTrackerItem,
   DeviceSupportTicket,
+  BillItem,
+  ServiceTicketItem,
 } from '../types';
 import { initialSystemOptions } from '../data/initialData';
 
@@ -1527,6 +1529,313 @@ export async function bulkDeleteSupabaseDeviceSupportTickets(ids: string[]): Pro
     return true;
   } catch (err) {
     console.warn('Supabase bulkDeleteDeviceSupportTickets catch error:', err);
+    return false;
+  }
+}
+
+// -------------------------------------------------------------
+// BILLS (Bill Tracker & Bill Report)
+// -------------------------------------------------------------
+function mapRowToBillItem(d: any, index: number = 0): BillItem {
+  return {
+    id: String(d.id || d.bill_number || d.billNumber || `BILL-${Date.now()}-${index}`),
+    billNumber: d.bill_number || d.billNumber || String(d.id || ''),
+    invoiceNumber: d.invoice_number || d.invoiceNumber || '',
+    vendor: d.vendor || '',
+    client: d.client || 'Black Bank PLC',
+    clientLocation: d.client_location || d.clientLocation || '',
+    description: d.description || '',
+    billType: d.bill_type || d.billType || 'Installation Support',
+    amount: Number(d.amount) || 0,
+    handoverDate: d.handover_date || d.handoverDate || '',
+    submissionDate: d.submission_date || d.submissionDate || '',
+    receivedDate: d.received_date || d.receivedDate || '',
+    paymentDate: d.payment_date || d.paymentDate || '',
+    status: (d.status || 'Pending') as 'Pending' | 'Submitted' | 'Partial' | 'Paid',
+    approvedBy: d.approved_by || d.approvedBy || '',
+    paymentMethod: d.payment_method || d.paymentMethod || 'Bank Transfer',
+    remarks: d.remarks || '',
+    createdAt: d.created_at || d.createdAt || new Date().toISOString(),
+    updatedAt: d.updated_at || d.updatedAt || new Date().toISOString(),
+  };
+}
+
+function mapBillItemToRow(bill: BillItem) {
+  return {
+    id: bill.id || bill.billNumber,
+    bill_number: bill.billNumber,
+    invoice_number: bill.invoiceNumber || '',
+    vendor: bill.vendor || '',
+    client: bill.client || 'Black Bank PLC',
+    client_location: bill.clientLocation || '',
+    description: bill.description || '',
+    bill_type: bill.billType || 'Installation Support',
+    amount: Number(bill.amount) || 0,
+    handover_date: bill.handoverDate || '',
+    submission_date: bill.submissionDate || '',
+    received_date: bill.receivedDate || '',
+    payment_date: bill.paymentDate || '',
+    status: bill.status || 'Pending',
+    approved_by: bill.approvedBy || '',
+    payment_method: bill.paymentMethod || 'Bank Transfer',
+    remarks: bill.remarks || '',
+    created_at: bill.createdAt || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export async function fetchSupabaseBills(): Promise<BillItem[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('bills')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('Supabase fetchBills warning:', error.message);
+      // Fallback query without sorting
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('bills')
+        .select('*');
+      if (fallbackError) {
+        return null;
+      }
+      if (!fallbackData) return [];
+      return fallbackData.map((d: any, idx: number) => mapRowToBillItem(d, idx));
+    }
+
+    if (!data) return [];
+    return data.map((d: any, idx: number) => mapRowToBillItem(d, idx));
+  } catch (err) {
+    console.warn('Supabase fetchBills catch error:', err);
+    return null;
+  }
+}
+
+export async function insertSupabaseBill(bill: BillItem): Promise<boolean> {
+  try {
+    const row = mapBillItemToRow(bill);
+    const { error } = await supabase
+      .from('bills')
+      .upsert([row], { onConflict: 'id' });
+
+    if (error) {
+      console.warn('Supabase insertBill error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase insertBill catch error:', err);
+    return false;
+  }
+}
+
+export async function bulkInsertSupabaseBills(bills: BillItem[]): Promise<boolean> {
+  try {
+    const rows = bills.map((b) => mapBillItemToRow(b));
+    const { error } = await supabase
+      .from('bills')
+      .upsert(rows, { onConflict: 'id' });
+
+    if (error) {
+      console.warn('Supabase bulkInsertBills error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkInsertBills catch error:', err);
+    return false;
+  }
+}
+
+export async function deleteSupabaseBill(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('bills')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.warn('Supabase deleteBill error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase deleteBill catch error:', err);
+    return false;
+  }
+}
+
+export async function bulkDeleteSupabaseBills(ids: string[]): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('bills')
+      .delete()
+      .in('id', ids);
+
+    if (error) {
+      console.warn('Supabase bulkDeleteBills error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkDeleteBills catch error:', err);
+    return false;
+  }
+}
+
+// -------------------------------------------------------------
+// SERVICE TICKETS (Hardware Maintenance & Support Tickets)
+// -------------------------------------------------------------
+export async function fetchSupabaseServiceTickets(): Promise<ServiceTicketItem[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('service_tickets')
+      .select('*')
+      .limit(10000)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('Supabase fetchServiceTickets error:', error.message);
+      return null;
+    }
+
+    if (!data) return [];
+
+    return data.map((t: any) => ({
+      id: t.id || '',
+      issueNumber: t.issue_number || t.id,
+      odooId: t.odoo_id || '',
+      emailFrom: t.email_from || '',
+      emailSubject: t.email_subject || '',
+      client: t.client || 'Black Bank PLC',
+      contactPerson: t.contact_person || '',
+      contactNumber: t.contact_number || '',
+      district: t.district || 'Dhaka',
+      address: t.address || '',
+      deviceLocation: t.device_location || '',
+      locationType: t.location_type || 'Main Branch',
+      deviceId: t.device_id || '',
+      product: t.product || '',
+      productPrice: t.product_price || '',
+      segment: t.segment || 'Corporate',
+      kam: t.kam || '',
+      requestDate: t.request_date || '',
+      requestTime: t.request_time || '',
+      plannedDate: t.planned_date || '',
+      serviceDate: t.service_date || '',
+      slaThreshold: Number(t.sla_threshold) || 3,
+      resolutionDays: t.resolution_days || 0,
+      slaStatus: t.sla_status || 'Pending',
+      issues: t.issues || '',
+      priority: t.priority || 'Medium',
+      status: t.status || 'Open',
+      replace: t.replace || 'No',
+      replaceDeviceId: t.replace_device_id || 'N/A',
+      assignPerson: t.assign_person || '',
+      accessories: t.accessories || '',
+      deliveryOption: t.delivery_option || 'Onsite',
+      challanBy: t.challan_by || '',
+      handedOverTo: t.handed_over_to || '',
+      unitQty: Number(t.unit_qty) || 1,
+      invoiceHandover: t.invoice_handover || 'No',
+      paymentMethod: t.payment_method || 'Cash',
+      vendorBill: t.vendor_bill || '',
+      remarks: t.remarks || '',
+      visitEmail: t.visit_email || '',
+      comments: t.comments || '',
+      createdAt: t.created_at || new Date().toISOString(),
+      updatedAt: t.updated_at || new Date().toISOString(),
+    }));
+  } catch (err) {
+    console.warn('Supabase fetchServiceTickets catch error:', err);
+    return null;
+  }
+}
+
+export async function insertSupabaseServiceTicket(ticket: ServiceTicketItem): Promise<boolean> {
+  try {
+    const row = {
+      id: ticket.id,
+      issue_number: ticket.issueNumber,
+      odoo_id: ticket.odooId || '',
+      email_from: ticket.emailFrom || '',
+      email_subject: ticket.emailSubject || '',
+      client: ticket.client || 'Black Bank PLC',
+      contact_person: ticket.contactPerson || '',
+      contact_number: ticket.contactNumber || '',
+      district: ticket.district || 'Dhaka',
+      address: ticket.address || '',
+      device_location: ticket.deviceLocation || '',
+      location_type: ticket.locationType || 'Main Branch',
+      device_id: ticket.deviceId || '',
+      product: ticket.product || '',
+      product_price: ticket.productPrice || '',
+      segment: ticket.segment || 'Corporate',
+      kam: ticket.kam || '',
+      request_date: ticket.requestDate || '',
+      request_time: ticket.requestTime || '',
+      planned_date: ticket.plannedDate || '',
+      service_date: ticket.serviceDate || '',
+      sla_threshold: ticket.slaThreshold || 3,
+      resolution_days: String(ticket.resolutionDays || 0),
+      sla_status: ticket.slaStatus || 'Pending',
+      issues: ticket.issues || '',
+      priority: ticket.priority || 'Medium',
+      status: ticket.status || 'Open',
+      replace: ticket.replace || 'No',
+      replace_device_id: ticket.replaceDeviceId || 'N/A',
+      assign_person: ticket.assignPerson || '',
+      accessories: ticket.accessories || '',
+      delivery_option: ticket.deliveryOption || 'Onsite',
+      challan_by: ticket.challanBy || '',
+      handed_over_to: ticket.handedOverTo || '',
+      unit_qty: ticket.unitQty || 1,
+      invoice_handover: ticket.invoiceHandover || 'No',
+      payment_method: ticket.paymentMethod || 'Cash',
+      vendor_bill: ticket.vendorBill || '',
+      remarks: ticket.remarks || '',
+      visit_email: ticket.visitEmail || '',
+      comments: ticket.comments || '',
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from('service_tickets').upsert([row], { onConflict: 'id' });
+    if (error) {
+      console.warn('Supabase insertServiceTicket error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase insertServiceTicket catch error:', err);
+    return false;
+  }
+}
+
+export async function deleteSupabaseServiceTicket(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('service_tickets').delete().eq('id', id);
+    if (error) {
+      console.warn('Supabase deleteServiceTicket error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase deleteServiceTicket catch error:', err);
+    return false;
+  }
+}
+
+export async function bulkDeleteSupabaseServiceTickets(ids: string[]): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('service_tickets').delete().in('id', ids);
+    if (error) {
+      console.warn('Supabase bulkDeleteServiceTickets error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase bulkDeleteServiceTickets catch error:', err);
     return false;
   }
 }

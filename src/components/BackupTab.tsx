@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   AlertCircle,
   FolderTree,
+  Wrench,
 } from 'lucide-react';
 import {
   Device,
@@ -25,6 +26,7 @@ import {
   AppSettings,
   IssueTrackerItem,
   DeviceSupportTicket,
+  ServiceTicketItem,
 } from '../types';
 
 interface BackupTabProps {
@@ -35,6 +37,7 @@ interface BackupTabProps {
     sims: SIMItem[];
     issues?: IssueTrackerItem[];
     deviceSupportTickets?: DeviceSupportTicket[];
+    serviceTickets?: ServiceTicketItem[];
     categoryGroups: CategoryGroup[];
     systemOptions?: SystemOptions;
     appSettings?: AppSettings;
@@ -46,6 +49,7 @@ interface BackupTabProps {
     sims?: SIMItem[];
     issues?: IssueTrackerItem[];
     deviceSupportTickets?: DeviceSupportTicket[];
+    serviceTickets?: ServiceTicketItem[];
     categoryGroups?: CategoryGroup[];
     systemOptions?: SystemOptions;
     appSettings?: AppSettings;
@@ -88,6 +92,7 @@ export const BackupTab: React.FC<BackupTabProps> = ({
       const simsCount = data.sims?.length || 0;
       const issuesCount = data.issues?.length || 0;
       const deviceSupportTicketsCount = data.deviceSupportTickets?.length || 0;
+      const serviceTicketsCount = data.serviceTickets?.length || 0;
       const groupsCount = data.categoryGroups?.length || 0;
 
       const backupObj = {
@@ -106,6 +111,7 @@ export const BackupTab: React.FC<BackupTabProps> = ({
           simCards: simsCount,
           issueTracker: issuesCount,
           deviceSupportTickets: deviceSupportTicketsCount,
+          serviceTickets: serviceTicketsCount,
           categoryGroups: groupsCount,
         },
         data: {
@@ -115,6 +121,7 @@ export const BackupTab: React.FC<BackupTabProps> = ({
           sims: data.sims || [],
           issues: data.issues || [],
           deviceSupportTickets: data.deviceSupportTickets || [],
+          serviceTickets: data.serviceTickets || [],
           categoryGroups: data.categoryGroups || [],
           systemOptions: data.systemOptions || null,
           appSettings: data.appSettings || null,
@@ -177,9 +184,10 @@ export const BackupTab: React.FC<BackupTabProps> = ({
             simCards: payloadData.sims?.length || 0,
             issueTracker: payloadData.issues?.length || 0,
             deviceSupportTickets: payloadData.deviceSupportTickets?.length || 0,
+            serviceTickets: payloadData.serviceTickets?.length || 0,
             categoryGroups: payloadData.categoryGroups?.length || 0,
           };
-        } else if (parsed && (parsed.devices || parsed.tickets || parsed.pos || parsed.sims || parsed.deviceSupportTickets)) {
+        } else if (parsed && (parsed.devices || parsed.tickets || parsed.pos || parsed.sims || parsed.deviceSupportTickets || parsed.serviceTickets)) {
           // Direct un-enveloped dump
           payloadData = parsed;
           counts = {
@@ -189,6 +197,7 @@ export const BackupTab: React.FC<BackupTabProps> = ({
             simCards: parsed.sims?.length || 0,
             issueTracker: parsed.issues?.length || 0,
             deviceSupportTickets: parsed.deviceSupportTickets?.length || 0,
+            serviceTickets: parsed.serviceTickets?.length || 0,
             categoryGroups: parsed.categoryGroups?.length || 0,
           };
         } else {
@@ -337,6 +346,13 @@ export const BackupTab: React.FC<BackupTabProps> = ({
                     <span>Categories:</span>
                   </div>
                   <span className="font-bold text-slate-900 dark:text-white font-mono">{data.categoryGroups?.length || 0}</span>
+                </div>
+                <div className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between col-span-2 sm:col-span-1">
+                  <div className="flex items-center space-x-1.5 text-slate-600 dark:text-slate-300">
+                    <Wrench className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Service Tickets:</span>
+                  </div>
+                  <span className="font-bold text-slate-900 dark:text-white font-mono">{data.serviceTickets?.length || 0}</span>
                 </div>
               </div>
             </div>

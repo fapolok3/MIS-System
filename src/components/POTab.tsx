@@ -1,5 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, Plus, Trash2, Edit2, FileSpreadsheet, Search, X, Eye, Upload } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  FileText,
+  Plus,
+  Trash2,
+  Edit2,
+  FileSpreadsheet,
+  Search,
+  X,
+  Eye,
+  Upload,
+  ShoppingBag,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  Filter,
+} from 'lucide-react';
 import { PurchaseOrder } from '../types';
 import { Pagination } from './Pagination';
 import { ConfirmModal } from './Modals/ConfirmModal';
@@ -30,6 +45,7 @@ export const POTab: React.FC<POTabProps> = ({
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [localSearch, setLocalSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [filterStatus, setFilterStatus] = useState<string>('ALL');
 
   // View Details Modal & Confirm Modal States
   const [viewingPO, setViewingPO] = useState<PurchaseOrder | null>(null);
@@ -48,25 +64,78 @@ export const POTab: React.FC<POTabProps> = ({
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds([]);
-  }, [searchQuery, localSearch]);
+  }, [searchQuery, localSearch, filterStatus]);
 
   const effectiveSearch = localSearch.trim() || searchQuery.trim();
 
-  const filteredPOs = pos.filter((p) => {
-    if (!effectiveSearch.trim()) return true;
-    const q = effectiveSearch.toLowerCase();
-    return (
-      (p.poNumber || p.id || '').toLowerCase().includes(q) ||
-      (p.vendor || '').toLowerCase().includes(q) ||
-      (p.category || '').toLowerCase().includes(q) ||
-      (p.status || '').toLowerCase().includes(q)
-    );
-  });
+  // Metrics across all PO records
+  const totalCount = pos.length;
+  const completeCount = useMemo(
+    () => pos.filter((p) => (p.status || '').toUpperCase() === 'COMPLETED').length,
+    [pos]
+  );
+  const ongoingCount = useMemo(
+    () => pos.filter((p) => (p.status || '').toUpperCase() === 'ONGOING').length,
+    [pos]
+  );
+  const pendingCount = useMemo(
+    () => pos.filter((p) => (p.status || '').toUpperCase() === 'PENDING').length,
+    [pos]
+  );
 
-  const totalCount = filteredPOs.length;
-  const completeCount = filteredPOs.filter((p) => p.status === 'COMPLETED').length;
-  const ongoingCount = filteredPOs.filter((p) => p.status === 'ONGOING').length;
-  const pendingCount = filteredPOs.filter((p) => p.status === 'PENDING').length;
+  const totalAmount = useMemo(() => {
+    return pos.reduce((sum, p) => {
+      const val = parseFloat(String(p.totalPrice || '').replace(/[^0-9.-]+/g, '')) || 0;
+      return sum + val;
+    }, 0);
+  }, [pos]);
+
+  const completedAmount = useMemo(() => {
+    return pos
+      .filter((p) => (p.status || '').toUpperCase() === 'COMPLETED')
+      .reduce((sum, p) => {
+        const val = parseFloat(String(p.totalPrice || '').replace(/[^0-9.-]+/g, '')) || 0;
+        return sum + val;
+      }, 0);
+  }, [pos]);
+
+  const ongoingAmount = useMemo(() => {
+    return pos
+      .filter((p) => (p.status || '').toUpperCase() === 'ONGOING')
+      .reduce((sum, p) => {
+        const val = parseFloat(String(p.totalPrice || '').replace(/[^0-9.-]+/g, '')) || 0;
+        return sum + val;
+      }, 0);
+  }, [pos]);
+
+  const pendingAmount = useMemo(() => {
+    return pos
+      .filter((p) => (p.status || '').toUpperCase() === 'PENDING')
+      .reduce((sum, p) => {
+        const val = parseFloat(String(p.totalPrice || '').replace(/[^0-9.-]+/g, '')) || 0;
+        return sum + val;
+      }, 0);
+  }, [pos]);
+
+  const completePercent = totalCount > 0 ? Math.round((completeCount / totalCount) * 100) : 0;
+  const ongoingPercent = totalCount > 0 ? Math.round((ongoingCount / totalCount) * 100) : 0;
+  const pendingPercent = totalCount > 0 ? Math.round((pendingCount / totalCount) * 100) : 0;
+
+  const filteredPOs = useMemo(() => {
+    return pos.filter((p) => {
+      if (filterStatus !== 'ALL' && (p.status || '').toUpperCase() !== filterStatus) {
+        return false;
+      }
+      if (!effectiveSearch.trim()) return true;
+      const q = effectiveSearch.toLowerCase();
+      return (
+        (p.poNumber || p.id || '').toLowerCase().includes(q) ||
+        (p.vendor || '').toLowerCase().includes(q) ||
+        (p.category || '').toLowerCase().includes(q) ||
+        (p.status || '').toLowerCase().includes(q)
+      );
+    });
+  }, [pos, filterStatus, effectiveSearch]);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedPOs = filteredPOs.slice(startIndex, startIndex + itemsPerPage);
@@ -228,25 +297,174 @@ export const POTab: React.FC<POTabProps> = ({
         </div>
       </div>
 
-      {/* PO DASHBOARD CARDS INTEGRATED */}
-      <div className="po-card-grid">
-        <div className="po-card total">
-          <div className="po-card-title">Total PO</div>
-          <div className="po-card-value">{totalCount}</div>
+      {/* PRIMARY PO METRICS CARDS (Dashboard / Report Luxury Gradient Style) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total PO Card */}
+        <div
+          onClick={() => {
+            setFilterStatus('ALL');
+            setCurrentPage(1);
+          }}
+          className={`bg-gradient-to-br from-indigo-500/10 via-white to-indigo-50/40 dark:from-indigo-950/40 dark:via-slate-900 dark:to-indigo-900/20 border p-4 rounded-xl shadow-xs select-none cursor-pointer hover:border-indigo-500/70 transition ${
+            filterStatus === 'ALL'
+              ? 'border-indigo-400 dark:border-indigo-600 ring-2 ring-indigo-500/20'
+              : 'border-indigo-200/80 dark:border-indigo-800/60'
+          }`}
+          title="Click to view all purchase orders"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+              <ShoppingBag className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              Total PO
+            </span>
+            <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800/60">
+              100% Volume
+            </span>
+          </div>
+          <div className="text-3xl font-extrabold text-slate-900 dark:text-white mt-2">
+            {totalCount}
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-500 dark:text-slate-400">
+            <span>Procurement Register</span>
+            <span className="font-semibold text-indigo-600 dark:text-indigo-400 font-mono">
+              {totalAmount > 0
+                ? `৳${totalAmount.toLocaleString('en-IN')}`
+                : `${pos.reduce((s, p) => s + (p.qty || 1), 0)} items`}
+            </span>
+          </div>
         </div>
-        <div className="po-card complete">
-          <div className="po-card-title">Total PO Complete</div>
-          <div className="po-card-value">{completeCount}</div>
+
+        {/* Complete PO Card */}
+        <div
+          onClick={() => {
+            setFilterStatus((prev) => (prev === 'COMPLETED' ? 'ALL' : 'COMPLETED'));
+            setCurrentPage(1);
+          }}
+          className={`bg-gradient-to-br from-emerald-500/10 via-white to-emerald-50/40 dark:from-emerald-950/40 dark:via-slate-900 dark:to-emerald-900/20 border p-4 rounded-xl shadow-xs select-none cursor-pointer hover:border-emerald-500/70 transition ${
+            filterStatus === 'COMPLETED'
+              ? 'border-emerald-400 dark:border-emerald-600 ring-2 ring-emerald-500/20'
+              : 'border-emerald-200/80 dark:border-emerald-800/60'
+          }`}
+          title="Click to filter Completed POs"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              Total PO Complete
+            </span>
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
+              Completed
+            </span>
+          </div>
+          <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">
+            {completeCount}
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-emerald-100 dark:border-emerald-900/40 text-[11px] text-slate-500 dark:text-slate-400">
+            <span>Fulfillment Rate</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
+              {completedAmount > 0
+                ? `৳${completedAmount.toLocaleString('en-IN')} (${completePercent}%)`
+                : `${completePercent}% volume`}
+            </span>
+          </div>
         </div>
-        <div className="po-card ongoing">
-          <div className="po-card-title">Ongoing</div>
-          <div className="po-card-value">{ongoingCount}</div>
+
+        {/* Ongoing PO Card */}
+        <div
+          onClick={() => {
+            setFilterStatus((prev) => (prev === 'ONGOING' ? 'ALL' : 'ONGOING'));
+            setCurrentPage(1);
+          }}
+          className={`bg-gradient-to-br from-blue-500/10 via-white to-blue-50/40 dark:from-blue-950/40 dark:via-slate-900 dark:to-blue-900/20 border p-4 rounded-xl shadow-xs select-none cursor-pointer hover:border-blue-500/70 transition ${
+            filterStatus === 'ONGOING'
+              ? 'border-blue-400 dark:border-blue-600 ring-2 ring-blue-500/20'
+              : 'border-blue-200/80 dark:border-blue-800/60'
+          }`}
+          title="Click to filter Ongoing POs"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              Ongoing
+            </span>
+            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800/60">
+              In Delivery
+            </span>
+          </div>
+          <div className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 mt-2">
+            {ongoingCount}
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-blue-100 dark:border-blue-900/40 text-[11px] text-slate-500 dark:text-slate-400">
+            <span>Active processing</span>
+            <span className="font-semibold text-blue-600 dark:text-blue-400 font-mono">
+              {ongoingAmount > 0
+                ? `৳${ongoingAmount.toLocaleString('en-IN')} (${ongoingPercent}%)`
+                : `${ongoingPercent}% in-progress`}
+            </span>
+          </div>
         </div>
-        <div className="po-card pending">
-          <div className="po-card-title">Pending</div>
-          <div className="po-card-value">{pendingCount}</div>
+
+        {/* Pending PO Card */}
+        <div
+          onClick={() => {
+            setFilterStatus((prev) => (prev === 'PENDING' ? 'ALL' : 'PENDING'));
+            setCurrentPage(1);
+          }}
+          className={`bg-gradient-to-br from-amber-500/10 via-white to-amber-50/40 dark:from-amber-950/40 dark:via-slate-900 dark:to-amber-900/20 border p-4 rounded-xl shadow-xs select-none cursor-pointer hover:border-amber-500/70 transition ${
+            filterStatus === 'PENDING'
+              ? 'border-amber-400 dark:border-amber-600 ring-2 ring-amber-500/20'
+              : 'border-amber-200/80 dark:border-amber-800/60'
+          }`}
+          title="Click to filter Pending POs"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              Pending
+            </span>
+            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/60">
+              Awaiting
+            </span>
+          </div>
+          <div className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-2">
+            {pendingCount}
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-amber-100 dark:border-amber-900/40 text-[11px] text-slate-500 dark:text-slate-400">
+            <span>Pending approvals</span>
+            <span className="font-semibold text-amber-600 dark:text-amber-400 font-mono">
+              {pendingAmount > 0
+                ? `৳${pendingAmount.toLocaleString('en-IN')} (${pendingPercent}%)`
+                : `${pendingPercent}% queue`}
+            </span>
+          </div>
         </div>
       </div>
+
+      {/* Filter active status indicator */}
+      {filterStatus !== 'ALL' && (
+        <div className="flex items-center justify-between bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 px-3.5 py-2 rounded-lg text-xs">
+          <div className="flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-slate-600 dark:text-slate-400">Showing orders with status:</span>
+            <span className="font-bold uppercase text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-700">
+              {filterStatus}
+            </span>
+            <span className="text-slate-500 dark:text-slate-400 font-medium">
+              ({filteredPOs.length} of {totalCount} records)
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              setFilterStatus('ALL');
+              setCurrentPage(1);
+            }}
+            className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 cursor-pointer flex items-center gap-1"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>Reset Filter</span>
+          </button>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden p-4 space-y-3 shadow-xs">
         <div className="overflow-x-auto">

@@ -11,6 +11,8 @@ import {
   IssueTrackerItem,
   DeviceSupportTicket,
   LiveActiveUser,
+  BillItem,
+  ServiceTicketItem,
 } from './types';
 import {
   initialDevices,
@@ -21,6 +23,11 @@ import {
   initialDeviceSupportTickets,
   initialCategoryGroups,
   initialSystemOptions,
+  initialBills,
+  initialServiceTickets,
+  initialClients,
+  initialBillLocations,
+  initialBillCategories,
 } from './data/initialData';
 
 import {
@@ -65,6 +72,14 @@ import {
   bulkInsertSupabaseDeviceSupportTickets,
   subscribeToSupabaseLiveSync,
   defaultAppSettings,
+  fetchSupabaseBills,
+  insertSupabaseBill,
+  deleteSupabaseBill,
+  bulkDeleteSupabaseBills,
+  fetchSupabaseServiceTickets,
+  insertSupabaseServiceTicket,
+  deleteSupabaseServiceTicket,
+  bulkDeleteSupabaseServiceTickets,
 } from './lib/supabase';
 
 import { Header } from './components/Header';
@@ -72,6 +87,10 @@ import { Sidebar } from './components/Sidebar';
 import { DashboardTab } from './components/DashboardTab';
 import { DeviceIssueTrackerTab } from './components/DeviceIssueTrackerTab';
 import { DeviceIssueReportTab } from './components/DeviceIssueReportTab';
+import { ServiceTicketTrackerTab } from './components/ServiceTicketTrackerTab';
+import { ServiceTicketReportTab } from './components/ServiceTicketReportTab';
+import { BillTrackerTab } from './components/BillTrackerTab';
+import { BillReportTab } from './components/BillReportTab';
 import { IssueTrackerTab } from './components/IssueTrackerTab';
 import { IssueReportTab } from './components/IssueReportTab';
 import { DevicesTab } from './components/DevicesTab';
@@ -110,6 +129,10 @@ const pathToTab = (path: string): TabType => {
   const cleanPath = path.toLowerCase().replace(/\/$/, '') || '/';
   if (cleanPath === '/device-issue-tracker' || cleanPath === '/device-issues') return 'device_issue_tracker';
   if (cleanPath === '/device-issue-report' || cleanPath === '/device-reports') return 'device_issue_report';
+  if (cleanPath === '/service-ticket-tracker' || cleanPath === '/service-tracker') return 'service_ticket_tracker';
+  if (cleanPath === '/service-ticket-report' || cleanPath === '/service-report') return 'service_ticket_report';
+  if (cleanPath === '/bill-tracker' || cleanPath === '/bill-entry' || cleanPath === '/bills') return 'bill_tracker';
+  if (cleanPath === '/bill-report' || cleanPath === '/bill-reports' || cleanPath === '/bill-analytics') return 'bill_report';
   if (cleanPath === '/issue-tracker' || cleanPath === '/tracker' || cleanPath === '/issues') return 'issue_tracker';
   if (cleanPath === '/issue-report' || cleanPath === '/issue-analytics' || cleanPath === '/reports') return 'issue_report';
   if (cleanPath === '/devices') return 'devices';
@@ -127,6 +150,10 @@ const tabToPath = (tab: TabType): string => {
   switch (tab) {
     case 'device_issue_tracker': return '/device-issue-tracker';
     case 'device_issue_report': return '/device-issue-report';
+    case 'service_ticket_tracker': return '/service-ticket-tracker';
+    case 'service_ticket_report': return '/service-ticket-report';
+    case 'bill_tracker': return '/bill-tracker';
+    case 'bill_report': return '/bill-report';
     case 'issue_tracker': return '/issue-tracker';
     case 'issue_report': return '/issue-report';
     case 'devices': return '/devices';
@@ -430,6 +457,91 @@ export default function App() {
     }
     return initialDeviceSupportTickets;
   });
+
+  // Bills State (Bill Tracker & Bill Report)
+  const [bills, setBills] = useState<BillItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('billsData');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            const filtered = parsed.filter(
+              (b: BillItem) =>
+                b &&
+                b.id &&
+                !b.id.startsWith('BILL-20261013-10000') &&
+                !b.id.startsWith('demo-')
+            );
+            return filtered;
+          }
+        }
+      } catch (e) {
+        console.warn('localStorage parse error', e);
+      }
+    }
+    return initialBills;
+  });
+
+  const [billClients, setBillClients] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('billClientsData');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return initialClients;
+  });
+
+  const [billLocations, setBillLocations] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('billLocationsData');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return initialBillLocations;
+  });
+
+  const [billCategories, setBillCategories] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('billCategoriesData');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return initialBillCategories;
+  });
+
+  const [editingBillForTracker, setEditingBillForTracker] = useState<BillItem | null>(null);
+
+  // Service Tickets State (Service Ticket Tracker & Service Ticket Report)
+  const [serviceTickets, setServiceTickets] = useState<ServiceTicketItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('serviceTicketItemsData');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {
+        console.warn('localStorage parse error', e);
+      }
+    }
+    return initialServiceTickets;
+  });
+
+  const [editingServiceTicketForTracker, setEditingServiceTicketForTracker] = useState<ServiceTicketItem | null>(null);
+
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -670,6 +782,8 @@ export default function App() {
         dbSystemOptions,
         dbAppSettings,
         dbDeviceSupportTickets,
+        dbBills,
+        dbServiceTickets,
       ] = await Promise.all([
         fetchSupabaseDevices(),
         fetchSupabaseTickets(),
@@ -680,6 +794,8 @@ export default function App() {
         fetchSupabaseSystemOptions(),
         fetchSupabaseAppSettings(),
         fetchSupabaseDeviceSupportTickets(),
+        fetchSupabaseBills(),
+        fetchSupabaseServiceTickets(),
       ]);
 
       // 1. Devices (Supabase is authoritative, never resurrect deleted items)
@@ -826,6 +942,33 @@ export default function App() {
           localStorage.setItem('deviceSupportTicketsData', JSON.stringify(cleanDbTickets));
         } catch (e) {
           console.warn('localStorage save device support tickets error', e);
+        }
+      }
+
+      // 10. Bills (Bill Tracker & Bill Report)
+      if (dbBills !== null) {
+        const cleanDbBills = dbBills.filter(
+          (b: BillItem) =>
+            b &&
+            b.id &&
+            !b.id.startsWith('BILL-20261013-10000') &&
+            !b.id.startsWith('demo-')
+        );
+        setBills(cleanDbBills);
+        try {
+          localStorage.setItem('billsData', JSON.stringify(cleanDbBills));
+        } catch (e) {
+          console.warn('localStorage save bills error', e);
+        }
+      }
+
+      // 11. Service Tickets (Service Ticket Tracker & Service Ticket Report)
+      if (dbServiceTickets !== null) {
+        setServiceTickets(dbServiceTickets);
+        try {
+          localStorage.setItem('serviceTicketItemsData', JSON.stringify(dbServiceTickets));
+        } catch (e) {
+          console.warn('localStorage save service tickets error', e);
         }
       }
     } catch (err) {
@@ -1641,6 +1784,265 @@ export default function App() {
     await bulkDeleteSupabaseDeviceSupportTickets(ids);
   };
 
+  // Bill Tracker & Report Handlers
+  const handleSaveBill = async (bill: BillItem) => {
+    setBills((prev) => {
+      const exists = prev.some((b) => b.id === bill.id);
+      const updated = exists ? prev.map((b) => (b.id === bill.id ? bill : b)) : [bill, ...prev];
+      try {
+        localStorage.setItem('billsData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save bills error', e);
+      }
+      return updated;
+    });
+    showToast('Bill saved successfully!');
+    await insertSupabaseBill(bill);
+  };
+
+  const handleDeleteBill = async (id: string) => {
+    setBills((prev) => {
+      const updated = prev.filter((b) => b.id !== id);
+      try {
+        localStorage.setItem('billsData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save bills error', e);
+      }
+      return updated;
+    });
+    showToast('Bill record deleted.');
+    await deleteSupabaseBill(id);
+  };
+
+  const handleBulkDeleteBills = async (ids: string[]) => {
+    setBills((prev) => {
+      const updated = prev.filter((b) => !ids.includes(b.id));
+      try {
+        localStorage.setItem('billsData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save bills error', e);
+      }
+      return updated;
+    });
+    showToast(`${ids.length} Bill record(s) deleted.`);
+    await bulkDeleteSupabaseBills(ids);
+  };
+
+  // Service Tickets Handlers (Service Ticket Tracker & Service Ticket Report)
+  const handleSaveServiceTicket = async (ticket: ServiceTicketItem) => {
+    setServiceTickets((prev) => {
+      const exists = prev.some((t) => t.id === ticket.id);
+      const updated = exists
+        ? prev.map((t) => (t.id === ticket.id ? { ...ticket, updatedAt: new Date().toISOString() } : t))
+        : [{ ...ticket, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...prev];
+      try {
+        localStorage.setItem('serviceTicketItemsData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save service tickets error', e);
+      }
+      return updated;
+    });
+    showToast(`Service Ticket "${ticket.issueNumber}" saved successfully!`);
+    await insertSupabaseServiceTicket(ticket);
+  };
+
+  const handleDeleteServiceTicket = async (id: string) => {
+    setServiceTickets((prev) => {
+      const updated = prev.filter((t) => t.id !== id);
+      try {
+        localStorage.setItem('serviceTicketItemsData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save service tickets error', e);
+      }
+      return updated;
+    });
+    showToast('Service ticket record deleted.');
+    await deleteSupabaseServiceTicket(id);
+  };
+
+  const handleBulkDeleteServiceTickets = async (ids: string[]) => {
+    const idSet = new Set(ids);
+    setServiceTickets((prev) => {
+      const updated = prev.filter((t) => !idSet.has(t.id));
+      try {
+        localStorage.setItem('serviceTicketItemsData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save service tickets error', e);
+      }
+      return updated;
+    });
+    showToast(`${ids.length} service ticket(s) deleted.`);
+    await bulkDeleteSupabaseServiceTickets(ids);
+  };
+
+  const handleLoadSampleServiceTickets = () => {
+    const sampleDate = new Date().toISOString().split('T')[0];
+    const samples: ServiceTicketItem[] = [
+      {
+        id: 'ISS-SAMPLE-01',
+        issueNumber: 'ISS-20261019-01',
+        odooId: 'ODOO-98201',
+        emailFrom: 'branch.motijheel@blackbank.com',
+        emailSubject: 'Fingerprint Module & Backup Battery Fault',
+        client: 'Black Bank PLC',
+        contactPerson: 'Farhan Ahmed',
+        contactNumber: '01711223344',
+        district: 'Dhaka',
+        address: 'Motijheel C/A, Dhaka-1000',
+        deviceLocation: 'Motijheel Branch - Counter 03',
+        locationType: 'Main Branch',
+        deviceId: 'DEV-1029',
+        product: 'Fingerprint Module',
+        productPrice: '3720',
+        segment: 'Corporate',
+        kam: 'Tanvir Hossain',
+        requestDate: sampleDate,
+        requestTime: '10:30',
+        plannedDate: sampleDate,
+        serviceDate: '',
+        slaThreshold: 3,
+        resolutionDays: 0,
+        slaStatus: 'Pending',
+        issues: 'Sensor, Power Issue',
+        priority: 'High',
+        status: 'Working',
+        replace: 'Yes',
+        replaceDeviceId: 'DEV-NEW-8841',
+        assignPerson: 'Engr. Shakil',
+        accessories: 'SMPS Adapter, Battery Cable',
+        deliveryOption: 'Onsite',
+        challanBy: 'Md. Kabir',
+        handedOverTo: 'Branch Manager',
+        unitQty: 1,
+        invoiceHandover: 'Yes',
+        paymentMethod: 'Cash',
+        vendorBill: 'BILL-V-7712',
+        remarks: 'Replaced fingerprint module and verified connectivity.',
+        comments: 'Branch operational after quick fix.',
+      },
+      {
+        id: 'ISS-SAMPLE-02',
+        issueNumber: 'ISS-20261019-02',
+        odooId: 'ODOO-98202',
+        emailFrom: 'branch.dhanmondi@blackbank.com',
+        emailSubject: 'GPRS SIM connectivity drop',
+        client: 'Black Bank PLC',
+        contactPerson: 'Nasrin Sultana',
+        contactNumber: '01819334455',
+        district: 'Dhaka',
+        address: 'Road 27, Dhanmondi, Dhaka',
+        deviceLocation: 'Dhanmondi Branch - ATM Booth 1',
+        locationType: 'Sub Branch',
+        deviceId: 'DEV-1044',
+        product: 'GPRS Network Communication Module',
+        productPrice: '1320',
+        segment: 'Retail',
+        kam: 'Tanvir Hossain',
+        requestDate: sampleDate,
+        requestTime: '11:15',
+        plannedDate: sampleDate,
+        serviceDate: sampleDate,
+        slaThreshold: 2,
+        resolutionDays: 1,
+        slaStatus: 'Within SLA',
+        issues: 'Sim Connectivity',
+        priority: 'Medium',
+        status: 'Done',
+        replace: 'No',
+        replaceDeviceId: 'N/A',
+        assignPerson: 'Engr. Shakil',
+        accessories: 'Antenna',
+        deliveryOption: 'Onsite',
+        challanBy: 'Sajib Roy',
+        handedOverTo: 'Security Supervisor',
+        unitQty: 1,
+        invoiceHandover: 'No',
+        paymentMethod: 'Bank Transfer',
+        vendorBill: '',
+        remarks: 'Antenna re-tightened and SIM re-seated. Signal restored.',
+        comments: 'Solved within SLA.',
+      },
+    ];
+
+    setServiceTickets((prev) => {
+      const merged = [...samples, ...prev.filter((p) => !samples.some((s) => s.id === p.id))];
+      try {
+        localStorage.setItem('serviceTicketItemsData', JSON.stringify(merged));
+      } catch (e) {}
+      return merged;
+    });
+    showToast('Sample Service Tickets loaded successfully!');
+  };
+
+  const handleAddBillClient = (name: string) => {
+    setBillClients((prev) => {
+      if (prev.includes(name)) return prev;
+      const updated = [...prev, name];
+      try {
+        localStorage.setItem('billClientsData', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    showToast(`Client "${name}" added.`);
+  };
+
+  const handleDeleteBillClient = (name: string) => {
+    setBillClients((prev) => {
+      const updated = prev.filter((c) => c !== name);
+      try {
+        localStorage.setItem('billClientsData', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    showToast(`Client "${name}" removed.`);
+  };
+
+  const handleAddBillLocation = (loc: string) => {
+    setBillLocations((prev) => {
+      if (prev.includes(loc)) return prev;
+      const updated = [...prev, loc];
+      try {
+        localStorage.setItem('billLocationsData', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    showToast(`Location "${loc}" added.`);
+  };
+
+  const handleDeleteBillLocation = (loc: string) => {
+    setBillLocations((prev) => {
+      const updated = prev.filter((l) => l !== loc);
+      try {
+        localStorage.setItem('billLocationsData', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    showToast(`Location "${loc}" removed.`);
+  };
+
+  const handleAddBillCategory = (cat: string) => {
+    setBillCategories((prev) => {
+      if (prev.includes(cat)) return prev;
+      const updated = [...prev, cat];
+      try {
+        localStorage.setItem('billCategoriesData', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    showToast(`Category "${cat}" added.`);
+  };
+
+  const handleDeleteBillCategory = (cat: string) => {
+    setBillCategories((prev) => {
+      const updated = prev.filter((c) => c !== cat);
+      try {
+        localStorage.setItem('billCategoriesData', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    showToast(`Category "${cat}" removed.`);
+  };
+
   // Backup Restore Handler
   const handleRestoreData = (restored: {
     devices?: Device[];
@@ -1649,6 +2051,7 @@ export default function App() {
     sims?: SIMItem[];
     issues?: IssueTrackerItem[];
     deviceSupportTickets?: DeviceSupportTicket[];
+    serviceTickets?: ServiceTicketItem[];
     categoryGroups?: CategoryGroup[];
     systemOptions?: SystemOptions;
     appSettings?: AppSettings;
@@ -1712,6 +2115,15 @@ export default function App() {
           } catch (e) {
             console.warn('localStorage save error', e);
           }
+        }
+        if (restored.serviceTickets && Array.isArray(restored.serviceTickets)) {
+          setServiceTickets(restored.serviceTickets);
+          try {
+            localStorage.setItem('serviceTicketItemsData', JSON.stringify(restored.serviceTickets));
+          } catch (e) {
+            console.warn('localStorage save error', e);
+          }
+          restored.serviceTickets.forEach((st) => insertSupabaseServiceTicket(st));
         }
         if (restored.categoryGroups && Array.isArray(restored.categoryGroups)) {
           setCategoryGroups(restored.categoryGroups);
@@ -1830,6 +2242,8 @@ export default function App() {
               sims={sims}
               issues={issues}
               deviceSupportTickets={deviceSupportTickets}
+              bills={bills}
+              serviceTickets={serviceTickets}
               onSwitchTab={setActiveTab}
             />
           )}
@@ -1851,6 +2265,66 @@ export default function App() {
               onDeleteTicket={handleDeleteDeviceSupportTicket}
               onBulkDeleteTickets={handleBulkDeleteDeviceSupportTickets}
               onNavigateToTracker={() => setActiveTab('device_issue_tracker')}
+            />
+          )}
+
+          {activeTab === 'service_ticket_tracker' && (
+            <ServiceTicketTrackerTab
+              tickets={serviceTickets}
+              onSaveTicket={handleSaveServiceTicket}
+              onDeleteTicket={handleDeleteServiceTicket}
+              onNavigateToReport={() => setActiveTab('service_ticket_report')}
+              editTicket={editingServiceTicketForTracker}
+              onClearEditTicket={() => setEditingServiceTicketForTracker(null)}
+            />
+          )}
+
+          {activeTab === 'service_ticket_report' && (
+            <ServiceTicketReportTab
+              tickets={serviceTickets}
+              onSaveTicket={handleSaveServiceTicket}
+              onDeleteTicket={handleDeleteServiceTicket}
+              onBulkDeleteTickets={handleBulkDeleteServiceTickets}
+              onNavigateToTracker={() => setActiveTab('service_ticket_tracker')}
+              onEditTicketInTracker={(t) => {
+                setEditingServiceTicketForTracker(t);
+                setActiveTab('service_ticket_tracker');
+              }}
+              onLoadSampleData={handleLoadSampleServiceTickets}
+            />
+          )}
+
+          {activeTab === 'bill_tracker' && (
+            <BillTrackerTab
+              bills={bills}
+              onSaveBill={handleSaveBill}
+              onDeleteBill={handleDeleteBill}
+              clients={billClients}
+              onAddClient={handleAddBillClient}
+              onDeleteClient={handleDeleteBillClient}
+              locations={billLocations}
+              onAddLocation={handleAddBillLocation}
+              onDeleteLocation={handleDeleteBillLocation}
+              categories={billCategories}
+              onAddCategory={handleAddBillCategory}
+              onDeleteCategory={handleDeleteBillCategory}
+              onNavigateToReport={() => setActiveTab('bill_report')}
+              editBill={editingBillForTracker}
+              onClearEditBill={() => setEditingBillForTracker(null)}
+            />
+          )}
+
+          {activeTab === 'bill_report' && (
+            <BillReportTab
+              bills={bills}
+              onSaveBill={handleSaveBill}
+              onDeleteBill={handleDeleteBill}
+              onBulkDeleteBills={handleBulkDeleteBills}
+              onNavigateToTracker={() => setActiveTab('bill_tracker')}
+              onEditBillInTracker={(b) => {
+                setEditingBillForTracker(b);
+                setActiveTab('bill_tracker');
+              }}
             />
           )}
 
@@ -1953,6 +2427,7 @@ export default function App() {
                 sims,
                 issues,
                 deviceSupportTickets,
+                serviceTickets,
                 categoryGroups,
                 systemOptions,
                 appSettings,

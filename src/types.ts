@@ -2,6 +2,10 @@ export type TabType =
   | 'dashboard'
   | 'device_issue_tracker'
   | 'device_issue_report'
+  | 'service_ticket_tracker'
+  | 'service_ticket_report'
+  | 'bill_tracker'
+  | 'bill_report'
   | 'issue_tracker'
   | 'issue_report'
   | 'devices'
@@ -12,6 +16,74 @@ export type TabType =
   | 'ticket_generator'
   | 'settings'
   | 'backup';
+
+export interface ServiceTicketItem {
+  id: string;
+  issueNumber: string;
+  odooId: string;
+  emailFrom?: string;
+  emailSubject?: string;
+  client: string;
+  contactPerson: string;
+  contactNumber: string;
+  district: string;
+  address: string;
+  deviceLocation: string;
+  locationType: string;
+  deviceId: string;
+  product: string;
+  productPrice?: string;
+  segment?: string;
+  kam?: string;
+  requestDate: string;
+  requestTime: string;
+  plannedDate: string;
+  serviceDate?: string;
+  slaThreshold: number;
+  resolutionDays?: number | string;
+  slaStatus: string;
+  issues: string;
+  priority: 'Low' | 'Medium' | 'High' | 'Critical' | string;
+  status: 'Open' | 'Pending' | 'Ongoing' | 'Working' | 'RMA' | 'Repairing' | 'Done' | string;
+  replace: 'No' | 'Yes' | string;
+  replaceDeviceId?: string;
+  assignPerson: string;
+  accessories?: string;
+  deliveryOption?: string;
+  challanBy?: string;
+  handedOverTo?: string;
+  unitQty?: number;
+  invoiceHandover?: string;
+  paymentMethod?: string;
+  vendorBill?: string;
+  remarks?: string;
+  visitEmail?: string;
+  comments?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BillItem {
+  id: string;
+  billNumber: string;
+  invoiceNumber: string;
+  vendor: string;
+  client: string;
+  clientLocation: string;
+  description: string;
+  billType: string;
+  amount: number;
+  handoverDate: string;
+  submissionDate: string;
+  receivedDate: string;
+  paymentDate: string;
+  status: 'Pending' | 'Submitted' | 'Partial' | 'Paid';
+  approvedBy: string;
+  paymentMethod: 'Bank Transfer' | 'Cheque' | 'Cash' | 'Online' | string;
+  remarks: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface DeviceSupportTicket {
   id: string;

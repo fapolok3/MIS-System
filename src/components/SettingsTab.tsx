@@ -40,6 +40,8 @@ import {
   Database,
   Save,
   Check,
+  Receipt,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { CategoryGroup, SystemOptions, AppSettings } from '../types';
 import { ConfirmModal } from './Modals/ConfirmModal';
@@ -165,6 +167,20 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       description: 'Interactive analytics cards, filterable issue list, and Excel export',
       icon: Layers,
       badgeColor: 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/50 border-teal-200 dark:border-teal-800',
+    },
+    {
+      id: 'bill_tracker',
+      name: 'Bill Tracker',
+      description: 'Corporate billing entry, invoice registration, and payment tracking',
+      icon: Receipt,
+      badgeColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800',
+    },
+    {
+      id: 'bill_report',
+      name: 'Bill Report & Analytics',
+      description: 'Financial KPI cards, billing analytics charts, and Excel/PDF reports',
+      icon: FileSpreadsheet,
+      badgeColor: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-800',
     },
     {
       id: 'issue_tracker',
