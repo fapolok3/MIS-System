@@ -4,8 +4,6 @@ import {
   Clock,
   AlertTriangle,
   Calendar,
-  ChevronLeft,
-  ChevronRight,
   AlertCircle,
   Cpu,
   Layers,
@@ -13,6 +11,7 @@ import {
   Receipt,
   FileSpreadsheet,
   Wrench,
+  MapPin,
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -133,16 +132,19 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
-  // Pagination state for High Priority & Recent Tickets
-  const [ticketPage, setTicketPage] = useState<number>(1);
-  const TICKETS_PER_PAGE = 10;
-
-  const totalTicketPages = Math.ceil(tickets.length / TICKETS_PER_PAGE) || 1;
-
-  const paginatedTickets = useMemo(() => {
-    const start = (ticketPage - 1) * TICKETS_PER_PAGE;
-    return tickets.slice(start, start + TICKETS_PER_PAGE);
-  }, [tickets, ticketPage]);
+  // Latest 10 Bills for Dashboard Billing Report Table
+  const latestBills = useMemo(() => {
+    return [...bills]
+      .sort((a, b) => {
+        const dateA = a.createdAt || a.submissionDate || a.handoverDate || '';
+        const dateB = b.createdAt || b.submissionDate || b.handoverDate || '';
+        if (dateA && dateB && dateA !== dateB) {
+          return new Date(dateB).getTime() - new Date(dateA).getTime();
+        }
+        return (b.id || '').localeCompare(a.id || '');
+      })
+      .slice(0, 10);
+  }, [bills]);
 
   // Billing Metrics strictly from Billing Report
   const {
@@ -567,105 +569,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         </div>
       </div>
 
-      {/* Primary Billing Metrics Cards (From Billing Report) */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between px-0.5">
-          <div className="flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
-              Billing Report & Financial Overview
-            </span>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 font-mono">
-              (Total BDT: ৳{totalBillAmount.toLocaleString('en-IN')})
-            </span>
-          </div>
-          <button
-            onClick={() => onSwitchTab('bill_report')}
-            className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 cursor-pointer transition"
-          >
-            <span>Open Billing Report</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Total Bills Card */}
-          <div
-            onClick={() => onSwitchTab('bill_report')}
-            className="bg-gradient-to-br from-indigo-500/10 via-white to-indigo-50/40 dark:from-indigo-950/40 dark:via-slate-900 dark:to-indigo-900/20 border border-indigo-200/80 dark:border-indigo-800/60 p-4 rounded-xl shadow-xs select-none cursor-pointer hover:border-indigo-500/70 transition"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Receipt className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                Total Bills
-              </span>
-              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800/60">
-                All Records
-              </span>
-            </div>
-            <div className="text-3xl font-extrabold text-slate-900 dark:text-white mt-2">
-              {totalBillCount}
-            </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-500 dark:text-slate-400">
-              <span>Billing Report</span>
-              <span className="font-semibold text-indigo-600 dark:text-indigo-400 font-mono">
-                ৳{totalBillAmount.toLocaleString('en-IN')} (100% Volume)
-              </span>
-            </div>
-          </div>
-
-          {/* Paid Bills Card */}
-          <div
-            onClick={() => onSwitchTab('bill_report')}
-            className="bg-gradient-to-br from-emerald-500/10 via-white to-emerald-50/40 dark:from-emerald-950/40 dark:via-slate-900 dark:to-emerald-900/20 border border-emerald-200/80 dark:border-emerald-800/60 p-4 rounded-xl shadow-xs select-none cursor-pointer hover:border-emerald-500/70 transition"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                Bills Paid
-              </span>
-              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
-                Cleared
-              </span>
-            </div>
-            <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">
-              {paidBillCount}
-            </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-emerald-100 dark:border-emerald-900/40 text-[11px] text-slate-500 dark:text-slate-400">
-              <span>Successfully completed</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
-                ৳{paidBillAmount.toLocaleString('en-IN')} ({totalBillCount > 0 ? Math.round((paidBillCount / totalBillCount) * 100) : 0}%)
-              </span>
-            </div>
-          </div>
-
-          {/* Pending Bills Card */}
-          <div
-            onClick={() => onSwitchTab('bill_report')}
-            className="bg-gradient-to-br from-amber-500/10 via-white to-amber-50/40 dark:from-amber-950/40 dark:via-slate-900 dark:to-amber-900/20 border border-amber-200/80 dark:border-amber-800/60 p-4 rounded-xl shadow-xs select-none cursor-pointer hover:border-amber-500/70 transition"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                Bills Pending
-              </span>
-              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/60">
-                In-Progress
-              </span>
-            </div>
-            <div className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-2">
-              {pendingBillCount}
-            </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-amber-100 dark:border-amber-900/40 text-[11px] text-slate-500 dark:text-slate-400">
-              <span>Active & in-progress</span>
-              <span className="font-semibold text-amber-600 dark:text-amber-400 font-mono">
-                ৳{pendingBillAmount.toLocaleString('en-IN')} ({totalBillCount > 0 ? Math.round((pendingBillCount / totalBillCount) * 100) : 0}%)
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Year Selection Banner & Charts */}
       <div className="space-y-3">
         <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 p-3 rounded-lg flex flex-wrap justify-between items-center gap-2 shadow-xs">
@@ -730,66 +633,112 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         </div>
       </div>
 
-      {/* Recent High Priority Tickets Table */}
+      {/* Billing Report - Latest 10 Records */}
       <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-xs">
-        <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/50 flex justify-between items-center">
-          <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
-            High Priority & Recent Service Tickets
-          </h3>
+        <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/50 flex flex-wrap justify-between items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+              Billing Report
+            </h3>
+            <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800/60 font-mono">
+              Latest 10
+            </span>
+          </div>
           <button
-            onClick={() => onSwitchTab('service')}
-            className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer font-medium"
+            onClick={() => onSwitchTab('bill_report')}
+            className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium flex items-center gap-1 cursor-pointer transition hover:underline"
           >
-            View All Tickets &rarr;
+            <span>View All in Billing Report</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse min-w-[900px]">
             <thead className="bg-slate-100 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 uppercase font-bold text-[10px] border-b border-slate-200 dark:border-slate-800">
               <tr>
-                <th className="p-2.5">Ticket ID</th>
+                <th className="p-2.5 w-12 text-center">SL</th>
+                <th className="p-2.5">Bill Number</th>
+                <th className="p-2.5">Invoice No.</th>
+                <th className="p-2.5">Client & Location</th>
+                <th className="p-2.5">Vendor</th>
                 <th className="p-2.5">Category</th>
-                <th className="p-2.5">Device ID</th>
-                <th className="p-2.5">Issue Type</th>
-                <th className="p-2.5">Priority</th>
-                <th className="p-2.5">SLA Status</th>
-                <th className="p-2.5">Status</th>
+                <th className="p-2.5 text-right">Amount (৳ BDT)</th>
+                <th className="p-2.5">Submission Date</th>
+                <th className="p-2.5">Method</th>
+                <th className="p-2.5 text-center">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300 font-mono">
-              {tickets.length === 0 ? (
+              {latestBills.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center p-4 text-slate-500 font-sans">
-                    No tickets available
+                  <td colSpan={10} className="text-center p-8 text-slate-400 dark:text-slate-500 font-sans">
+                    No billing records found. Click "View All in Billing Report" to create or import bills.
                   </td>
                 </tr>
               ) : (
-                paginatedTickets.map((t, tIdx) => (
-                  <tr key={`dash-ticket-${t.id}-${tIdx}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    <td className="p-2.5 text-indigo-600 dark:text-indigo-400 font-bold">{t.id}</td>
-                    <td className="p-2.5 font-sans text-slate-800 dark:text-slate-300">{t.locType}</td>
-                    <td className="p-2.5 text-slate-700 dark:text-slate-300">{t.deviceId}</td>
-                    <td className="p-2.5 font-sans text-slate-800 dark:text-slate-300">{t.issueType}</td>
-                    <td className="p-2.5">
-                      {t.priority === 'CRITICAL' ? (
-                        <span className="bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-900/80 dark:text-rose-200 dark:border-rose-600 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
-                          CRITICAL
-                        </span>
-                      ) : (
-                        <span className="bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/60 dark:text-amber-300 dark:border-amber-700/50 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
-                          {t.priority}
-                        </span>
+                latestBills.map((b, bIdx) => (
+                  <tr
+                    key={`dash-bill-${b.id}-${bIdx}`}
+                    onClick={() => onSwitchTab('bill_report')}
+                    className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer"
+                    title="Click to view details in Billing Report"
+                  >
+                    <td className="p-2.5 text-center text-slate-400 font-medium font-sans">
+                      {bIdx + 1}
+                    </td>
+                    <td className="p-2.5 text-indigo-600 dark:text-indigo-400 font-bold">
+                      {b.billNumber}
+                    </td>
+                    <td className="p-2.5 text-slate-600 dark:text-slate-400">
+                      {b.invoiceNumber || '—'}
+                    </td>
+                    <td className="p-2.5 font-sans">
+                      <div className="font-semibold text-slate-900 dark:text-white">
+                        {b.client}
+                      </div>
+                      {b.clientLocation && (
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span className="truncate max-w-[200px]">{b.clientLocation}</span>
+                        </div>
                       )}
                     </td>
-                    <td className="p-2.5">
-                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                        {t.slaStatus}
+                    <td className="p-2.5 font-sans text-slate-800 dark:text-slate-300">
+                      {b.vendor || '—'}
+                    </td>
+                    <td className="p-2.5 font-sans">
+                      <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded text-[10px] font-medium border border-slate-200 dark:border-slate-700/60">
+                        {b.billType || 'General'}
                       </span>
                     </td>
-                    <td className="p-2.5">
-                      <span className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded text-[10px] font-sans font-medium">
-                        {t.status}
-                      </span>
+                    <td className="p-2.5 text-right font-bold text-slate-900 dark:text-white">
+                      ৳{Number(b.amount || 0).toLocaleString('en-IN')}
+                    </td>
+                    <td className="p-2.5 text-slate-600 dark:text-slate-400">
+                      {b.submissionDate || b.handoverDate || '—'}
+                    </td>
+                    <td className="p-2.5 font-sans text-slate-700 dark:text-slate-300 text-[11px]">
+                      {b.paymentMethod || '—'}
+                    </td>
+                    <td className="p-2.5 text-center">
+                      {b.status === 'Paid' ? (
+                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700/50 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
+                          Paid
+                        </span>
+                      ) : b.status === 'Submitted' ? (
+                        <span className="bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/60 dark:text-blue-300 dark:border-blue-700/50 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
+                          Submitted
+                        </span>
+                      ) : b.status === 'Pending' ? (
+                        <span className="bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/60 dark:text-amber-300 dark:border-amber-700/50 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
+                          Pending
+                        </span>
+                      ) : (
+                        <span className="bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700/50 px-2 py-0.5 rounded text-[10px] font-bold font-sans">
+                          {b.status || 'Draft'}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -797,34 +746,19 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             </tbody>
           </table>
         </div>
-
-        {/* Table Pagination Controls */}
-        {tickets.length > 0 && (
+        {latestBills.length > 0 && (
           <div className="p-3 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800 flex flex-wrap justify-between items-center text-xs text-slate-500 dark:text-slate-400 gap-2">
             <div>
-              Showing <span className="font-bold text-slate-900 dark:text-slate-200">{(ticketPage - 1) * TICKETS_PER_PAGE + 1}</span> to{' '}
-              <span className="font-bold text-slate-900 dark:text-slate-200">{Math.min(ticketPage * TICKETS_PER_PAGE, tickets.length)}</span> of{' '}
-              <span className="font-bold text-slate-900 dark:text-slate-200">{tickets.length}</span> tickets
+              Showing <span className="font-bold text-slate-900 dark:text-slate-200">{latestBills.length}</span> latest of{' '}
+              <span className="font-bold text-slate-900 dark:text-slate-200">{bills.length}</span> total billing records
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                disabled={ticketPage <= 1}
-                onClick={() => setTicketPage((p) => Math.max(1, p - 1))}
-                className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 font-medium text-slate-700 dark:text-slate-200 cursor-pointer transition shadow-xs"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" /> Previous
-              </button>
-              <span className="font-bold text-slate-700 dark:text-slate-300 px-1">
-                Page {ticketPage} of {totalTicketPages}
-              </span>
-              <button
-                disabled={ticketPage >= totalTicketPages}
-                onClick={() => setTicketPage((p) => Math.min(totalTicketPages, p + 1))}
-                className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 font-medium text-slate-700 dark:text-slate-200 cursor-pointer transition shadow-xs"
-              >
-                Next <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <button
+              onClick={() => onSwitchTab('bill_report')}
+              className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-semibold flex items-center gap-1 cursor-pointer transition hover:underline"
+            >
+              <span>Go to Full Billing Report & Manager</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
       </div>

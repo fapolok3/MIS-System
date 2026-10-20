@@ -15,6 +15,7 @@ import {
   X,
   FileSpreadsheet,
   FileText,
+  FileDown,
   User,
   Phone,
   Tag,
@@ -25,6 +26,8 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { downloadStyledExcel, getActiveSystemBranding, triggerDownload } from '../utils/excelExport';
 import { ServiceTicketItem } from '../types';
 
 export const STANDARD_SERVICE_PRODUCTS = [
@@ -455,145 +458,342 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
     setTimeout(() => setToastMessage(''), 4000);
   };
 
-  // PDF Generator for Single Ticket
-  const downloadSingleTicketPDF = (t: ServiceTicketItem) => {
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageW = 210;
-    const margin = 14;
-    let y = 18;
+  // Export All Saved Tickets to Styled Excel
+  const handleExportExcel = () => {
+    if (tickets.length === 0) {
+      setToastMessage('No tickets found to export.');
+      return;
+    }
 
-    // Header band
-    doc.setFillColor(15, 23, 42); // slate-900
-    doc.rect(0, 0, pageW, 24, 'F');
-    doc.setFillColor(79, 70, 229); // indigo-600
-    doc.rect(0, 24, pageW, 2, 'F');
+    try {
+      const headers = [
+        'Issue Number',
+        'Odoo ID',
+        'Client',
+        'Device Location',
+        'Device ID',
+        'Product',
+        'Price (BDT)',
+        'Request Date',
+        'Priority',
+        'SLA Status',
+        'Status',
+        'Replace',
+        'Replace Device ID',
+        'Assign Person',
+        'Payment Method',
+        'Remarks',
+      ];
 
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.text('BLACK BANK PLC — SERVICE TICKET', margin, 12);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(203, 213, 225);
-    doc.text('Hardware Maintenance & On-Site Support Operations', margin, 18);
+      const rows = tickets.map((t) => [
+        t.issueNumber,
+        t.odooId || '-',
+        t.client,
+        t.deviceLocation,
+        t.deviceId,
+        t.product,
+        t.productPrice || '-',
+        t.requestDate,
+        t.priority,
+        t.slaStatus,
+        t.status,
+        t.replace,
+        t.replaceDeviceId || '-',
+        t.assignPerson,
+        t.paymentMethod || 'Cash',
+        t.remarks || '-',
+      ]);
 
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`TICKET: ${t.issueNumber}`, pageW - margin, 12, { align: 'right' });
-    doc.setFontSize(7);
-    doc.setTextColor(203, 213, 225);
-    doc.text(`Odoo ID: ${t.odooId || '-'}  |  Date: ${t.requestDate}`, pageW - margin, 18, {
-      align: 'right',
-    });
+      downloadStyledExcel({
+        title: 'SERVICE TICKET TRACKER REPORT',
+        subtitle: `Recorded Hardware & Software Support Tickets (${tickets.length} Records)`,
+        filename: `Service_Tickets_Tracker_${new Date().toISOString().split('T')[0]}`,
+        headers,
+        data: rows,
+        summaryCards: [
+          { label: 'Total Tickets', value: tickets.length },
+          { label: 'Completed', value: tickets.filter((t) => t.status === 'Done').length },
+          { label: 'In Progress', value: tickets.filter((t) => t.status === 'In Progress').length },
+          { label: 'SLA Breached', value: tickets.filter((t) => t.slaStatus === 'Breached').length },
+        ],
+      });
+      setToastMessage('Excel report (.xlsx) exported successfully!');
+      setTimeout(() => setToastMessage(''), 3000);
+    } catch (err) {
+      console.error('Failed to export Excel:', err);
+      setToastMessage('Failed to export Excel file. Please try again.');
+    }
+  };
 
-    y = 33;
-    doc.setTextColor(30, 41, 59);
+  // Export Complete Service Ticket Tracker Register as PDF
+  const handleExportPDF = () => {
+    if (tickets.length === 0) {
+      setToastMessage('No tickets found to export.');
+      return;
+    }
 
-    const renderSection = (title: string, pairs: [string, string | number | undefined][]) => {
-      if (y > 250) {
-        doc.addPage();
-        y = 18;
-      }
-      doc.setFillColor(241, 245, 249);
-      doc.rect(margin, y, pageW - 2 * margin, 6.5, 'F');
+    try {
+      const branding = getActiveSystemBranding();
+      const doc = new jsPDF('l', 'mm', 'a4');
+      const pageW = 297;
+      const margin = 12;
+
+      // Header band
+      doc.setFillColor(15, 23, 42); // slate-900
+      doc.rect(0, 0, pageW, 26, 'F');
+      doc.setFillColor(79, 70, 229); // indigo-600
+      doc.rect(0, 26, pageW, 2, 'F');
+
+      doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(79, 70, 229);
-      doc.text(title.toUpperCase(), margin + 2.5, y + 4.5);
-      y += 9;
+      doc.setFontSize(16);
+      doc.text(branding.appName.toUpperCase() || 'BLACK BANK PLC', margin, 12);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(200, 210, 230);
+      doc.text(branding.tagline || 'Service Ticket Tracker · Operational Management', margin, 18);
 
       doc.setFontSize(8);
-      pairs.forEach(([label, val]) => {
-        if (y > 275) {
+      doc.setTextColor(255, 255, 255);
+      doc.text('SERVICE TICKET TRACKER REGISTER', pageW - margin, 10, { align: 'right' });
+      doc.setFontSize(7);
+      doc.setTextColor(200, 210, 230);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, pageW - margin, 15, { align: 'right' });
+      doc.text(
+        `Total Tickets: ${tickets.length}  |  Done: ${
+          tickets.filter((t) => t.status === 'Done').length
+        }  |  Breached: ${tickets.filter((t) => t.slaStatus === 'Breached').length}`,
+        pageW - margin,
+        20,
+        { align: 'right' }
+      );
+
+      const body = tickets.map((t) => [
+        t.issueNumber,
+        t.odooId || '-',
+        t.client,
+        t.deviceLocation,
+        t.deviceId,
+        t.product,
+        t.requestDate,
+        t.priority,
+        t.slaStatus,
+        t.status,
+        t.assignPerson,
+      ]);
+
+      autoTable(doc, {
+        startY: 32,
+        head: [
+          [
+            'Issue #',
+            'Odoo ID',
+            'Client',
+            'Location',
+            'Device ID',
+            'Product',
+            'Request Date',
+            'Priority',
+            'SLA',
+            'Status',
+            'Assignee',
+          ],
+        ],
+        body,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [79, 70, 229],
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 7.5,
+          halign: 'center',
+          valign: 'middle',
+        },
+        bodyStyles: { fontSize: 7, cellPadding: 2 },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 32 },
+          1: { cellWidth: 20 },
+          4: { fontStyle: 'bold' },
+          8: { halign: 'center' },
+          9: { halign: 'center', fontStyle: 'bold' },
+        },
+      });
+
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 200, pageW, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7);
+        doc.text('Black Bank PLC · Support Operations', margin, 206);
+        doc.text(
+          `Page ${i} of ${pageCount}  |  Computer-generated document`,
+          pageW - margin,
+          206,
+          { align: 'right' }
+        );
+      }
+
+      const pdfBlob = doc.output('blob');
+      triggerDownload(pdfBlob, `Service_Tickets_Tracker_${new Date().toISOString().split('T')[0]}.pdf`);
+      setToastMessage('PDF report (.pdf) exported successfully!');
+      setTimeout(() => setToastMessage(''), 3000);
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+      setToastMessage('Failed to export PDF file. Please try again.');
+    }
+  };
+
+  // PDF Generator for Single Ticket
+  const downloadSingleTicketPDF = (t: ServiceTicketItem) => {
+    try {
+      const branding = getActiveSystemBranding();
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageW = 210;
+      const margin = 14;
+      let y = 18;
+
+      // Header band
+      doc.setFillColor(15, 23, 42); // slate-900
+      doc.rect(0, 0, pageW, 24, 'F');
+      doc.setFillColor(79, 70, 229); // indigo-600
+      doc.rect(0, 24, pageW, 2, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text(`${(branding.appName || 'BLACK BANK PLC').toUpperCase()} — SERVICE TICKET`, margin, 12);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(203, 213, 225);
+      doc.text(branding.tagline || 'Hardware Maintenance & On-Site Support Operations', margin, 18);
+
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`TICKET: ${t.issueNumber}`, pageW - margin, 12, { align: 'right' });
+      doc.setFontSize(7);
+      doc.setTextColor(203, 213, 225);
+      doc.text(`Odoo ID: ${t.odooId || '-'}  |  Date: ${t.requestDate}`, pageW - margin, 18, {
+        align: 'right',
+      });
+
+      y = 33;
+      doc.setTextColor(30, 41, 59);
+
+      const renderSection = (title: string, pairs: [string, string | number | undefined][]) => {
+        if (y > 250) {
           doc.addPage();
           y = 18;
         }
+        doc.setFillColor(241, 245, 249);
+        doc.rect(margin, y, pageW - 2 * margin, 6.5, 'F');
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(100, 116, 139);
-        doc.text(String(label) + ':', margin + 2.5, y);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(15, 23, 42);
-        const strVal = String(val || '—');
-        const split = doc.splitTextToSize(strVal, pageW - margin - 60);
-        doc.text(split, margin + 45, y);
-        y += Math.max(4.5, split.length * 4);
-      });
-      y += 2.5;
-    };
+        doc.setFontSize(8.5);
+        doc.setTextColor(79, 70, 229);
+        doc.text(title.toUpperCase(), margin + 2.5, y + 4.5);
+        y += 9;
 
-    renderSection('1 · Ticket Identity', [
-      ['Issue Number', t.issueNumber],
-      ['Odoo Ticket ID', t.odooId],
-      ['Email From', t.emailFrom],
-      ['Email Subject', t.emailSubject],
-    ]);
+        doc.setFontSize(8);
+        pairs.forEach(([label, val]) => {
+          if (y > 275) {
+            doc.addPage();
+            y = 18;
+          }
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(100, 116, 139);
+          doc.text(String(label) + ':', margin + 2.5, y);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(15, 23, 42);
+          const strVal = String(val || '—');
+          const split = doc.splitTextToSize(strVal, pageW - margin - 60);
+          doc.text(split, margin + 45, y);
+          y += Math.max(4.5, split.length * 4);
+        });
+        y += 2.5;
+      };
 
-    renderSection('2 · Client & Device Details', [
-      ['Client Name', t.client],
-      ['Contact Person', t.contactPerson],
-      ['Contact Number', t.contactNumber],
-      ['District', t.district],
-      ['Address / Premises', t.address],
-      ['Device Location', t.deviceLocation],
-      ['Location Type', t.locationType],
-      ['Device ID', t.deviceId],
-      ['Product / Component', t.product + (t.productPrice ? ` (BDT ৳${t.productPrice})` : '')],
-      ['Segment / KAM', `${t.segment || '-'} / ${t.kam || '-'}`],
-    ]);
+      renderSection('1 · Ticket Identity', [
+        ['Issue Number', t.issueNumber],
+        ['Odoo Ticket ID', t.odooId],
+        ['Email From', t.emailFrom],
+        ['Email Subject', t.emailSubject],
+      ]);
 
-    renderSection('3 · Dates & SLA Performance', [
-      ['Request Date & Time', `${t.requestDate} ${t.requestTime || ''}`],
-      ['Planned Provide Date', t.plannedDate],
-      ['Service Provide Date', t.serviceDate || 'Pending Delivery'],
-      ['SLA Threshold', `${t.slaThreshold} Days`],
-      ['Resolution Days', `${t.resolutionDays || 0} Days`],
-      ['SLA Compliance', t.slaStatus],
-    ]);
+      renderSection('2 · Client & Device Details', [
+        ['Client Name', t.client],
+        ['Contact Person', t.contactPerson],
+        ['Contact Number', t.contactNumber],
+        ['District', t.district],
+        ['Address / Premises', t.address],
+        ['Device Location', t.deviceLocation],
+        ['Location Type', t.locationType],
+        ['Device ID', t.deviceId],
+        ['Product / Component', t.product + (t.productPrice ? ` (BDT ${t.productPrice})` : '')],
+        ['Segment / KAM', `${t.segment || '-'} / ${t.kam || '-'}`],
+      ]);
 
-    renderSection('4 · Issue Specification', [
-      ['Issue Type(s)', t.issues],
-      ['Priority', t.priority],
-      ['Ticket Status', t.status],
-      ['Device Replaced?', t.replace],
-      ['Replacement Device ID', t.replaceDeviceId || 'N/A'],
-    ]);
+      renderSection('3 · Dates & SLA Performance', [
+        ['Request Date & Time', `${t.requestDate} ${t.requestTime || ''}`],
+        ['Planned Provide Date', t.plannedDate],
+        ['Service Provide Date', t.serviceDate || 'Pending Delivery'],
+        ['SLA Threshold', `${t.slaThreshold} Days`],
+        ['Resolution Days', `${t.resolutionDays || 0} Days`],
+        ['SLA Compliance', t.slaStatus],
+      ]);
 
-    renderSection('5 · Operations & Logistics', [
-      ['Technician / Assignee', t.assignPerson],
-      ['Accessories Provided', t.accessories || 'None'],
-      ['Delivery Mode', t.deliveryOption],
-      ['Challan Received By', t.challanBy],
-      ['Handed Over To', t.handedOverTo],
-      ['Unit Quantity', t.unitQty || 1],
-    ]);
+      renderSection('4 · Issue Specification', [
+        ['Issue Type(s)', t.issues],
+        ['Priority', t.priority],
+        ['Ticket Status', t.status],
+        ['Device Replaced?', t.replace],
+        ['Replacement Device ID', t.replaceDeviceId || 'N/A'],
+      ]);
 
-    renderSection('6 · Billing & Commercials', [
-      ['Invoice Handover', t.invoiceHandover],
-      ['Payment Method', t.paymentMethod],
-      ['Vendor Bill Reference', t.vendorBill || 'N/A'],
-    ]);
+      renderSection('5 · Operations & Logistics', [
+        ['Technician / Assignee', t.assignPerson],
+        ['Accessories Provided', t.accessories || 'None'],
+        ['Delivery Mode', t.deliveryOption],
+        ['Challan Received By', t.challanBy],
+        ['Handed Over To', t.handedOverTo],
+        ['Unit Quantity', t.unitQty || 1],
+      ]);
 
-    renderSection('7 · Notes & Remarks', [
-      ['Remarks', t.remarks],
-      ['Visit Email Details', t.visitEmail],
-      ['Comments', t.comments],
-    ]);
+      renderSection('6 · Billing & Commercials', [
+        ['Invoice Handover', t.invoiceHandover],
+        ['Payment Method', t.paymentMethod],
+        ['Vendor Bill Reference', t.vendorBill || 'N/A'],
+      ]);
 
-    // Footer
-    const totalPages = doc.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setFontSize(7);
-      doc.setTextColor(148, 163, 184);
-      doc.text(
-        `Black Bank PLC · Support Operations  |  Generated on ${new Date().toLocaleString()}`,
-        margin,
-        290
-      );
-      doc.text(`Page ${i} of ${totalPages}`, pageW - margin, 290, { align: 'right' });
+      renderSection('7 · Notes & Remarks', [
+        ['Remarks', t.remarks],
+        ['Visit Email Details', t.visitEmail],
+        ['Comments', t.comments],
+      ]);
+
+      // Footer
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(148, 163, 184);
+        doc.text(
+          `Black Bank PLC · Support Operations  |  Generated on ${new Date().toLocaleString()}`,
+          margin,
+          290
+        );
+        doc.text(`Page ${i} of ${totalPages}`, pageW - margin, 290, { align: 'right' });
+      }
+
+      const pdfBlob = doc.output('blob');
+      triggerDownload(pdfBlob, `${t.issueNumber}_Report.pdf`);
+      setToastMessage(`Ticket ${t.issueNumber} PDF downloaded successfully!`);
+      setTimeout(() => setToastMessage(''), 3000);
+    } catch (err) {
+      console.error('Failed to export single ticket PDF:', err);
+      setToastMessage('Failed to download ticket PDF. Please try again.');
     }
-
-    doc.save(`${t.issueNumber}_Report.pdf`);
   };
 
   return (
@@ -630,7 +830,25 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
           </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700"
+            title="Export all tickets to Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Export Excel</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700"
+            title="Export all tickets to PDF (.pdf)"
+          >
+            <FileDown className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+            <span>Export PDF</span>
+          </button>
           <button
             type="button"
             onClick={onNavigateToReport}

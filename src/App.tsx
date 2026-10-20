@@ -74,6 +74,7 @@ import {
   defaultAppSettings,
   fetchSupabaseBills,
   insertSupabaseBill,
+  bulkInsertSupabaseBills,
   deleteSupabaseBill,
   bulkDeleteSupabaseBills,
   fetchSupabaseServiceTickets,
@@ -1828,6 +1829,24 @@ export default function App() {
     await bulkDeleteSupabaseBills(ids);
   };
 
+  const handleImportBills = async (newBills: BillItem[]) => {
+    setBills((prev) => {
+      const updated = [...newBills, ...prev];
+      try {
+        localStorage.setItem('billsData', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('localStorage save bills error', e);
+      }
+      return updated;
+    });
+    const success = await bulkInsertSupabaseBills(newBills);
+    if (success) {
+      showToast(`${newBills.length} Bill record(s) imported & saved to database!`);
+    } else {
+      showToast(`${newBills.length} Bill record(s) imported locally!`);
+    }
+  };
+
   // Service Tickets Handlers (Service Ticket Tracker & Service Ticket Report)
   const handleSaveServiceTicket = async (ticket: ServiceTicketItem) => {
     setServiceTickets((prev) => {
@@ -2290,7 +2309,6 @@ export default function App() {
                 setEditingServiceTicketForTracker(t);
                 setActiveTab('service_ticket_tracker');
               }}
-              onLoadSampleData={handleLoadSampleServiceTickets}
             />
           )}
 
@@ -2320,6 +2338,7 @@ export default function App() {
               onSaveBill={handleSaveBill}
               onDeleteBill={handleDeleteBill}
               onBulkDeleteBills={handleBulkDeleteBills}
+              onImportBills={handleImportBills}
               onNavigateToTracker={() => setActiveTab('bill_tracker')}
               onEditBillInTracker={(b) => {
                 setEditingBillForTracker(b);

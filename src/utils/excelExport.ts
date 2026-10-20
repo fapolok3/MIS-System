@@ -60,6 +60,40 @@ export const getActiveSystemBranding = (): { appName: string; tagline: string } 
   return { appName, tagline };
 };
 
+/**
+ * Universal safe browser file download utility
+ * Prevents URL revocation before download starts, works inside iframes and sandboxes
+ */
+export const triggerDownload = (blob: Blob, filename: string) => {
+  try {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.style.display = 'none';
+    link.href = url;
+    link.setAttribute('download', filename);
+
+    document.body.appendChild(link);
+    link.click();
+
+    // Delay revocation to ensure browser processes the download
+    setTimeout(() => {
+      try {
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.warn('Cleanup error:', e);
+      }
+    }, 2000);
+  } catch (err) {
+    console.error('triggerDownload error:', err);
+  }
+};
+
+/**
+ * Generates and downloads a real, genuine Excel (.xlsx) workbook with branding, summary cards, and data
+ */
 export const downloadStyledExcel = ({
   title,
   subtitle,
@@ -69,135 +103,82 @@ export const downloadStyledExcel = ({
   data,
   summaryCards = [],
 }: ExportExcelOptions) => {
-  const dateStr = new Date().toLocaleString();
-  const branding = getActiveSystemBranding();
-  
-  const currentBrandName = (systemName || branding.appName || 'BBL DM System').trim();
-  const currentSubtitle = subtitle || `${currentBrandName} Data Export`;
+  try {
+    const dateStr = new Date().toLocaleString();
+    const branding = getActiveSystemBranding();
+    const currentBrandName = (systemName || branding.appName || 'BBL DM System').trim();
+    const currentSubtitle = subtitle || `${currentBrandName} Data Export`;
 
-  // Construct styled HTML table format for rich Excel styling (fonts, colors, borders, badges)
-  let html = `
-  <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <!--[if gte mso 9]>
-    <xml>
-      <x:ExcelWorkbook>
-        <x:ExcelWorksheets>
-          <x:ExcelWorksheet>
-            <x:Name>Sheet1</x:Name>
-            <x:WorksheetOptions>
-              <x:DisplayGridlines/>
-            </x:WorksheetOptions>
-          </x:ExcelWorksheet>
-        </x:ExcelWorksheets>
-      </x:ExcelWorkbook>
-    </xml>
-    <![endif]-->
-    <style>
-      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 10pt; color: #0f172a; }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #64748b !important; }
-    </style>
-  </head>
-  <body>
-    <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; border: 1px solid #475569; width: 100%;">
-      <!-- TITLE BANNER -->
-      <tr>
-        <td colspan="${headers.length}" style="background-color: #0f172a; color: #ffffff; font-size: 14pt; font-weight: bold; text-align: left; padding: 10px 12px; border: 1px solid #0f172a;">
-          🏢 ${currentBrandName.toUpperCase()} &nbsp;|&nbsp; ${title.toUpperCase()}
-        </td>
-      </tr>
-      <tr>
-        <td colspan="${headers.length}" style="background-color: #1e293b; color: #cbd5e1; font-size: 9.5pt; text-align: left; padding: 6px 12px; border: 1px solid #1e293b;">
-          ${currentSubtitle} &nbsp;•&nbsp; Exported on: ${dateStr}
-        </td>
-      </tr>
-      <tr><td colspan="${headers.length}" style="height: 10px; border: none;"></td></tr>
-  `;
+    const sheetRows: any[][] = [];
 
-  // SUMMARY CARDS SECTION
-  if (summaryCards.length > 0) {
-    html += `<tr>`;
-    summaryCards.forEach((card) => {
-      html += `<td colspan="2" style="background-color: #e2e8f0; color: #1e293b; font-size: 9pt; font-weight: bold; text-align: center; border: 1px solid #64748b; padding: 6px 8px;">${card.label}</td>`;
+    // Title Banner Row
+    sheetRows.push([`${currentBrandName.toUpperCase()} | ${title.toUpperCase()}`]);
+    sheetRows.push([`${currentSubtitle} • Exported on: ${dateStr}`]);
+    sheetRows.push([]); // blank separator
+
+    // Summary Cards Row if available
+    if (summaryCards && summaryCards.length > 0) {
+      const summaryLabels: string[] = [];
+      const summaryValues: (string | number)[] = [];
+      summaryCards.forEach((c) => {
+        summaryLabels.push(c.label, '');
+        summaryValues.push(c.value, '');
+      });
+      sheetRows.push(summaryLabels);
+      sheetRows.push(summaryValues);
+      sheetRows.push([]); // blank separator
+    }
+
+    // Main Table Headers
+    sheetRows.push(headers);
+
+    // Main Table Rows
+    data.forEach((row) => {
+      sheetRows.push(
+        row.map((cell) => {
+          if (cell === null || cell === undefined) return '';
+          return cell;
+        })
+      );
     });
-    html += `</tr><tr>`;
-    summaryCards.forEach((card) => {
-      html += `<td colspan="2" style="background-color: #ffffff; color: #3730a3; font-size: 11pt; font-weight: bold; text-align: center; border: 1px solid #64748b; padding: 6px 8px;">${card.value}</td>`;
+
+    const ws = XLSX.utils.aoa_to_sheet(sheetRows);
+
+    // Auto-fit column widths
+    const colWidths = headers.map((h, colIndex) => {
+      let maxLen = h ? String(h).length : 10;
+      data.forEach((row) => {
+        const val = row[colIndex];
+        if (val !== undefined && val !== null) {
+          const len = String(val).length;
+          if (len > maxLen) maxLen = len;
+        }
+      });
+      return { wch: Math.min(45, Math.max(14, maxLen + 3)) };
     });
-    html += `</tr><tr><td colspan="${headers.length}" style="height: 12px; border: none;"></td></tr>`;
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    const sheetName = title.slice(0, 31).replace(/[\\/?*[\]]/g, '') || 'Report';
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+    // Ensure safe .xlsx filename
+    let safeFilename = filename;
+    if (safeFilename.endsWith('.xls')) {
+      safeFilename = safeFilename.replace(/\.xls$/, '.xlsx');
+    } else if (!safeFilename.endsWith('.xlsx')) {
+      safeFilename = `${safeFilename}.xlsx`;
+    }
+
+    // Write real XLSX buffer and trigger safe download
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+
+    triggerDownload(blob, safeFilename);
+  } catch (err) {
+    console.error('Error in downloadStyledExcel:', err);
+    throw err;
   }
-
-  // TABLE HEADERS
-  html += `<tr>`;
-  headers.forEach((header) => {
-    html += `<th style="background-color: #1e1b4b; color: #ffffff; font-weight: bold; font-size: 9.5pt; text-align: center; padding: 8px 10px; border: 1px solid #475569;">${header}</th>`;
-  });
-  html += `</tr>`;
-
-  // TABLE ROWS
-  data.forEach((row, rowIndex) => {
-    const bg = rowIndex % 2 === 0 ? '#ffffff' : '#f8fafc';
-    html += `<tr>`;
-    row.forEach((cell, cellIndex) => {
-      const cellVal = cell === null || cell === undefined ? '' : String(cell);
-      const uppercaseVal = cellVal.toUpperCase().trim();
-
-      const borderStyle = 'border: 1px solid #64748b; padding: 6px 10px; font-size: 9.5pt; vertical-align: middle;';
-
-      // Check status coloring
-      if (
-        ['LIVE', 'ACTIVE', 'COMPLETED', 'RESOLVED'].includes(uppercaseVal)
-      ) {
-        html += `<td style="background-color: #dcfce7; color: #14532d; font-weight: bold; text-align: center; ${borderStyle}">${cellVal}</td>`;
-      } else if (
-        ['OFFLINE', 'CRITICAL', 'CLOSED', 'INACTIVE'].includes(uppercaseVal)
-      ) {
-        html += `<td style="background-color: #fee2e2; color: #7f1d1d; font-weight: bold; text-align: center; ${borderStyle}">${cellVal}</td>`;
-      } else if (
-        ['MAINTENANCE', 'WORKING', 'ASSIGNED', 'ONGOING', 'OPEN', 'PENDING'].includes(uppercaseVal)
-      ) {
-        html += `<td style="background-color: #fef3c7; color: #78350f; font-weight: bold; text-align: center; ${borderStyle}">${cellVal}</td>`;
-      } else if (
-        // Code/ID columns or center alignment
-        cellIndex === 0 || // SL
-        /^[A-Z0-9\-]{4,}$/.test(cellVal) || // Device ID, SIM, SOL, Ticket No, PO No
-        cellVal.startsWith('SOL-') ||
-        cellVal.startsWith('INV-') ||
-        cellVal.startsWith('PO-')
-      ) {
-        html += `<td style="background-color: ${bg}; color: #0f172a; font-family: 'Consolas', 'Courier New', monospace; font-weight: bold; text-align: center; ${borderStyle}">${cellVal}</td>`;
-      } else if (typeof cell === 'number' || /^\$?\d+(\.\d+)?$/.test(cellVal)) {
-        html += `<td style="background-color: ${bg}; color: #0f172a; text-align: right; ${borderStyle}">${cellVal}</td>`;
-      } else {
-        html += `<td style="background-color: ${bg}; color: #0f172a; text-align: left; ${borderStyle}">${cellVal}</td>`;
-      }
-    });
-    html += `</tr>`;
-  });
-
-  // FOOTER
-  html += `
-    </table>
-  </body>
-  </html>
-  `;
-
-  // Create blob and download as .xls / .xlsx
-  const blob = new Blob(['\ufeff' + html], {
-    type: 'application/vnd.ms-excel;charset=utf-8;',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  const safeFilename = filename.endsWith('.xls') || filename.endsWith('.xlsx')
-    ? filename
-    : `${filename}.xls`;
-
-  link.setAttribute('href', url);
-  link.setAttribute('download', safeFilename);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 };

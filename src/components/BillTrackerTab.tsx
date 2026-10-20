@@ -24,6 +24,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
+import { downloadStyledExcel, getActiveSystemBranding, triggerDownload } from '../utils/excelExport';
 import { BillItem } from '../types';
 
 interface BillTrackerTabProps {
@@ -125,6 +126,8 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
     title: '',
     message: '',
   });
+
+  const [toastMessage, setToastMessage] = useState<string>('');
 
   // Generate Unique Bill Number
   const generateBillNumber = () => {
@@ -268,8 +271,65 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
     resetForm();
   };
 
+  // Export Bills to Styled Excel
+  const handleExportExcel = () => {
+    if (bills.length === 0) {
+      setToastMessage('No bill records found to export.');
+      return;
+    }
+
+    const headers = [
+      'Bill Number',
+      'Invoice Number',
+      'Vendor',
+      'Client',
+      'Client Location',
+      'Description',
+      'Bill Type',
+      'Amount (BDT)',
+      'Handover Date',
+      'Submission Date',
+      'Receive Date',
+      'Payment Date',
+      'Status',
+      'Payment Method',
+      'Approved By',
+      'Remarks',
+    ];
+
+    const rows = bills.map((b) => [
+      b.billNumber,
+      b.invoiceNumber || '-',
+      b.vendor || '-',
+      b.client || '-',
+      b.clientLocation || '-',
+      b.description || '-',
+      b.billType || '-',
+      b.amount || 0,
+      b.handoverDate || '-',
+      b.submissionDate || '-',
+      b.receivedDate || '-',
+      b.paymentDate || '-',
+      b.status,
+      b.paymentMethod || '-',
+      b.approvedBy || '-',
+      b.remarks || '-',
+    ]);
+
+    downloadStyledExcel({
+      title: 'CORPORATE BILLING MANAGEMENT REPORT',
+      subtitle: `Recorded Corporate Bills & Invoices (${bills.length} Records)`,
+      filename: `Bill_Tracker_${new Date().toISOString().split('T')[0]}`,
+      headers,
+      data: rows,
+    });
+    setToastMessage('Excel report exported successfully!');
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
   // PDF Individual Bill Generation
   const downloadBillPDF = (b: BillItem) => {
+    const branding = getActiveSystemBranding();
     const doc = new jsPDF('p', 'mm', 'a4');
     const pageW = 210;
     const margin = 15;
@@ -284,12 +344,12 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
-    doc.text('BLACK BANK PLC', margin, 13);
+    doc.text(branding.appName.toUpperCase() || 'BLACK BANK PLC', margin, 13);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(200, 210, 230);
-    doc.text('Billing & Service Management Suite', margin, 19);
-    doc.text('Head Office, Dhaka, Bangladesh | +880 1234 567890', margin, 24);
+    doc.text(branding.tagline || 'Billing & Service Management Suite', margin, 19);
+    doc.text('Corporate Invoicing & Payment Operations', margin, 24);
 
     // Right header metadata
     doc.setFontSize(8);
@@ -452,7 +512,10 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
     doc.text('Black Bank PLC · Corporate Billing Management', margin, 293.5);
     doc.text('Computer-generated document', pageW - margin, 293.5, { align: 'right' });
 
-    doc.save(`${b.billNumber}.pdf`);
+    const pdfBlob = doc.output('blob');
+    triggerDownload(pdfBlob, `${b.billNumber}.pdf`);
+    setToastMessage(`Bill ${b.billNumber} PDF downloaded successfully!`);
+    setTimeout(() => setToastMessage(''), 3000);
   };
 
   // Filtered Bills for side list
@@ -475,6 +538,22 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="p-3.5 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+          <button
+            onClick={() => setToastMessage('')}
+            className="text-emerald-500 hover:text-emerald-800 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Top Header Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 rounded-xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -491,14 +570,25 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={onNavigateToReport}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer self-start sm:self-auto"
-        >
-          <FileSpreadsheet className="w-4 h-4" />
-          <span>View Bill Report & Analytics</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700"
+            title="Export all bills to Excel"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Export Excel</span>
+          </button>
+          <button
+            onClick={onNavigateToReport}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>View Bill Report & Analytics</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Main Grid: Form (2/3) + Side List (1/3) */}

@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   FileText,
   FileSpreadsheet,
-  Download,
   Plus,
   Trash2,
   Edit2,
@@ -24,12 +23,14 @@ import {
   MapPin,
   Calendar,
   X,
-  FileCode,
+  Upload,
   Receipt,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { downloadStyledExcel, getActiveSystemBranding, triggerDownload } from '../utils/excelExport';
+import { BillExcelUploadModal } from './Modals/BillExcelUploadModal';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -65,8 +66,13 @@ interface BillReportTabProps {
   onSaveBill: (bill: BillItem) => void;
   onDeleteBill: (id: string) => void;
   onBulkDeleteBills?: (ids: string[]) => void;
+  onImportBills?: (bills: BillItem[]) => void;
+  onOpenExcelUploadModal?: () => void;
   onNavigateToTracker: () => void;
   onEditBillInTracker: (bill: BillItem) => void;
+  clients?: string[];
+  locations?: string[];
+  categories?: string[];
   onLoadDemoBills?: () => void;
 }
 
@@ -75,12 +81,38 @@ export const BillReportTab: React.FC<BillReportTabProps> = ({
   onSaveBill,
   onDeleteBill,
   onBulkDeleteBills,
+  onImportBills,
+  onOpenExcelUploadModal,
   onNavigateToTracker,
   onEditBillInTracker,
+  clients,
+  locations,
+  categories,
   onLoadDemoBills,
 }) => {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+
+  // Modal upload state
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
+
+  const availableClients = useMemo(() => {
+    return Array.from(new Set(bills.map((b) => b.client).filter(Boolean)));
+  }, [bills]);
+
+  const availableLocations = useMemo(() => {
+    return Array.from(new Set(bills.map((b) => b.clientLocation).filter(Boolean)));
+  }, [bills]);
+
+  const handleImportBills = (newBills: BillItem[]) => {
+    if (onImportBills) {
+      onImportBills(newBills);
+    } else {
+      newBills.forEach((b) => onSaveBill(b));
+    }
+    setToastMessage(`${newBills.length} Bill(s) successfully imported!`);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -338,50 +370,65 @@ export const BillReportTab: React.FC<BillReportTabProps> = ({
       return;
     }
 
-    const headers = [
-      'Bill Number',
-      'Invoice Number',
-      'Vendor',
-      'Client',
-      'Client Location',
-      'Description',
-      'Bill Type',
-      'Amount (BDT)',
-      'Handover Date',
-      'Submission Date',
-      'Receive Date',
-      'Payment Date',
-      'Status',
-      'Payment Method',
-      'Approved By',
-      'Remarks',
-    ];
+    try {
+      const headers = [
+        'Bill Number',
+        'Invoice Number',
+        'Vendor',
+        'Client',
+        'Client Location',
+        'Description',
+        'Bill Type',
+        'Amount (BDT)',
+        'Handover Date',
+        'Submission Date',
+        'Receive Date',
+        'Payment Date',
+        'Status',
+        'Payment Method',
+        'Approved By',
+        'Remarks',
+      ];
 
-    const rows = filteredBills.map((b) => [
-      b.billNumber,
-      b.invoiceNumber || '-',
-      b.vendor || '-',
-      b.client || '-',
-      b.clientLocation || '-',
-      b.description || '-',
-      b.billType || '-',
-      b.amount || 0,
-      b.handoverDate || '-',
-      b.submissionDate || '-',
-      b.receivedDate || '-',
-      b.paymentDate || '-',
-      b.status,
-      b.paymentMethod || '-',
-      b.approvedBy || '-',
-      b.remarks || '-',
-    ]);
+      const rows = filteredBills.map((b) => [
+        b.billNumber,
+        b.invoiceNumber || '-',
+        b.vendor || '-',
+        b.client || '-',
+        b.clientLocation || '-',
+        b.description || '-',
+        b.billType || '-',
+        Number(b.amount) || 0,
+        b.handoverDate || '-',
+        b.submissionDate || '-',
+        b.receivedDate || '-',
+        b.paymentDate || '-',
+        b.status,
+        b.paymentMethod || '-',
+        b.approvedBy || '-',
+        b.remarks || '-',
+      ]);
 
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    ws['!cols'] = headers.map((h) => ({ wch: Math.max(15, h.length + 3) }));
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Bills');
-    XLSX.writeFile(wb, `Bill_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+      downloadStyledExcel({
+        title: 'CORPORATE BILLING MANAGEMENT REPORT',
+        subtitle: `Audit, Invoicing, and Payment Tracking (${filteredBills.length} Records)`,
+        filename: `Bill_Report_${new Date().toISOString().split('T')[0]}`,
+        headers,
+        data: rows,
+        summaryCards: [
+          { label: 'Total Bills', value: totalBills },
+          { label: 'Total Volume', value: `BDT ${totalAmount.toLocaleString('en-IN')}` },
+          { label: 'Bills Paid', value: paidBills.length },
+          { label: 'Paid Amount', value: `BDT ${paidAmount.toLocaleString('en-IN')}` },
+          { label: 'Bills Pending', value: pendingBills.length },
+        ],
+      });
+      setToastMessage('Excel report (.xlsx) exported successfully!');
+      setTimeout(() => setToastMessage(''), 3000);
+    } catch (err) {
+      console.error('Failed to export Excel:', err);
+      setToastMessage('Failed to export Excel file. Please try again.');
+    }
   };
 
   // Export Full PDF Register
@@ -391,232 +438,114 @@ export const BillReportTab: React.FC<BillReportTabProps> = ({
       return;
     }
 
-    const doc = new jsPDF('l', 'mm', 'a4');
-    const pageW = 297;
-    const margin = 12;
+    try {
+      const branding = getActiveSystemBranding();
+      const doc = new jsPDF('l', 'mm', 'a4');
+      const pageW = 297;
+      const margin = 12;
 
-    // Header band
-    doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, pageW, 26, 'F');
-    doc.setFillColor(79, 70, 229);
-    doc.rect(0, 26, pageW, 2, 'F');
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text('BLACK BANK PLC', margin, 12);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(200, 210, 230);
-    doc.text('Corporate Billing Management Suite · Head Office, Dhaka', margin, 18);
-
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text('BILL REGISTER REPORT', pageW - margin, 10, { align: 'right' });
-    doc.setFontSize(7);
-    doc.setTextColor(200, 210, 230);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, pageW - margin, 15, { align: 'right' });
-    doc.text(
-      `Total Bills: ${filteredBills.length}  |  Amount: BDT ${filteredBills
-        .reduce((s, b) => s + (Number(b.amount) || 0), 0)
-        .toLocaleString('en-IN')}`,
-      pageW - margin,
-      20,
-      { align: 'right' }
-    );
-
-    const body = filteredBills.map((b) => [
-      b.billNumber,
-      b.invoiceNumber || '-',
-      b.client,
-      b.clientLocation,
-      b.billType,
-      (Number(b.amount) || 0).toLocaleString('en-IN'),
-      b.handoverDate || '-',
-      b.submissionDate || '-',
-      b.paymentDate || '-',
-      b.status,
-    ]);
-
-    autoTable(doc, {
-      startY: 32,
-      head: [
-        [
-          'Bill #',
-          'Invoice',
-          'Client',
-          'Location',
-          'Category',
-          'Amount (৳)',
-          'Handover',
-          'Submitted',
-          'Payment',
-          'Status',
-        ],
-      ],
-      body,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [79, 70, 229],
-        textColor: 255,
-        fontStyle: 'bold',
-        fontSize: 7.5,
-        halign: 'center',
-        valign: 'middle',
-      },
-      bodyStyles: { fontSize: 7, cellPadding: 2 },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
-      columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 35 },
-        5: { halign: 'right', fontStyle: 'bold' },
-        9: { halign: 'center' },
-      },
-    });
-
-    const pageCount = (doc as any).internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
+      // Header band
       doc.setFillColor(15, 23, 42);
-      doc.rect(0, 200, pageW, 10, 'F');
+      doc.rect(0, 0, pageW, 26, 'F');
+      doc.setFillColor(79, 70, 229);
+      doc.rect(0, 26, pageW, 2, 'F');
+
       doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text(branding.appName.toUpperCase() || 'BLACK BANK PLC', margin, 12);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(200, 210, 230);
+      doc.text(branding.tagline || 'Corporate Billing Management Suite · Head Office, Dhaka', margin, 18);
+
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.text('BILL REGISTER REPORT', pageW - margin, 10, { align: 'right' });
       doc.setFontSize(7);
-      doc.text('Black Bank PLC · Accounts & Audit Division', margin, 206);
+      doc.setTextColor(200, 210, 230);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, pageW - margin, 15, { align: 'right' });
       doc.text(
-        `Page ${i} of ${pageCount}  |  Computer-generated document`,
+        `Total Bills: ${filteredBills.length}  |  Amount: BDT ${filteredBills
+          .reduce((s, b) => s + (Number(b.amount) || 0), 0)
+          .toLocaleString('en-IN')}`,
         pageW - margin,
-        206,
+        20,
         { align: 'right' }
       );
+
+      const body = filteredBills.map((b) => [
+        b.billNumber,
+        b.invoiceNumber || '-',
+        b.client,
+        b.clientLocation,
+        b.billType,
+        (Number(b.amount) || 0).toLocaleString('en-IN'),
+        b.handoverDate || '-',
+        b.submissionDate || '-',
+        b.paymentDate || '-',
+        b.status,
+      ]);
+
+      autoTable(doc, {
+        startY: 32,
+        head: [
+          [
+            'Bill #',
+            'Invoice',
+            'Client',
+            'Location',
+            'Category',
+            'Amount (BDT)',
+            'Handover',
+            'Submitted',
+            'Payment',
+            'Status',
+          ],
+        ],
+        body,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [79, 70, 229],
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 7.5,
+          halign: 'center',
+          valign: 'middle',
+        },
+        bodyStyles: { fontSize: 7, cellPadding: 2 },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 35 },
+          5: { halign: 'right', fontStyle: 'bold' },
+          9: { halign: 'center' },
+        },
+      });
+
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 200, pageW, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7);
+        doc.text('Black Bank PLC · Accounts & Audit Division', margin, 206);
+        doc.text(
+          `Page ${i} of ${pageCount}  |  Computer-generated document`,
+          pageW - margin,
+          206,
+          { align: 'right' }
+        );
+      }
+
+      const pdfBlob = doc.output('blob');
+      triggerDownload(pdfBlob, `Bill_Register_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      setToastMessage('PDF report (.pdf) exported successfully!');
+      setTimeout(() => setToastMessage(''), 3000);
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+      setToastMessage('Failed to export PDF file. Please try again.');
     }
-
-    doc.save(`Bill_Register_Report_${new Date().toISOString().split('T')[0]}.pdf`);
-  };
-
-  // Export to Word (.doc)
-  const handleExportWord = () => {
-    if (filteredBills.length === 0) {
-      setToastMessage('No bill records to export.');
-      return;
-    }
-
-    let html = `
-      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head><meta charset='utf-8'><title>Bill Register</title>
-      <style>
-        body { font-family: Arial, sans-serif; font-size: 10pt; color: #1e293b; }
-        .header { background: #0f172a; color: #fff; padding: 14px 20px; }
-        .header h1 { margin: 0; font-size: 16pt; }
-        .header p { margin: 4px 0 0; font-size: 8pt; color: #cbd5e1; }
-        .accent { height: 3px; background: #4f46e5; }
-        .meta { padding: 10px 20px; background: #f1f5f9; font-size: 8.5pt; margin-bottom: 12px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 8px; }
-        th { background: #4f46e5; color: white; padding: 6px; text-align: left; font-size: 8pt; }
-        td { border: 1px solid #e2e8f0; padding: 5px; font-size: 8pt; }
-        tr:nth-child(even) { background: #f8fafc; }
-        .footer { margin-top: 20px; padding: 8px 20px; background: #0f172a; color: #fff; font-size: 7pt; }
-      </style></head><body>
-      <div class="header">
-        <h1>Black Bank PLC</h1>
-        <p>Corporate Billing Management Suite · Head Office, Dhaka, Bangladesh</p>
-      </div>
-      <div class="accent"></div>
-      <div class="meta">
-        <b>BILL REGISTER REPORT</b><br>
-        Generated: ${new Date().toLocaleString()} &nbsp;|&nbsp;
-        Total Bills: ${filteredBills.length} &nbsp;|&nbsp;
-        Total Amount: ৳${filteredBills.reduce((s, b) => s + (Number(b.amount) || 0), 0).toLocaleString('en-IN')}
-      </div>
-      <table>
-        <tr>
-          <th>Bill #</th><th>Invoice</th><th>Client</th><th>Location</th><th>Category</th>
-          <th>Amount (৳)</th><th>Handover</th><th>Submitted</th><th>Payment</th><th>Status</th>
-        </tr>`;
-
-    filteredBills.forEach((b) => {
-      html += `<tr>
-        <td><b>${b.billNumber}</b></td><td>${b.invoiceNumber || '-'}</td><td>${b.client}</td><td>${b.clientLocation}</td>
-        <td>${b.billType}</td><td align="right"><b>${(Number(b.amount) || 0).toLocaleString()}</b></td>
-        <td>${b.handoverDate || '-'}</td><td>${b.submissionDate || '-'}</td><td>${b.paymentDate || '-'}</td>
-        <td>${b.status}</td>
-      </tr>`;
-    });
-
-    html += `</table>
-      <div class="footer">Black Bank PLC · Computer-generated document</div>
-      </body></html>`;
-
-    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Bill_Register_${new Date().toISOString().split('T')[0]}.doc`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // Download Sample Excel
-  const handleDownloadSample = () => {
-    const headers = [
-      'Bill Number',
-      'Invoice Number',
-      'Vendor',
-      'Client',
-      'Client Location',
-      'Description',
-      'Bill Type',
-      'Amount (BDT)',
-      'Handover Date',
-      'Submission Date',
-      'Receive Date',
-      'Payment Date',
-      'Status',
-      'Payment Method',
-      'Approved By',
-      'Remarks',
-    ];
-    const sampleRows = [
-      [
-        'BILL-20261013-100001',
-        'INV-2026-001',
-        'Tech Solutions Ltd',
-        'Black Bank PLC',
-        'Gulistan Branch',
-        'CCTV installation at main entrance',
-        'Installation Support',
-        25000,
-        '2026-10-01',
-        '2026-10-03',
-        '2026-10-05',
-        '2026-10-15',
-        'Submitted',
-        'Bank Transfer',
-        'Mr. Rahman',
-        '',
-      ],
-      [
-        'BILL-20261013-100002',
-        'INV-2026-002',
-        'Safe Security',
-        'Black Bank PLC',
-        'Dhanmondi Branch',
-        'Device relocation from Room 201 to Room 305',
-        'Location Shift',
-        8000,
-        '2026-10-02',
-        '2026-10-04',
-        '',
-        '',
-        'Pending',
-        'Cheque',
-        '',
-        '',
-      ],
-    ];
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
-    ws['!cols'] = headers.map((h) => ({ wch: Math.max(14, h.length + 3) }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Sample_Bills');
-    XLSX.writeFile(wb, 'Bill_Tracker_SAMPLE.xlsx');
   };
 
   return (
@@ -932,39 +861,36 @@ export const BillReportTab: React.FC<BillReportTabProps> = ({
               </button>
 
               <button
+                onClick={() => {
+                  if (onOpenExcelUploadModal) {
+                    onOpenExcelUploadModal();
+                  } else {
+                    setIsUploadModalOpen(true);
+                  }
+                }}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                title="Bulk import bills from Excel file (.xlsx, .xls, .csv)"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload from Excel</span>
+              </button>
+
+              <button
                 onClick={handleExportExcel}
-                className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700"
                 title="Export filtered records to MS Excel (.xlsx)"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Excel</span>
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Export Excel</span>
               </button>
 
               <button
                 onClick={handleExportPDF}
-                className="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700"
                 title="Export Bill Register to PDF"
               >
-                <FileDown className="w-3.5 h-3.5" />
-                <span>PDF</span>
-              </button>
-
-              <button
-                onClick={handleExportWord}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
-                title="Export to MS Word (.doc)"
-              >
-                <FileCode className="w-3.5 h-3.5" />
-                <span>Word</span>
-              </button>
-
-              <button
-                onClick={handleDownloadSample}
-                className="px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
-                title="Download Sample Excel Template"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Sample</span>
+                <FileDown className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                <span>Export PDF</span>
               </button>
 
               {onLoadDemoBills && (
@@ -1494,6 +1420,17 @@ export const BillReportTab: React.FC<BillReportTabProps> = ({
           </div>
         </div>
       )}
+
+      {/* Bill Excel Upload Modal */}
+      <BillExcelUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onImportBills={handleImportBills}
+        clients={clients && clients.length > 0 ? clients : availableClients}
+        locations={locations && locations.length > 0 ? locations : availableLocations}
+        categories={categories && categories.length > 0 ? categories : availableCategories}
+        billCount={bills.length}
+      />
     </div>
   );
 };
