@@ -349,7 +349,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
         t.contactDate,
         t.lastCommunication,
         t.deviceLocation,
-        `${monthlyCount} visit(s) in ${t.contactDate ? t.contactDate.substring(0, 7) : '-'}`,
+        `${monthlyCount} visit${monthlyCount > 1 ? 's' : ''}`,
         t.issueType,
         t.responsibility,
         t.probableSolvingDate,
@@ -674,8 +674,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
                                 : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                             }`}
                           >
-                            {monthlyCount} visit{monthlyCount > 1 ? 's' : ''} in{' '}
-                            {t.contactDate ? t.contactDate.substring(0, 7) : '-'}
+                            {monthlyCount} visit{monthlyCount > 1 ? 's' : ''}
                           </span>
                         </div>
                       </td>
@@ -848,8 +847,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
                   {viewingTicket.deviceLocation}
                 </p>
                 <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-1 font-medium">
-                  • {getMonthlyCount(viewingTicket.deviceLocation, viewingTicket.contactDate)} visit(s) in{' '}
-                  {viewingTicket.contactDate ? viewingTicket.contactDate.substring(0, 7) : '-'}
+                  • {getMonthlyCount(viewingTicket.deviceLocation, viewingTicket.contactDate)} visit{getMonthlyCount(viewingTicket.deviceLocation, viewingTicket.contactDate) > 1 ? 's' : ''}
                 </p>
               </div>
 
