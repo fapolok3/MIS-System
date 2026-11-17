@@ -32,7 +32,7 @@ An Enterprise Infrastructure & Device Management System built with **React**, **
 
 To connect your Supabase database:
 
-1. Open your **Supabase Dashboard** for project `pgzlfirdycocxzxekhbo` (or your custom project).
+1. Open your **Supabase Dashboard** for project  (or your custom project).
 2. Go to the **SQL Editor**.
 3. Run the SQL statements provided in the [`supabase_schema.sql`](./supabase_schema.sql) file located at the root of this project.
 
