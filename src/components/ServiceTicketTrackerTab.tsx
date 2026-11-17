@@ -407,10 +407,6 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
     e.preventDefault();
     setFormError('');
 
-    if (!odooId.trim()) {
-      setFormError('Odoo ID is required.');
-      return;
-    }
     if (!client.trim()) {
       setFormError('Client Name is required.');
       return;
@@ -766,7 +762,7 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
 
       renderSection('1 · Ticket Identity', [
         ['Issue Number', t.issueNumber],
-        ['Odoo Ticket ID', t.odooId],
+        ['Odoo Ticket ID', t.odooId || '-'],
         ['Email From', t.emailFrom],
         ['Email Subject', t.emailSubject],
       ]);
@@ -961,12 +957,11 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
                 </div>
                 <div>
                   <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
-                    Odoo ID *
+                    Odoo ID
                   </label>
                   <input
                     type="text"
-                    required
-                    placeholder="e.g. ODOO-88219"
+                    placeholder="e.g. ODOO-88219 (Optional)"
                     value={odooId}
                     onChange={(e) => setOdooId(e.target.value)}
                     className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
@@ -1835,7 +1830,8 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
                     <span className="text-slate-400">Issue #:</span> {viewTicketModal.issueNumber}
                   </div>
                   <div>
-                    <span className="text-slate-400">Odoo ID:</span> {viewTicketModal.odooId}
+                    <span className="text-slate-400">Odoo ID:</span>{' '}
+                    {viewTicketModal.odooId || '—'}
                   </div>
                   <div>
                     <span className="text-slate-400">Email From:</span>{' '}
