@@ -54,6 +54,19 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
+  const statusOptions =
+    systemOptions?.issueTrackerStatuses && systemOptions.issueTrackerStatuses.length > 0
+      ? systemOptions.issueTrackerStatuses
+      : STATUS_OPTIONS;
+  const premesisOptions =
+    systemOptions?.issuePremisesNames && systemOptions.issuePremisesNames.length > 0
+      ? systemOptions.issuePremisesNames
+      : PREMESIS_OPTIONS;
+  const priorityOptions =
+    systemOptions?.issuePriorityLevels && systemOptions.issuePriorityLevels.length > 0
+      ? systemOptions.issuePriorityLevels
+      : PRIORITY_OPTIONS;
+
   // State for Editing
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -61,11 +74,13 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
   const [sl, setSl] = useState<number>(issues.length + 1);
   const [issueLogDate, setIssueLogDate] = useState<string>(getTodayDate());
   const [odooId, setOdooId] = useState<string>('');
-  const [status, setStatus] = useState<string>('Open');
+  const [status, setStatus] = useState<string>(statusOptions[0] || 'Open');
   const [clientName, setClientName] = useState<string>('');
   const [premesisName, setPremesisName] = useState<string>('');
 
-  const [priority, setPriority] = useState<string>('Medium');
+  const [priority, setPriority] = useState<string>(
+    priorityOptions.includes('Medium') ? 'Medium' : priorityOptions[0] || 'Medium'
+  );
   const [deviceReplace, setDeviceReplace] = useState<'Yes' | 'No'>('No');
   const [oldDevice, setOldDevice] = useState<string>('');
   const [newDevice, setNewDevice] = useState<string>('');
@@ -407,11 +422,14 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                       : 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
                   }`}
                 >
-                  {STATUS_OPTIONS.map((opt) => (
+                  {statusOptions.map((opt) => (
                     <option key={opt} value={opt}>
                       {opt}
                     </option>
                   ))}
+                  {status && !statusOptions.includes(status) && (
+                    <option value={status}>{status}</option>
+                  )}
                 </select>
               </div>
 
@@ -439,11 +457,14 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                   className="w-full px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
                   <option value="">Select Premesis</option>
-                  {PREMESIS_OPTIONS.map((prem) => (
+                  {premesisOptions.map((prem) => (
                     <option key={prem} value={prem}>
                       {prem}
                     </option>
                   ))}
+                  {premesisName && !premesisOptions.includes(premesisName) && (
+                    <option value={premesisName}>{premesisName}</option>
+                  )}
                 </select>
               </div>
             </div>
@@ -471,11 +492,14 @@ export const IssueTrackerTab: React.FC<IssueTrackerTabProps> = ({
                       : 'bg-sky-50 text-sky-800 border-sky-300 dark:bg-sky-950/50 dark:text-sky-300 dark:border-sky-800'
                   }`}
                 >
-                  {PRIORITY_OPTIONS.map((pri) => (
+                  {priorityOptions.map((pri) => (
                     <option key={pri} value={pri}>
                       {pri}
                     </option>
                   ))}
+                  {priority && !priorityOptions.includes(priority) && (
+                    <option value={priority}>{priority}</option>
+                  )}
                 </select>
               </div>
 

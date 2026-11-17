@@ -126,6 +126,7 @@ CREATE TABLE IF NOT EXISTS public.device_support_tickets (
   device_location TEXT DEFAULT '',
   issue_type TEXT DEFAULT '',
   responsibility TEXT DEFAULT 'ITL',
+  status TEXT DEFAULT 'Pending',
   probable_solving_date TEXT DEFAULT '',
   ticket_status TEXT DEFAULT 'No',
   odoo_id TEXT DEFAULT '',
@@ -247,6 +248,44 @@ CREATE POLICY "Allow public full access on issues" ON public.issues FOR ALL USIN
 
 DROP POLICY IF EXISTS "Allow public full access on service_tickets" ON public.service_tickets;
 CREATE POLICY "Allow public full access on service_tickets" ON public.service_tickets FOR ALL USING (true) WITH CHECK (true);
+
+-- 11. System Options Table (Module Dropdown Configurator)
+CREATE TABLE IF NOT EXISTS public.system_options (
+  id TEXT PRIMARY KEY,
+  device_statuses JSONB DEFAULT '[]'::jsonb,
+  sim_operators JSONB DEFAULT '[]'::jsonb,
+  access_types JSONB DEFAULT '[]'::jsonb,
+  location_types JSONB DEFAULT '[]'::jsonb,
+  issue_types JSONB DEFAULT '[]'::jsonb,
+  ticket_priorities JSONB DEFAULT '[]'::jsonb,
+  ticket_statuses JSONB DEFAULT '[]'::jsonb,
+  vendors JSONB DEFAULT '[]'::jsonb,
+  po_statuses JSONB DEFAULT '[]'::jsonb,
+  sim_statuses JSONB DEFAULT '[]'::jsonb,
+  technicians JSONB DEFAULT '[]'::jsonb,
+  sla_statuses JSONB DEFAULT '[]'::jsonb,
+  device_issue_types JSONB DEFAULT '[]'::jsonb,
+  device_responsibilities JSONB DEFAULT '[]'::jsonb,
+  device_issue_statuses JSONB DEFAULT '[]'::jsonb,
+  service_location_types JSONB DEFAULT '[]'::jsonb,
+  service_segments JSONB DEFAULT '[]'::jsonb,
+  service_issue_types JSONB DEFAULT '[]'::jsonb,
+  service_priorities JSONB DEFAULT '[]'::jsonb,
+  service_ticket_statuses JSONB DEFAULT '[]'::jsonb,
+  service_delivery_options JSONB DEFAULT '[]'::jsonb,
+  service_payment_methods JSONB DEFAULT '[]'::jsonb,
+  issue_tracker_statuses JSONB DEFAULT '[]'::jsonb,
+  issue_premises_names JSONB DEFAULT '[]'::jsonb,
+  issue_priority_levels JSONB DEFAULT '[]'::jsonb,
+  bill_payment_statuses JSONB DEFAULT '[]'::jsonb,
+  bill_payment_methods JSONB DEFAULT '[]'::jsonb,
+  options JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.system_options ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public full access on system_options" ON public.system_options;
+CREATE POLICY "Allow public full access on system_options" ON public.system_options FOR ALL USING (true) WITH CHECK (true);
 
 -- Seed Default Admin Account into user_credentials
 INSERT INTO public.user_credentials (email, password, role, full_name)

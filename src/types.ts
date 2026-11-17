@@ -77,7 +77,7 @@ export interface BillItem {
   submissionDate: string;
   receivedDate: string;
   paymentDate: string;
-  status: 'Pending' | 'Submitted' | 'Partial' | 'Paid';
+  status: 'Pending' | 'Submitted' | 'Partial' | 'Paid' | string;
   approvedBy: string;
   paymentMethod: 'Bank Transfer' | 'Cheque' | 'Cash' | 'Online' | string;
   remarks: string;
@@ -94,6 +94,7 @@ export interface DeviceSupportTicket {
   deviceLocation: string;
   issueType: string;
   responsibility: 'BBPLC' | 'ITL' | string;
+  status?: 'Pending' | 'On Going' | 'Solved' | string;
   probableSolvingDate: string;
   ticketStatus: 'Yes' | 'No' | string;
   odooId: string;
@@ -160,6 +161,7 @@ export interface IssueTrackerItem {
 }
 
 export interface SystemOptions {
+  // Device MIS Tree & SIM Management & Purchase Orders & Service Tracker
   deviceStatuses: string[];
   simOperators: string[];
   accessTypes: string[];
@@ -172,6 +174,29 @@ export interface SystemOptions {
   simStatuses: string[];
   technicians: string[];
   slaStatuses?: string[];
+
+  // Device Issue Tracker
+  deviceIssueTypes?: string[];
+  deviceResponsibilities?: string[];
+  deviceIssueStatuses?: string[];
+
+  // Service Ticket Tracker
+  serviceLocationTypes?: string[];
+  serviceSegments?: string[];
+  serviceIssueTypes?: string[];
+  servicePriorities?: string[];
+  serviceTicketStatuses?: string[];
+  serviceDeliveryOptions?: string[];
+  servicePaymentMethods?: string[];
+
+  // Issue Tracker
+  issueTrackerStatuses?: string[];
+  issuePremisesNames?: string[];
+  issuePriorityLevels?: string[];
+
+  // Bill Tracker
+  billPaymentStatuses?: string[];
+  billPaymentMethods?: string[];
 }
 
 export interface Device {

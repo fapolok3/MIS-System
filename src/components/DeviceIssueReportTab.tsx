@@ -18,10 +18,11 @@ import {
   ArrowRight,
   Filter,
 } from 'lucide-react';
-import { DeviceSupportTicket } from '../types';
+import { DeviceSupportTicket, SystemOptions } from '../types';
 import { ConfirmModal } from './Modals/ConfirmModal';
 import { Pagination } from './Pagination';
 import { downloadStyledExcel } from '../utils/excelExport';
+import { normalizeDeviceSupportStatus } from '../lib/supabase';
 
 const STANDARD_ISSUE_TYPES = [
   'Sim Connectivity',
@@ -39,6 +40,7 @@ interface DeviceIssueReportTabProps {
   onSaveTicket: (ticket: DeviceSupportTicket) => void;
   onDeleteTicket: (id: string) => void;
   onBulkDeleteTickets?: (ids: string[]) => void;
+  systemOptions?: SystemOptions;
   onNavigateToTracker: () => void;
 }
 
@@ -47,12 +49,27 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
   onSaveTicket,
   onDeleteTicket,
   onBulkDeleteTickets,
+  systemOptions,
   onNavigateToTracker,
 }) => {
+  const issueTypeOptions =
+    systemOptions?.deviceIssueTypes && systemOptions.deviceIssueTypes.length > 0
+      ? systemOptions.deviceIssueTypes
+      : STANDARD_ISSUE_TYPES;
+  const responsibilityOptions =
+    systemOptions?.deviceResponsibilities && systemOptions.deviceResponsibilities.length > 0
+      ? systemOptions.deviceResponsibilities
+      : ['ITL', 'BBPLC'];
+  const statusOptions =
+    systemOptions?.deviceIssueStatuses && systemOptions.deviceIssueStatuses.length > 0
+      ? systemOptions.deviceIssueStatuses
+      : ['Pending', 'On Going', 'Solved'];
+
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMonth, setFilterMonth] = useState('ALL');
   const [filterResponsibility, setFilterResponsibility] = useState('ALL');
+  const [filterIssueStatus, setFilterIssueStatus] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterRepeat, setFilterRepeat] = useState<'ALL' | 'REPEATED' | 'SINGLE'>('ALL');
 
@@ -66,6 +83,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
   // Modals State
   const [viewingTicket, setViewingTicket] = useState<DeviceSupportTicket | null>(null);
   const [editingTicket, setEditingTicket] = useState<DeviceSupportTicket | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Edit Modal form internal state
   const [editForm, setEditForm] = useState<{
@@ -76,6 +94,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
     selectedIssues: string[];
     otherIssue: string;
     responsibility: string;
+    status: string;
     probableSolvingDate: string;
     ticketStatus: string;
     odooId: string;
@@ -87,7 +106,8 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
     deviceLocation: '',
     selectedIssues: [],
     otherIssue: '',
-    responsibility: 'ITL',
+    responsibility: responsibilityOptions[0] || 'ITL',
+    status: statusOptions[0] || 'Pending',
     probableSolvingDate: '',
     ticketStatus: 'No',
     odooId: '',
@@ -163,7 +183,8 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
           (t.issueType || '').toLowerCase().includes(q) ||
           (t.odooId || '').toLowerCase().includes(q) ||
           (t.remarks || '').toLowerCase().includes(q) ||
-          (t.responsibility || '').toLowerCase().includes(q);
+          (t.responsibility || '').toLowerCase().includes(q) ||
+          normalizeDeviceSupportStatus(t.status).toLowerCase().includes(q);
         if (!matches) return false;
       }
 
@@ -181,14 +202,21 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
         }
       }
 
-      // 4. Ticket Status Raised Filter
+      // 4. Issue Status Filter (Pending / On Going / Solved)
+      if (filterIssueStatus !== 'ALL') {
+        if (normalizeDeviceSupportStatus(t.status) !== filterIssueStatus) {
+          return false;
+        }
+      }
+
+      // 5. Ticket Status Raised Filter
       if (filterStatus !== 'ALL') {
         if ((t.ticketStatus || '').toUpperCase() !== filterStatus.toUpperCase()) {
           return false;
         }
       }
 
-      // 5. Repeat Location Filter
+      // 6. Repeat Location Filter
       if (filterRepeat !== 'ALL') {
         const monthlyCount = getMonthlyCount(t.deviceLocation, t.contactDate);
         if (filterRepeat === 'REPEATED' && monthlyCount <= 1) return false;
@@ -197,7 +225,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
 
       return true;
     });
-  }, [tickets, searchQuery, filterMonth, filterResponsibility, filterStatus, filterRepeat]);
+  }, [tickets, searchQuery, filterMonth, filterResponsibility, filterIssueStatus, filterStatus, filterRepeat]);
 
   // Paginated Tickets
   const paginatedTickets = useMemo(() => {
@@ -229,9 +257,10 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
   // Open Edit Modal
   const openEditModal = (t: DeviceSupportTicket) => {
     setEditingTicket(t);
+    setEditError(null);
     const issues = (t.issueType || '').split(',').map((s) => s.trim()).filter(Boolean);
-    const standardMatches = issues.filter((i) => STANDARD_ISSUE_TYPES.includes(i));
-    const otherMatches = issues.filter((i) => !STANDARD_ISSUE_TYPES.includes(i));
+    const standardMatches = issues.filter((i) => issueTypeOptions.includes(i));
+    const otherMatches = issues.filter((i) => !issueTypeOptions.includes(i));
 
     setEditForm({
       deviceId: t.deviceId,
@@ -241,6 +270,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
       selectedIssues: standardMatches,
       otherIssue: otherMatches.join(', '),
       responsibility: t.responsibility || 'ITL',
+      status: normalizeDeviceSupportStatus(t.status),
       probableSolvingDate: t.probableSolvingDate === 'N/A' ? '' : t.probableSolvingDate,
       ticketStatus: t.ticketStatus || 'No',
       odooId: t.odooId === 'N/A' ? '' : t.odooId,
@@ -251,6 +281,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
   const handleSaveEditedTicket = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTicket) return;
+    setEditError(null);
 
     const allIssues = [...editForm.selectedIssues];
     if (editForm.otherIssue.trim()) {
@@ -258,12 +289,12 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
     }
 
     if (allIssues.length === 0) {
-      alert('Please select at least one Device Issue Type.');
+      setEditError('Please select at least one Device Issue Type.');
       return;
     }
 
     if (editForm.ticketStatus === 'Yes' && !editForm.odooId.trim()) {
-      alert('Please enter the ODOO ID when Ticket Status Raised is Yes.');
+      setEditError('Please enter the ODOO ID when Ticket Status Raised is Yes.');
       return;
     }
 
@@ -275,6 +306,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
       deviceLocation: editForm.deviceLocation.trim(),
       issueType: allIssues.join(', '),
       responsibility: editForm.responsibility,
+      status: editForm.status,
       probableSolvingDate: editForm.probableSolvingDate || 'N/A',
       ticketStatus: editForm.ticketStatus,
       odooId: editForm.ticketStatus === 'Yes' ? editForm.odooId.trim() : 'N/A',
@@ -322,7 +354,6 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
   // Excel Export
   const handleExportExcel = () => {
     if (filteredTickets.length === 0) {
-      alert('No ticket records match current filter criteria to export.');
       return;
     }
 
@@ -335,6 +366,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
       'Monthly Visits',
       'Device Issue Type',
       'Responsibility',
+      'Status',
       'Probable Solving Date',
       'Ticket Status Raised',
       'ODOO ID',
@@ -352,6 +384,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
         `${monthlyCount} visit${monthlyCount > 1 ? 's' : ''}`,
         t.issueType,
         t.responsibility,
+        normalizeDeviceSupportStatus(t.status),
         t.probableSolvingDate,
         t.ticketStatus,
         t.odooId,
@@ -378,6 +411,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
     setSearchQuery('');
     setFilterMonth('ALL');
     setFilterResponsibility('ALL');
+    setFilterIssueStatus('ALL');
     setFilterStatus('ALL');
     setFilterRepeat('ALL');
     setCurrentPage(1);
@@ -510,7 +544,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
           </div>
 
           {/* Filters Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
             {/* Search Input */}
             <div className="relative md:col-span-1">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -556,8 +590,34 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
               >
                 <option value="ALL">All Responsibilities</option>
-                <option value="ITL">ITL (Inovace Tech)</option>
-                <option value="BBPLC">BBPLC (Internal)</option>
+                {responsibilityOptions.map((resp) => (
+                  <option key={resp} value={resp}>
+                    {resp === 'ITL'
+                      ? 'ITL (Inovace Tech)'
+                      : resp === 'BBPLC'
+                      ? 'BBPLC (Internal)'
+                      : resp}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Issue Status Filter */}
+            <div>
+              <select
+                value={filterIssueStatus}
+                onChange={(e) => {
+                  setFilterIssueStatus(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+              >
+                <option value="ALL">All Statuses</option>
+                {statusOptions.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -571,7 +631,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
                 }}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
               >
-                <option value="ALL">All Ticket Statuses</option>
+                <option value="ALL">All ODOO Raised</option>
                 <option value="YES">Yes (ODOO Raised)</option>
                 <option value="NO">No (Not Raised)</option>
               </select>
@@ -597,7 +657,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
 
         {/* Table View */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse min-w-[1050px]">
+          <table className="w-full text-left text-xs border-collapse min-w-[1150px]">
             <thead className="bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800 font-bold">
               <tr>
                 <th className="px-3 py-3 w-10 text-center whitespace-nowrap">
@@ -614,6 +674,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
                 <th className="px-3 py-3 min-w-[180px] whitespace-nowrap">Issue Types</th>
                 <th className="px-3 py-3 whitespace-nowrap">Dates (Contact / Solve)</th>
                 <th className="px-3 py-3 text-center whitespace-nowrap">Resp.</th>
+                <th className="px-3 py-3 text-center whitespace-nowrap">Status</th>
                 <th className="px-3 py-3 text-center whitespace-nowrap">Ticket / ODOO</th>
                 <th className="px-3 py-3 min-w-[160px] whitespace-nowrap">Remarks</th>
                 <th className="px-3 py-3 text-center sticky right-0 z-10 bg-slate-100 dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 whitespace-nowrap">
@@ -625,7 +686,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
               {paginatedTickets.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={10}
+                    colSpan={11}
                     className="px-4 py-12 text-center text-slate-400 dark:text-slate-500 font-medium"
                   >
                     No device support ticket entries found matching filter criteria.
@@ -711,6 +772,26 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
                         >
                           {t.responsibility}
                         </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-3 py-2.5 text-center whitespace-nowrap">
+                        {(() => {
+                          const st = normalizeDeviceSupportStatus(t.status);
+                          return (
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap ${
+                                st === 'Solved'
+                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                  : st === 'On Going'
+                                  ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                                  : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                              }`}
+                            >
+                              {st}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Ticket / ODOO - Single line with whitespace-nowrap */}
@@ -833,10 +914,30 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
               </div>
 
               <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Responsibility</span>
-                <p className="font-bold text-slate-900 dark:text-white mt-0.5">
-                  {viewingTicket.responsibility}
-                </p>
+                <span className="text-[10px] text-slate-400 uppercase font-bold">
+                  Responsibility & Status
+                </span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {viewingTicket.responsibility}
+                  </span>
+                  {(() => {
+                    const st = normalizeDeviceSupportStatus(viewingTicket.status);
+                    return (
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                          st === 'Solved'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                            : st === 'On Going'
+                            ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
+                            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                        }`}
+                      >
+                        {st}
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
 
               <div className="col-span-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
@@ -950,6 +1051,12 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
             </div>
 
             <form onSubmit={handleSaveEditedTicket} className="space-y-3.5 text-xs">
+              {editError && (
+                <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{editError}</span>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -973,8 +1080,18 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
                     onChange={(e) => setEditForm({ ...editForm, responsibility: e.target.value })}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-semibold"
                   >
-                    <option value="ITL">ITL (Inovace Tech)</option>
-                    <option value="BBPLC">BBPLC (Internal)</option>
+                    {responsibilityOptions.map((resp) => (
+                      <option key={resp} value={resp}>
+                        {resp === 'ITL'
+                          ? 'ITL (Inovace Tech)'
+                          : resp === 'BBPLC'
+                          ? 'BBPLC (Internal)'
+                          : resp}
+                      </option>
+                    ))}
+                    {editForm.responsibility && !responsibilityOptions.includes(editForm.responsibility) && (
+                      <option value={editForm.responsibility}>{editForm.responsibility}</option>
+                    )}
                   </select>
                 </div>
               </div>
@@ -1030,7 +1147,7 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
                   Device Issue Types *
                 </label>
                 <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 max-h-36 overflow-y-auto">
-                  {STANDARD_ISSUE_TYPES.map((issue, issueIdx) => {
+                  {issueTypeOptions.map((issue, issueIdx) => {
                     const checked = editForm.selectedIssues.includes(issue);
                     return (
                       <label
@@ -1099,18 +1216,45 @@ export const DeviceIssueReportTab: React.FC<DeviceIssueReportTabProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Probable Solving Date
-                </label>
-                <input
-                  type="date"
-                  value={editForm.probableSolvingDate}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, probableSolvingDate: e.target.value })
-                  }
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2 font-mono text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Status *
+                  </label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        status: e.target.value,
+                      })
+                    }
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                  >
+                    {statusOptions.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                    {editForm.status && !statusOptions.includes(editForm.status) && (
+                      <option value={editForm.status}>{editForm.status}</option>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Probable Solving Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.probableSolvingDate}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, probableSolvingDate: e.target.value })
+                    }
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2 font-mono text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
               </div>
 
               <div>

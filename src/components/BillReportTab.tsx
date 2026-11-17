@@ -45,7 +45,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
-import { BillItem } from '../types';
+import { BillItem, SystemOptions } from '../types';
 import { useTheme } from '../context/ThemeContext';
 
 ChartJS.register(
@@ -68,6 +68,7 @@ interface BillReportTabProps {
   onBulkDeleteBills?: (ids: string[]) => void;
   onImportBills?: (bills: BillItem[]) => void;
   onOpenExcelUploadModal?: () => void;
+  systemOptions?: SystemOptions;
   onNavigateToTracker: () => void;
   onEditBillInTracker: (bill: BillItem) => void;
   clients?: string[];
@@ -83,6 +84,7 @@ export const BillReportTab: React.FC<BillReportTabProps> = ({
   onBulkDeleteBills,
   onImportBills,
   onOpenExcelUploadModal,
+  systemOptions,
   onNavigateToTracker,
   onEditBillInTracker,
   clients,
@@ -92,6 +94,15 @@ export const BillReportTab: React.FC<BillReportTabProps> = ({
 }) => {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+
+  const paymentStatusOptions =
+    systemOptions?.billPaymentStatuses && systemOptions.billPaymentStatuses.length > 0
+      ? systemOptions.billPaymentStatuses
+      : ['Pending', 'Submitted', 'Partial', 'Paid'];
+  const paymentMethodOptions =
+    systemOptions?.billPaymentMethods && systemOptions.billPaymentMethods.length > 0
+      ? systemOptions.billPaymentMethods
+      : ['Bank Transfer', 'Cheque', 'Cash', 'Online'];
 
   // Modal upload state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
@@ -995,10 +1006,11 @@ export const BillReportTab: React.FC<BillReportTabProps> = ({
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
               >
                 <option value="ALL">All Statuses</option>
-                <option value="Pending">Pending</option>
-                <option value="Submitted">Submitted</option>
-                <option value="Partial">Partial</option>
-                <option value="Paid">Paid</option>
+                {paymentStatusOptions.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -1013,10 +1025,11 @@ export const BillReportTab: React.FC<BillReportTabProps> = ({
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
               >
                 <option value="ALL">All Payment Methods</option>
-                <option value="Bank Transfer">Bank Transfer</option>
-                <option value="Cheque">Cheque</option>
-                <option value="Cash">Cash</option>
-                <option value="Online">Online</option>
+                {paymentMethodOptions.map((pm) => (
+                  <option key={pm} value={pm}>
+                    {pm}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

@@ -28,7 +28,7 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { downloadStyledExcel, getActiveSystemBranding, triggerDownload } from '../utils/excelExport';
-import { ServiceTicketItem } from '../types';
+import { ServiceTicketItem, SystemOptions } from '../types';
 
 export const STANDARD_SERVICE_PRODUCTS = [
   { name: 'Battery & Power Management Circuit', price: '1200' },
@@ -82,6 +82,8 @@ interface ServiceTicketTrackerTabProps {
   tickets: ServiceTicketItem[];
   onSaveTicket: (ticket: ServiceTicketItem) => void;
   onDeleteTicket: (id: string) => void;
+  systemOptions?: SystemOptions;
+  onAddServiceIssueType?: (issueType: string) => void;
   onNavigateToReport: () => void;
   editTicket?: ServiceTicketItem | null;
   onClearEditTicket?: () => void;
@@ -91,10 +93,41 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
   tickets,
   onSaveTicket,
   onDeleteTicket,
+  systemOptions,
+  onAddServiceIssueType,
   onNavigateToReport,
   editTicket,
   onClearEditTicket,
 }) => {
+  const locationTypeOptions =
+    systemOptions?.serviceLocationTypes && systemOptions.serviceLocationTypes.length > 0
+      ? systemOptions.serviceLocationTypes
+      : LOCATION_TYPES;
+  const segmentOptions =
+    systemOptions?.serviceSegments && systemOptions.serviceSegments.length > 0
+      ? systemOptions.serviceSegments
+      : ['Corporate', 'Retail', 'SME'];
+  const configuredIssueTypes =
+    systemOptions?.serviceIssueTypes && systemOptions.serviceIssueTypes.length > 0
+      ? systemOptions.serviceIssueTypes
+      : DEFAULT_ISSUE_TYPES;
+  const priorityOptions =
+    systemOptions?.servicePriorities && systemOptions.servicePriorities.length > 0
+      ? systemOptions.servicePriorities
+      : ['Low', 'Medium', 'High', 'Critical'];
+  const statusOptions =
+    systemOptions?.serviceTicketStatuses && systemOptions.serviceTicketStatuses.length > 0
+      ? systemOptions.serviceTicketStatuses
+      : ['Open', 'Pending', 'Ongoing', 'Working', 'RMA', 'Repairing', 'Done'];
+  const deliveryOptions =
+    systemOptions?.serviceDeliveryOptions && systemOptions.serviceDeliveryOptions.length > 0
+      ? systemOptions.serviceDeliveryOptions
+      : ['Onsite', 'Courier', 'Hand Delivery'];
+  const paymentMethodOptions =
+    systemOptions?.servicePaymentMethods && systemOptions.servicePaymentMethods.length > 0
+      ? systemOptions.servicePaymentMethods
+      : ['Cash', 'Cheque', 'Bank Transfer', 'Online'];
+
   const getTodayDate = () => new Date().toISOString().split('T')[0];
   const getCurrentTime = () => {
     const now = new Date();
@@ -127,12 +160,12 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
   const [district, setDistrict] = useState('Dhaka');
   const [address, setAddress] = useState('');
   const [deviceLocation, setDeviceLocation] = useState('');
-  const [locationType, setLocationType] = useState('Main Branch');
+  const [locationType, setLocationType] = useState(locationTypeOptions[0] || 'Main Branch');
   const [deviceId, setDeviceId] = useState('');
   const [productSelect, setProductSelect] = useState('');
   const [productCustom, setProductCustom] = useState('');
   const [productPrice, setProductPrice] = useState('');
-  const [segment, setSegment] = useState('Corporate');
+  const [segment, setSegment] = useState(segmentOptions[0] || 'Corporate');
   const [kam, setKam] = useState('');
 
   // 3 · Dates & SLA
@@ -143,26 +176,28 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
   const [slaThreshold, setSlaThreshold] = useState<number>(3);
 
   // 4 · Issue Details
-  const [availableIssues, setAvailableIssues] = useState<string[]>(DEFAULT_ISSUE_TYPES);
+  const [availableIssues, setAvailableIssues] = useState<string[]>(configuredIssueTypes);
   const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
   const [newIssueInput, setNewIssueInput] = useState('');
   const [showAddIssueModal, setShowAddIssueModal] = useState(false);
-  const [priority, setPriority] = useState<string>('Medium');
-  const [status, setStatus] = useState<string>('Open');
+  const [priority, setPriority] = useState<string>(
+    priorityOptions.includes('Medium') ? 'Medium' : priorityOptions[0] || 'Medium'
+  );
+  const [status, setStatus] = useState<string>(statusOptions[0] || 'Open');
   const [replace, setReplace] = useState<string>('No');
   const [replaceDeviceId, setReplaceDeviceId] = useState('');
 
   // 5 · Operations & Assignment
   const [assignPerson, setAssignPerson] = useState('');
   const [accessories, setAccessories] = useState('');
-  const [deliveryOption, setDeliveryOption] = useState('Onsite');
+  const [deliveryOption, setDeliveryOption] = useState(deliveryOptions[0] || 'Onsite');
   const [challanBy, setChallanBy] = useState('');
   const [handedOverTo, setHandedOverTo] = useState('');
   const [unitQty, setUnitQty] = useState<number>(1);
 
   // 6 · Billing
   const [invoiceHandover, setInvoiceHandover] = useState('No');
-  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [paymentMethod, setPaymentMethod] = useState(paymentMethodOptions[0] || 'Cash');
   const [vendorBill, setVendorBill] = useState('');
 
   // 7 · Notes
@@ -172,6 +207,18 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
 
   // View modal for preview
   const [viewTicketModal, setViewTicketModal] = useState<ServiceTicketItem | null>(null);
+
+  useEffect(() => {
+    setAvailableIssues((prev) => {
+      const merged = [...configuredIssueTypes];
+      prev.forEach((p) => {
+        if (selectedIssues.includes(p) && !merged.includes(p)) {
+          merged.push(p);
+        }
+      });
+      return merged;
+    });
+  }, [systemOptions?.serviceIssueTypes]);
 
   // Dynamic SLA Calculation
   const { resolutionDays, slaStatus } = useMemo(() => {
@@ -303,6 +350,9 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
     if (!selectedIssues.includes(clean)) {
       setSelectedIssues((prev) => [...prev, clean]);
     }
+    if (onAddServiceIssueType) {
+      onAddServiceIssueType(clean);
+    }
     setNewIssueInput('');
     setShowAddIssueModal(false);
   };
@@ -320,12 +370,12 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
     setDistrict('Dhaka');
     setAddress('');
     setDeviceLocation('');
-    setLocationType('Main Branch');
+    setLocationType(locationTypeOptions[0] || 'Main Branch');
     setDeviceId('');
     setProductSelect('');
     setProductCustom('');
     setProductPrice('');
-    setSegment('Corporate');
+    setSegment(segmentOptions[0] || 'Corporate');
     setKam('');
     setRequestDate(getTodayDate());
     setRequestTime(getCurrentTime());
@@ -333,18 +383,18 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
     setServiceDate('');
     setSlaThreshold(3);
     setSelectedIssues([]);
-    setPriority('Medium');
-    setStatus('Open');
+    setPriority(priorityOptions.includes('Medium') ? 'Medium' : priorityOptions[0] || 'Medium');
+    setStatus(statusOptions[0] || 'Open');
     setReplace('No');
     setReplaceDeviceId('');
     setAssignPerson('');
     setAccessories('');
-    setDeliveryOption('Onsite');
+    setDeliveryOption(deliveryOptions[0] || 'Onsite');
     setChallanBy('');
     setHandedOverTo('');
     setUnitQty(1);
     setInvoiceHandover('No');
-    setPaymentMethod('Cash');
+    setPaymentMethod(paymentMethodOptions[0] || 'Cash');
     setVendorBill('');
     setRemarks('');
     setVisitEmail('');
@@ -1041,11 +1091,14 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
                     onChange={(e) => setLocationType(e.target.value)}
                     className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
-                    {LOCATION_TYPES.map((lt) => (
+                    {locationTypeOptions.map((lt) => (
                       <option key={lt} value={lt}>
                         {lt}
                       </option>
                     ))}
+                    {locationType && !locationTypeOptions.includes(locationType) && (
+                      <option value={locationType}>{locationType}</option>
+                    )}
                   </select>
                 </div>
                 <div>
@@ -1115,9 +1168,14 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
                     onChange={(e) => setSegment(e.target.value)}
                     className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                   >
-                    <option>Corporate</option>
-                    <option>Retail</option>
-                    <option>SME</option>
+                    {segmentOptions.map((seg) => (
+                      <option key={seg} value={seg}>
+                        {seg}
+                      </option>
+                    ))}
+                    {segment && !segmentOptions.includes(segment) && (
+                      <option value={segment}>{segment}</option>
+                    )}
                   </select>
                 </div>
                 <div>
@@ -1293,10 +1351,22 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
                       onChange={(e) => setPriority(e.target.value)}
                       className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                     >
-                      <option value="Low">🟢 Low</option>
-                      <option value="Medium">🟡 Medium</option>
-                      <option value="High">🟠 High</option>
-                      <option value="Critical">🔴 Critical</option>
+                      {priorityOptions.map((pri) => (
+                        <option key={pri} value={pri}>
+                          {pri === 'Low'
+                            ? '🟢 Low'
+                            : pri === 'Medium'
+                            ? '🟡 Medium'
+                            : pri === 'High'
+                            ? '🟠 High'
+                            : pri === 'Critical'
+                            ? '🔴 Critical'
+                            : pri}
+                        </option>
+                      ))}
+                      {priority && !priorityOptions.includes(priority) && (
+                        <option value={priority}>{priority}</option>
+                      )}
                     </select>
                   </div>
 
@@ -1309,13 +1379,14 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
                       onChange={(e) => setStatus(e.target.value)}
                       className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                     >
-                      <option value="Open">Open</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Ongoing">Ongoing</option>
-                      <option value="Working">Working</option>
-                      <option value="RMA">RMA</option>
-                      <option value="Repairing">Repairing</option>
-                      <option value="Done">Done</option>
+                      {statusOptions.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                      {status && !statusOptions.includes(status) && (
+                        <option value={status}>{status}</option>
+                      )}
                     </select>
                   </div>
 
@@ -1401,9 +1472,14 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
                     onChange={(e) => setDeliveryOption(e.target.value)}
                     className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white"
                   >
-                    <option>Onsite</option>
-                    <option>Courier</option>
-                    <option>Hand Delivery</option>
+                    {deliveryOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                    {deliveryOption && !deliveryOptions.includes(deliveryOption) && (
+                      <option value={deliveryOption}>{deliveryOption}</option>
+                    )}
                   </select>
                 </div>
                 <div>
@@ -1474,10 +1550,14 @@ export const ServiceTicketTrackerTab: React.FC<ServiceTicketTrackerTabProps> = (
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white"
                   >
-                    <option>Cash</option>
-                    <option>Cheque</option>
-                    <option>Bank Transfer</option>
-                    <option>Online</option>
+                    {paymentMethodOptions.map((pm) => (
+                      <option key={pm} value={pm}>
+                        {pm}
+                      </option>
+                    ))}
+                    {paymentMethod && !paymentMethodOptions.includes(paymentMethod) && (
+                      <option value={paymentMethod}>{paymentMethod}</option>
+                    )}
                   </select>
                 </div>
                 <div>

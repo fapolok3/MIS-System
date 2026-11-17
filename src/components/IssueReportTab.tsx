@@ -91,6 +91,20 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
     setTimeout(() => setToastMessage(''), 4000);
   };
 
+  // Dynamic dropdown options from SystemOptions with safe defaults
+  const statusOptions =
+    systemOptions?.issueTrackerStatuses && systemOptions.issueTrackerStatuses.length > 0
+      ? systemOptions.issueTrackerStatuses
+      : STATUS_OPTIONS;
+  const premesisBaseOptions =
+    systemOptions?.issuePremisesNames && systemOptions.issuePremisesNames.length > 0
+      ? systemOptions.issuePremisesNames
+      : PREMESIS_OPTIONS;
+  const priorityOptions =
+    systemOptions?.issuePriorityLevels && systemOptions.issuePriorityLevels.length > 0
+      ? systemOptions.issuePriorityLevels
+      : PRIORITY_OPTIONS;
+
   // Normalize all issues to guarantee 34 fields
   const normalizedIssues = useMemo(() => {
     return issues.map((item, index) => normalizeIssue(item, index));
@@ -98,12 +112,12 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
 
   // Dynamic premises list
   const availablePremesis = useMemo(() => {
-    const list = new Set<string>(PREMESIS_OPTIONS);
+    const list = new Set<string>(premesisBaseOptions);
     normalizedIssues.forEach((i) => {
       if (i.premesisName) list.add(i.premesisName);
     });
     return Array.from(list);
-  }, [normalizedIssues]);
+  }, [normalizedIssues, premesisBaseOptions]);
 
   // Status Metrics
   const { statusCounts, highPriorityCount, replaceCount } = useMemo(() => {
@@ -583,7 +597,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
               className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-indigo-500 text-slate-800 dark:text-slate-100 text-xs rounded-lg px-2.5 py-1.5 outline-none cursor-pointer font-medium"
             >
               <option value="ALL">All Statuses</option>
-              {STATUS_OPTIONS.map((opt) => (
+              {statusOptions.map((opt) => (
                 <option key={opt} value={opt}>
                   {opt}
                 </option>
@@ -603,7 +617,7 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
               className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-indigo-500 text-slate-800 dark:text-slate-100 text-xs rounded-lg px-2.5 py-1.5 outline-none cursor-pointer font-medium"
             >
               <option value="ALL">All Priorities</option>
-              {PRIORITY_OPTIONS.map((p) => (
+              {priorityOptions.map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>
@@ -1059,11 +1073,14 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                       onChange={(e) => setEditingIssue({ ...editingIssue, status: e.target.value })}
                       className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                     >
-                      {STATUS_OPTIONS.map((s) => (
+                      {statusOptions.map((s) => (
                         <option key={s} value={s}>
                           {s}
                         </option>
                       ))}
+                      {editingIssue.status && !statusOptions.includes(editingIssue.status) && (
+                        <option value={editingIssue.status}>{editingIssue.status}</option>
+                      )}
                     </select>
                   </div>
                   <div>
@@ -1077,12 +1094,18 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                   </div>
                   <div>
                     <label className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Premesis Name</label>
-                    <input
-                      type="text"
+                    <select
                       value={editingIssue.premesisName || ''}
                       onChange={(e) => setEditingIssue({ ...editingIssue, premesisName: e.target.value })}
                       className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                    />
+                    >
+                      <option value="">Select Premesis</option>
+                      {availablePremesis.map((prem) => (
+                        <option key={prem} value={prem}>
+                          {prem}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -1100,11 +1123,14 @@ export const IssueReportTab: React.FC<IssueReportTabProps> = ({
                       onChange={(e) => setEditingIssue({ ...editingIssue, priority: e.target.value })}
                       className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                     >
-                      {PRIORITY_OPTIONS.map((p) => (
+                      {priorityOptions.map((p) => (
                         <option key={p} value={p}>
                           {p}
                         </option>
                       ))}
+                      {editingIssue.priority && !priorityOptions.includes(editingIssue.priority) && (
+                        <option value={editingIssue.priority}>{editingIssue.priority}</option>
+                      )}
                     </select>
                   </div>
                   <div>

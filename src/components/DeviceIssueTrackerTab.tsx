@@ -19,8 +19,9 @@ import {
   X,
   Building,
 } from 'lucide-react';
-import { DeviceSupportTicket, Device } from '../types';
+import { DeviceSupportTicket, Device, SystemOptions } from '../types';
 import { ConfirmModal } from './Modals/ConfirmModal';
+import { normalizeDeviceSupportStatus } from '../lib/supabase';
 
 const STANDARD_ISSUE_TYPES = [
   'Sim Connectivity',
@@ -38,6 +39,7 @@ interface DeviceIssueTrackerTabProps {
   onSaveTicket: (ticket: DeviceSupportTicket) => void;
   onDeleteTicket?: (id: string) => void;
   devices?: Device[];
+  systemOptions?: SystemOptions;
   onNavigateToReport: () => void;
 }
 
@@ -46,8 +48,22 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
   onSaveTicket,
   onDeleteTicket,
   devices = [],
+  systemOptions,
   onNavigateToReport,
 }) => {
+  const issueTypeOptions =
+    systemOptions?.deviceIssueTypes && systemOptions.deviceIssueTypes.length > 0
+      ? systemOptions.deviceIssueTypes
+      : STANDARD_ISSUE_TYPES;
+  const responsibilityOptions =
+    systemOptions?.deviceResponsibilities && systemOptions.deviceResponsibilities.length > 0
+      ? systemOptions.deviceResponsibilities
+      : ['ITL', 'BBPLC'];
+  const statusOptions =
+    systemOptions?.deviceIssueStatuses && systemOptions.deviceIssueStatuses.length > 0
+      ? systemOptions.deviceIssueStatuses
+      : ['Pending', 'On Going', 'Solved'];
+
   const getTodayDate = () => new Date().toISOString().split('T')[0];
 
   // Editing state
@@ -61,11 +77,13 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
   const [selectedIssueTypes, setSelectedIssueTypes] = useState<string[]>([]);
   const [isOtherIssueChecked, setIsOtherIssueChecked] = useState(false);
   const [otherIssueText, setOtherIssueText] = useState('');
-  const [responsibility, setResponsibility] = useState<'BBPLC' | 'ITL' | string>('ITL');
+  const [responsibility, setResponsibility] = useState<string>(responsibilityOptions[0] || 'ITL');
+  const [status, setStatus] = useState<string>(statusOptions[0] || 'Pending');
   const [probableSolvingDate, setProbableSolvingDate] = useState('');
   const [ticketStatus, setTicketStatus] = useState<'Yes' | 'No'>('No');
   const [odooId, setOdooId] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Search in recent entries
   const [recentSearch, setRecentSearch] = useState('');
@@ -118,10 +136,12 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
     setIsOtherIssueChecked(false);
     setOtherIssueText('');
     setResponsibility('ITL');
+    setStatus('Pending');
     setProbableSolvingDate('');
     setTicketStatus('No');
     setOdooId('');
     setRemarks('');
+    setFormError(null);
   };
 
   const handleEditTicket = (t: DeviceSupportTicket) => {
@@ -130,15 +150,17 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
     setContactDate(t.contactDate || getTodayDate());
     setLastCommunication(t.lastCommunication || getTodayDate());
     setDeviceLocation(t.deviceLocation);
-    setResponsibility(t.responsibility || 'ITL');
+    setResponsibility(t.responsibility || responsibilityOptions[0] || 'ITL');
+    setStatus(normalizeDeviceSupportStatus(t.status));
     setProbableSolvingDate(t.probableSolvingDate === 'N/A' ? '' : t.probableSolvingDate);
     setTicketStatus(t.ticketStatus === 'Yes' ? 'Yes' : 'No');
     setOdooId(t.odooId === 'N/A' ? '' : t.odooId);
     setRemarks(t.remarks === 'N/A' ? '' : t.remarks);
+    setFormError(null);
 
     const issues = (t.issueType || '').split(',').map((s) => s.trim()).filter(Boolean);
-    const standardMatches = issues.filter((i) => STANDARD_ISSUE_TYPES.includes(i));
-    const otherMatches = issues.filter((i) => !STANDARD_ISSUE_TYPES.includes(i));
+    const standardMatches = issues.filter((i) => issueTypeOptions.includes(i));
+    const otherMatches = issues.filter((i) => !issueTypeOptions.includes(i));
 
     setSelectedIssueTypes(standardMatches);
     if (otherMatches.length > 0) {
@@ -154,6 +176,7 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
 
     const allIssues = [...selectedIssueTypes];
     if (isOtherIssueChecked && otherIssueText.trim()) {
@@ -161,12 +184,12 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
     }
 
     if (allIssues.length === 0) {
-      alert('Please select at least one Device Issue Type.');
+      setFormError('Please select at least one Device Issue Type.');
       return;
     }
 
     if (ticketStatus === 'Yes' && !odooId.trim()) {
-      alert('Please enter the ODOO ID when Ticket Status Raised is Yes.');
+      setFormError('Please enter the ODOO ID when Ticket Status Raised is Yes.');
       return;
     }
 
@@ -183,6 +206,7 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
       deviceLocation: deviceLocation.trim(),
       issueType: allIssues.join(', '),
       responsibility,
+      status,
       probableSolvingDate: probableSolvingDate || 'N/A',
       ticketStatus,
       odooId: ticketStatus === 'Yes' ? odooId.trim() : 'N/A',
@@ -205,7 +229,8 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
         t.deviceId.toLowerCase().includes(q) ||
         t.deviceLocation.toLowerCase().includes(q) ||
         t.issueType.toLowerCase().includes(q) ||
-        t.odooId.toLowerCase().includes(q)
+        t.odooId.toLowerCase().includes(q) ||
+        normalizeDeviceSupportStatus(t.status).toLowerCase().includes(q)
       );
     })
     .slice(0, 10);
@@ -256,6 +281,12 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {formError && (
+              <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
             {/* Row 1: SL No & Device ID */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
@@ -397,7 +428,7 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
 
               <div className="border border-slate-300 dark:border-slate-700 rounded-xl p-3 bg-slate-50/70 dark:bg-slate-950/60 max-h-48 overflow-y-auto space-y-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {STANDARD_ISSUE_TYPES.map((issue) => {
+                  {issueTypeOptions.map((issue) => {
                     const isChecked = selectedIssueTypes.includes(issue);
                     return (
                       <label
@@ -453,8 +484,8 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
               </div>
             </div>
 
-            {/* Row 5: Responsibility & Probable Solving Date */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Row 5: Responsibility, Status & Probable Solving Date */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Responsibility <span className="text-rose-500">*</span>
@@ -464,8 +495,38 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
                   onChange={(e) => setResponsibility(e.target.value)}
                   className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-semibold"
                 >
-                  <option value="ITL">ITL (Inovace Technologies)</option>
-                  <option value="BBPLC">BBPLC (Bank Internal)</option>
+                  {responsibilityOptions.map((resp) => (
+                    <option key={resp} value={resp}>
+                      {resp === 'ITL'
+                        ? 'ITL (Inovace Technologies)'
+                        : resp === 'BBPLC'
+                        ? 'BBPLC (Bank Internal)'
+                        : resp}
+                    </option>
+                  ))}
+                  {responsibility && !responsibilityOptions.includes(responsibility) && (
+                    <option value={responsibility}>{responsibility}</option>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Status <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-semibold"
+                >
+                  {statusOptions.map((st) => (
+                    <option key={st} value={st}>
+                      {st}
+                    </option>
+                  ))}
+                  {status && !statusOptions.includes(status) && (
+                    <option value={status}>{status}</option>
+                  )}
                 </select>
               </div>
 
@@ -607,6 +668,22 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
                           >
                             {t.responsibility}
                           </span>
+                          {(() => {
+                            const st = normalizeDeviceSupportStatus(t.status);
+                            return (
+                              <span
+                                className={`px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                                  st === 'Solved'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/60'
+                                    : st === 'On Going'
+                                    ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-400 dark:border-sky-800/60'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/60'
+                                }`}
+                              >
+                                {st}
+                              </span>
+                            );
+                          })()}
                         </div>
 
                         {/* Actions */}
@@ -720,10 +797,30 @@ export const DeviceIssueTrackerTab: React.FC<DeviceIssueTrackerTabProps> = ({
               </div>
 
               <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Responsibility</span>
-                <p className="font-bold text-slate-900 dark:text-white mt-0.5">
-                  {viewingTicket.responsibility}
-                </p>
+                <span className="text-[10px] text-slate-400 uppercase font-bold">
+                  Responsibility & Status
+                </span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {viewingTicket.responsibility}
+                  </span>
+                  {(() => {
+                    const st = normalizeDeviceSupportStatus(viewingTicket.status);
+                    return (
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                          st === 'Solved'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/60'
+                            : st === 'On Going'
+                            ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-400 dark:border-sky-800/60'
+                            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/60'
+                        }`}
+                      >
+                        {st}
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
 
               <div className="col-span-2 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">

@@ -23,6 +23,7 @@ import {
   initialDeviceSupportTickets,
   initialCategoryGroups,
   initialSystemOptions,
+  mergeSystemOptions,
   initialBills,
   initialServiceTickets,
   initialClients,
@@ -458,6 +459,7 @@ export default function App() {
     }
     return initialDeviceSupportTickets;
   });
+  const lastDeviceSupportLocalUpdateAtRef = React.useRef<number>(0);
 
   // Bills State (Bill Tracker & Bill Report)
   const [bills, setBills] = useState<BillItem[]>(() => {
@@ -564,20 +566,7 @@ export default function App() {
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && typeof parsed === 'object') {
-            return {
-              deviceStatuses: Array.isArray(parsed.deviceStatuses) && parsed.deviceStatuses.length > 0 ? parsed.deviceStatuses : initialSystemOptions.deviceStatuses,
-              simOperators: Array.isArray(parsed.simOperators) && parsed.simOperators.length > 0 ? parsed.simOperators : initialSystemOptions.simOperators,
-              accessTypes: Array.isArray(parsed.accessTypes) && parsed.accessTypes.length > 0 ? parsed.accessTypes : initialSystemOptions.accessTypes,
-              locationTypes: Array.isArray(parsed.locationTypes) && parsed.locationTypes.length > 0 ? parsed.locationTypes : initialSystemOptions.locationTypes,
-              issueTypes: Array.isArray(parsed.issueTypes) && parsed.issueTypes.length > 0 ? parsed.issueTypes : initialSystemOptions.issueTypes,
-              ticketPriorities: Array.isArray(parsed.ticketPriorities) && parsed.ticketPriorities.length > 0 ? parsed.ticketPriorities : initialSystemOptions.ticketPriorities,
-              ticketStatuses: Array.isArray(parsed.ticketStatuses) && parsed.ticketStatuses.length > 0 ? parsed.ticketStatuses : initialSystemOptions.ticketStatuses,
-              vendors: Array.isArray(parsed.vendors) && parsed.vendors.length > 0 ? parsed.vendors : initialSystemOptions.vendors,
-              poStatuses: Array.isArray(parsed.poStatuses) && parsed.poStatuses.length > 0 ? parsed.poStatuses : initialSystemOptions.poStatuses,
-              simStatuses: Array.isArray(parsed.simStatuses) && parsed.simStatuses.length > 0 ? parsed.simStatuses : initialSystemOptions.simStatuses,
-              technicians: Array.isArray(parsed.technicians) && parsed.technicians.length > 0 ? parsed.technicians : initialSystemOptions.technicians,
-              slaStatuses: Array.isArray(parsed.slaStatuses) && parsed.slaStatuses.length > 0 ? parsed.slaStatuses : initialSystemOptions.slaStatuses,
-            };
+            return mergeSystemOptions(parsed);
           }
         }
       } catch (e) {
@@ -597,6 +586,14 @@ export default function App() {
     }
     return defaultAppSettings;
   });
+  const lastBrandLocalUpdateAtRef = React.useRef<number>(0);
+  const handleUpdateAppSettings: React.Dispatch<React.SetStateAction<AppSettings>> = React.useCallback(
+    (updater) => {
+      lastBrandLocalUpdateAtRef.current = Date.now();
+      setAppSettings(updater);
+    },
+    []
+  );
 
   // Module Controller: Hidden sidebar modules state
   const [hiddenModules, setHiddenModules] = useState<string[]>(() => {
@@ -772,6 +769,7 @@ export default function App() {
 
   // Load live data from Supabase (Single Source of Truth)
   const loadSupabaseData = React.useCallback(async (silent = false) => {
+    const fetchStartedAt = Date.now();
     try {
       const [
         dbDevices,
@@ -902,11 +900,27 @@ export default function App() {
 
       // 8. App Settings & Global Module Visibility
       if (dbAppSettings !== null) {
-        setAppSettings(dbAppSettings);
-        try {
-          localStorage.setItem('appSettings', JSON.stringify(dbAppSettings));
-        } catch (e) {
-          console.warn('localStorage save appSettings error', e);
+        const hasRecentLocalBrandUpdate =
+          lastBrandLocalUpdateAtRef.current >= fetchStartedAt - 4000;
+
+        if (!hasRecentLocalBrandUpdate) {
+          setAppSettings((prev) => {
+            const sameName = (prev.appName || '') === (dbAppSettings.appName || '');
+            const sameLogo = (prev.appLogo || '') === (dbAppSettings.appLogo || '');
+            const sameTagline = (prev.tagline || '') === (dbAppSettings.tagline || '');
+            const sameHidden =
+              JSON.stringify(prev.hiddenModules || []) ===
+              JSON.stringify(dbAppSettings.hiddenModules || []);
+            if (sameName && sameLogo && sameTagline && sameHidden) {
+              return prev;
+            }
+            return dbAppSettings;
+          });
+          try {
+            localStorage.setItem('appSettings', JSON.stringify(dbAppSettings));
+          } catch (e) {
+            console.warn('localStorage save appSettings error', e);
+          }
         }
 
         if (Array.isArray(dbAppSettings.hiddenModules)) {
@@ -929,7 +943,10 @@ export default function App() {
       } catch (e) {}
 
       // 9. Device Support Tickets (Device Issue Tracker & Report)
-      if (dbDeviceSupportTickets !== null) {
+      if (
+        dbDeviceSupportTickets !== null &&
+        lastDeviceSupportLocalUpdateAtRef.current < fetchStartedAt - 4000
+      ) {
         const seen = new Set<string>();
         const cleanDbTickets = dbDeviceSupportTickets.filter((t: DeviceSupportTicket) => {
           if (!t || !t.id) return false;
@@ -1094,13 +1111,26 @@ export default function App() {
 
     if (appSettings.appLogo) {
       link.href = appSettings.appLogo;
-      // If it's a data URL or image type
       if (appSettings.appLogo.startsWith('data:image/svg+xml')) {
         link.type = 'image/svg+xml';
       } else if (appSettings.appLogo.startsWith('data:image/png')) {
         link.type = 'image/png';
-      } else if (appSettings.appLogo.startsWith('data:image/jpeg') || appSettings.appLogo.startsWith('data:image/jpg')) {
+      } else if (
+        appSettings.appLogo.startsWith('data:image/jpeg') ||
+        appSettings.appLogo.startsWith('data:image/jpg')
+      ) {
         link.type = 'image/jpeg';
+      } else if (appSettings.appLogo.startsWith('data:image/webp')) {
+        link.type = 'image/webp';
+      } else if (appSettings.appLogo.startsWith('data:image/gif')) {
+        link.type = 'image/gif';
+      } else if (
+        appSettings.appLogo.startsWith('data:image/x-icon') ||
+        appSettings.appLogo.startsWith('data:image/vnd.microsoft.icon')
+      ) {
+        link.type = 'image/x-icon';
+      } else {
+        link.removeAttribute('type');
       }
     } else {
       link.type = 'image/svg+xml';
@@ -1743,6 +1773,7 @@ export default function App() {
   };
 
   const handleSaveDeviceSupportTicket = async (ticket: DeviceSupportTicket) => {
+    lastDeviceSupportLocalUpdateAtRef.current = Date.now();
     setDeviceSupportTickets((prev) => {
       const exists = prev.some((t) => t.id === ticket.id);
       const updated = exists ? prev.map((t) => (t.id === ticket.id ? ticket : t)) : [ticket, ...prev];
@@ -1758,6 +1789,7 @@ export default function App() {
   };
 
   const handleDeleteDeviceSupportTicket = async (id: string) => {
+    lastDeviceSupportLocalUpdateAtRef.current = Date.now();
     setDeviceSupportTickets((prev) => {
       const updated = prev.filter((t) => t.id !== id);
       try {
@@ -1772,6 +1804,7 @@ export default function App() {
   };
 
   const handleBulkDeleteDeviceSupportTickets = async (ids: string[]) => {
+    lastDeviceSupportLocalUpdateAtRef.current = Date.now();
     setDeviceSupportTickets((prev) => {
       const updated = prev.filter((t) => !ids.includes(t.id));
       try {
@@ -2154,10 +2187,11 @@ export default function App() {
           saveSupabaseCategoryGroups(restored.categoryGroups);
         }
         if (restored.systemOptions) {
-          setSystemOptions(restored.systemOptions);
-          saveSupabaseSystemOptions(restored.systemOptions);
+          const mergedRestored = mergeSystemOptions(restored.systemOptions);
+          setSystemOptions(mergedRestored);
+          saveSupabaseSystemOptions(mergedRestored);
           try {
-            localStorage.setItem('systemOptions', JSON.stringify(restored.systemOptions));
+            localStorage.setItem('systemOptions', JSON.stringify(mergedRestored));
           } catch (e) {
             console.warn('localStorage save error', e);
           }
@@ -2273,6 +2307,7 @@ export default function App() {
               onSaveTicket={handleSaveDeviceSupportTicket}
               onDeleteTicket={handleDeleteDeviceSupportTicket}
               devices={devices}
+              systemOptions={systemOptions}
               onNavigateToReport={() => setActiveTab('device_issue_report')}
             />
           )}
@@ -2283,6 +2318,7 @@ export default function App() {
               onSaveTicket={handleSaveDeviceSupportTicket}
               onDeleteTicket={handleDeleteDeviceSupportTicket}
               onBulkDeleteTickets={handleBulkDeleteDeviceSupportTickets}
+              systemOptions={systemOptions}
               onNavigateToTracker={() => setActiveTab('device_issue_tracker')}
             />
           )}
@@ -2292,6 +2328,16 @@ export default function App() {
               tickets={serviceTickets}
               onSaveTicket={handleSaveServiceTicket}
               onDeleteTicket={handleDeleteServiceTicket}
+              systemOptions={systemOptions}
+              onAddServiceIssueType={(newType) => {
+                setSystemOptions((prev) => {
+                  const existing = prev.serviceIssueTypes || initialSystemOptions.serviceIssueTypes || [];
+                  if (existing.some((x) => x.toLowerCase() === newType.toLowerCase())) return prev;
+                  const updated = { ...prev, serviceIssueTypes: [...existing, newType] };
+                  saveSupabaseSystemOptions(updated);
+                  return updated;
+                });
+              }}
               onNavigateToReport={() => setActiveTab('service_ticket_report')}
               editTicket={editingServiceTicketForTracker}
               onClearEditTicket={() => setEditingServiceTicketForTracker(null)}
@@ -2304,6 +2350,7 @@ export default function App() {
               onSaveTicket={handleSaveServiceTicket}
               onDeleteTicket={handleDeleteServiceTicket}
               onBulkDeleteTickets={handleBulkDeleteServiceTickets}
+              systemOptions={systemOptions}
               onNavigateToTracker={() => setActiveTab('service_ticket_tracker')}
               onEditTicketInTracker={(t) => {
                 setEditingServiceTicketForTracker(t);
@@ -2326,6 +2373,7 @@ export default function App() {
               categories={billCategories}
               onAddCategory={handleAddBillCategory}
               onDeleteCategory={handleDeleteBillCategory}
+              systemOptions={systemOptions}
               onNavigateToReport={() => setActiveTab('bill_report')}
               editBill={editingBillForTracker}
               onClearEditBill={() => setEditingBillForTracker(null)}
@@ -2339,6 +2387,7 @@ export default function App() {
               onDeleteBill={handleDeleteBill}
               onBulkDeleteBills={handleBulkDeleteBills}
               onImportBills={handleImportBills}
+              systemOptions={systemOptions}
               onNavigateToTracker={() => setActiveTab('bill_tracker')}
               onEditBillInTracker={(b) => {
                 setEditingBillForTracker(b);
@@ -2473,7 +2522,7 @@ export default function App() {
               systemOptions={systemOptions}
               setSystemOptions={setSystemOptions}
               appSettings={appSettings}
-              setAppSettings={setAppSettings}
+              setAppSettings={handleUpdateAppSettings}
               hiddenModules={hiddenModules}
               onToggleModule={handleToggleModule}
               onSaveHiddenModules={handleSaveHiddenModules}

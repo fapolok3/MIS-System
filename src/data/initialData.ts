@@ -127,7 +127,118 @@ export const initialSystemOptions: SystemOptions = {
   simStatuses: ['ACTIVE', 'INACTIVE'],
   technicians: ['Rahim Ahmed', 'Karim Ullah', 'Shakil Hossain', 'Support Engineer Team'],
   slaStatuses: ['WITHIN SLA', 'SLA BREACH', 'NEAR BREACH', 'RESOLVED IN SLA', 'PENDING'],
+
+  // Device Issue Tracker
+  deviceIssueTypes: [
+    'Sim Connectivity',
+    'Display Damage',
+    'Beeper Problem',
+    'Location Shift',
+    'Power connectivity',
+    'Push Button',
+    'Debug Mood',
+    'Sensor',
+  ],
+  deviceResponsibilities: ['ITL', 'BBPLC'],
+  deviceIssueStatuses: ['Pending', 'On Going', 'Solved'],
+
+  // Service Ticket Tracker
+  serviceLocationTypes: [
+    'Main Branch',
+    'Sub Branch',
+    'Sepal Tower',
+    'Pinacle Tower',
+    'Anik Tower',
+    'Nina Kabba',
+    'Rajuk Parking',
+    'DC',
+    'DR',
+    'DPDC',
+    'ROC',
+    'ADC',
+    'SME',
+  ],
+  serviceSegments: ['Corporate', 'Retail', 'SME'],
+  serviceIssueTypes: [
+    'Sim Connectivity',
+    'Display Damage',
+    'Beeper Problem',
+    'Location Shift',
+    'Power Issue',
+    'Push Button',
+    'Debug Mode',
+    'Sensor',
+  ],
+  servicePriorities: ['Low', 'Medium', 'High', 'Critical'],
+  serviceTicketStatuses: ['Open', 'Pending', 'Ongoing', 'Working', 'RMA', 'Repairing', 'Done'],
+  serviceDeliveryOptions: ['Onsite', 'Courier', 'Hand Delivery'],
+  servicePaymentMethods: ['Cash', 'Cheque', 'Bank Transfer', 'Online'],
+
+  // Issue Tracker
+  issueTrackerStatuses: ['Open', 'Pending', 'OnBoard', 'Working', 'Done'],
+  issuePremisesNames: [
+    'Main Branch',
+    'Branch',
+    'Sub Branch',
+    'SME',
+    'ROC',
+    'DPDC',
+    'ATMSC',
+    'DC',
+    'DR',
+    'Anik Tower',
+    'Sepal Tower',
+    'Pinacle Tower',
+    'Nina Kabba',
+    'Parking Tejgaon',
+    'Parking Rajuk',
+  ],
+  issuePriorityLevels: ['High', 'Medium', 'Low'],
+
+  // Bill Tracker
+  billPaymentStatuses: ['Pending', 'Submitted', 'Partial', 'Paid'],
+  billPaymentMethods: ['Bank Transfer', 'Cheque', 'Cash', 'Online'],
 };
+
+export function mergeSystemOptions(raw?: Partial<SystemOptions> | null): SystemOptions {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  const pick = (val: unknown, fallback: string[]): string[] =>
+    Array.isArray(val) && val.length > 0 ? val.map((v) => String(v)) : [...fallback];
+
+  return {
+    deviceStatuses: pick(src.deviceStatuses, initialSystemOptions.deviceStatuses),
+    simOperators: pick(src.simOperators, initialSystemOptions.simOperators),
+    accessTypes: pick(src.accessTypes, initialSystemOptions.accessTypes),
+    locationTypes: pick(src.locationTypes, initialSystemOptions.locationTypes),
+    issueTypes: pick(src.issueTypes, initialSystemOptions.issueTypes),
+    ticketPriorities: pick(src.ticketPriorities, initialSystemOptions.ticketPriorities),
+    ticketStatuses: pick(src.ticketStatuses, initialSystemOptions.ticketStatuses),
+    vendors: pick(src.vendors, initialSystemOptions.vendors),
+    poStatuses: pick(src.poStatuses, initialSystemOptions.poStatuses),
+    simStatuses: pick(src.simStatuses, initialSystemOptions.simStatuses),
+    technicians: pick(src.technicians, initialSystemOptions.technicians),
+    slaStatuses: pick(src.slaStatuses, initialSystemOptions.slaStatuses || []),
+
+    deviceIssueTypes: pick(src.deviceIssueTypes, initialSystemOptions.deviceIssueTypes || []),
+    deviceResponsibilities: pick(src.deviceResponsibilities, initialSystemOptions.deviceResponsibilities || []),
+    deviceIssueStatuses: pick(src.deviceIssueStatuses, initialSystemOptions.deviceIssueStatuses || []),
+
+    serviceLocationTypes: pick(src.serviceLocationTypes, initialSystemOptions.serviceLocationTypes || []),
+    serviceSegments: pick(src.serviceSegments, initialSystemOptions.serviceSegments || []),
+    serviceIssueTypes: pick(src.serviceIssueTypes, initialSystemOptions.serviceIssueTypes || []),
+    servicePriorities: pick(src.servicePriorities, initialSystemOptions.servicePriorities || []),
+    serviceTicketStatuses: pick(src.serviceTicketStatuses, initialSystemOptions.serviceTicketStatuses || []),
+    serviceDeliveryOptions: pick(src.serviceDeliveryOptions, initialSystemOptions.serviceDeliveryOptions || []),
+    servicePaymentMethods: pick(src.servicePaymentMethods, initialSystemOptions.servicePaymentMethods || []),
+
+    issueTrackerStatuses: pick(src.issueTrackerStatuses, initialSystemOptions.issueTrackerStatuses || []),
+    issuePremisesNames: pick(src.issuePremisesNames, initialSystemOptions.issuePremisesNames || []),
+    issuePriorityLevels: pick(src.issuePriorityLevels, initialSystemOptions.issuePriorityLevels || []),
+
+    billPaymentStatuses: pick(src.billPaymentStatuses, initialSystemOptions.billPaymentStatuses || []),
+    billPaymentMethods: pick(src.billPaymentMethods, initialSystemOptions.billPaymentMethods || []),
+  };
+}
 
 export const initialCategoryGroups: CategoryGroup[] = [
   {

@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { downloadStyledExcel, getActiveSystemBranding, triggerDownload } from '../utils/excelExport';
-import { BillItem } from '../types';
+import { BillItem, SystemOptions } from '../types';
 
 interface BillTrackerTabProps {
   bills: BillItem[];
@@ -43,6 +43,7 @@ interface BillTrackerTabProps {
   onNavigateToReport: () => void;
   editBill?: BillItem | null;
   onClearEditBill?: () => void;
+  systemOptions?: SystemOptions;
 }
 
 export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
@@ -61,6 +62,7 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
   onNavigateToReport,
   editBill,
   onClearEditBill,
+  systemOptions,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string>('');
@@ -103,10 +105,36 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
   const [submissionDate, setSubmissionDate] = useState('');
   const [receivedDate, setReceivedDate] = useState('');
   const [paymentDate, setPaymentDate] = useState('');
-  const [status, setStatus] = useState<'Pending' | 'Submitted' | 'Partial' | 'Paid'>('Pending');
+  const basePaymentStatuses =
+    systemOptions?.billPaymentStatuses && systemOptions.billPaymentStatuses.length > 0
+      ? systemOptions.billPaymentStatuses
+      : ['Pending', 'Submitted', 'Partial', 'Paid'];
+  const basePaymentMethods =
+    systemOptions?.billPaymentMethods && systemOptions.billPaymentMethods.length > 0
+      ? systemOptions.billPaymentMethods
+      : ['Bank Transfer', 'Cheque', 'Cash', 'Online'];
+
+  const [status, setStatus] = useState<string>(basePaymentStatuses[0] || 'Pending');
   const [approvedBy, setApprovedBy] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Bank Transfer');
+  const [paymentMethod, setPaymentMethod] = useState<string>(
+    basePaymentMethods[0] || 'Bank Transfer'
+  );
   const [remarks, setRemarks] = useState('');
+
+  const paymentStatusOptions =
+    status && !basePaymentStatuses.includes(status)
+      ? [status, ...basePaymentStatuses]
+      : basePaymentStatuses;
+  const paymentMethodOptions =
+    paymentMethod && !basePaymentMethods.includes(paymentMethod)
+      ? [paymentMethod, ...basePaymentMethods]
+      : basePaymentMethods;
+  const filterStatusOptions = Array.from(
+    new Set([
+      ...basePaymentStatuses,
+      ...bills.map((b) => b.status).filter((s): s is string => Boolean(s)),
+    ])
+  );
 
   // Side List Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -227,9 +255,9 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
     setSubmissionDate('');
     setReceivedDate('');
     setPaymentDate('');
-    setStatus('Pending');
+    setStatus(basePaymentStatuses[0] || 'Pending');
     setApprovedBy('');
-    setPaymentMethod('Bank Transfer');
+    setPaymentMethod(basePaymentMethods[0] || 'Bank Transfer');
     setRemarks('');
   };
 
@@ -950,14 +978,27 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
                   </label>
                   <select
                     value={status}
-                    onChange={(e) => setStatus(e.target.value as any)}
+                    onChange={(e) => setStatus(e.target.value)}
                     required
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                   >
-                    <option value="Pending">⏳ Pending</option>
-                    <option value="Submitted">📤 Submitted</option>
-                    <option value="Partial">🔶 Partial</option>
-                    <option value="Paid">✅ Paid</option>
+                    {paymentStatusOptions.map((st) => {
+                      const label =
+                        st === 'Pending'
+                          ? '⏳ Pending'
+                          : st === 'Submitted'
+                          ? '📤 Submitted'
+                          : st === 'Partial'
+                          ? '🔶 Partial'
+                          : st === 'Paid'
+                          ? '✅ Paid'
+                          : st;
+                      return (
+                        <option key={st} value={st}>
+                          {label}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -983,10 +1024,11 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                   >
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Cheque">Cheque</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Online">Online</option>
+                    {paymentMethodOptions.map((pm) => (
+                      <option key={pm} value={pm}>
+                        {pm}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -1058,10 +1100,11 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
                 className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-700 dark:text-slate-300 focus:outline-none"
               >
                 <option value="ALL">All Status</option>
-                <option value="Pending">Pending</option>
-                <option value="Submitted">Submitted</option>
-                <option value="Partial">Partial</option>
-                <option value="Paid">Paid</option>
+                {filterStatusOptions.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -1116,7 +1159,9 @@ export const BillTrackerTab: React.FC<BillTrackerTabProps> = ({
                           ? '📤 Submitted'
                           : b.status === 'Partial'
                           ? '🔶 Partial'
-                          : '⏳ Pending'}
+                          : b.status === 'Pending'
+                          ? '⏳ Pending'
+                          : b.status || '⏳ Pending'}
                       </span>
                     </div>
 

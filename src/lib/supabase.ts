@@ -12,7 +12,7 @@ import {
   BillItem,
   ServiceTicketItem,
 } from '../types';
-import { initialSystemOptions } from '../data/initialData';
+import { initialSystemOptions, mergeSystemOptions } from '../data/initialData';
 
 export const defaultAppSettings: AppSettings = {
   appName: 'BBL DM System',
@@ -820,43 +820,49 @@ export async function fetchSupabaseSystemOptions(): Promise<SystemOptions | null
 
     if (!data) return null;
 
-    if (data.options && typeof data.options === 'object') {
-      return {
-        ...initialSystemOptions,
-        ...data.options,
-        deviceStatuses: Array.isArray(data.options.deviceStatuses) && data.options.deviceStatuses.length > 0 ? data.options.deviceStatuses : (Array.isArray(data.device_statuses) ? data.device_statuses : initialSystemOptions.deviceStatuses),
-        simOperators: Array.isArray(data.options.simOperators) && data.options.simOperators.length > 0 ? data.options.simOperators : (Array.isArray(data.sim_operators) ? data.sim_operators : initialSystemOptions.simOperators),
-        accessTypes: Array.isArray(data.options.accessTypes) && data.options.accessTypes.length > 0 ? data.options.accessTypes : (Array.isArray(data.access_types) ? data.access_types : initialSystemOptions.accessTypes),
-        locationTypes: Array.isArray(data.options.locationTypes) && data.options.locationTypes.length > 0 ? data.options.locationTypes : (Array.isArray(data.location_types) ? data.location_types : initialSystemOptions.locationTypes),
-        issueTypes: Array.isArray(data.options.issueTypes) && data.options.issueTypes.length > 0 ? data.options.issueTypes : (Array.isArray(data.issue_types) ? data.issue_types : initialSystemOptions.issueTypes),
-        ticketPriorities: Array.isArray(data.options.ticketPriorities) && data.options.ticketPriorities.length > 0 ? data.options.ticketPriorities : (Array.isArray(data.ticket_priorities) ? data.ticket_priorities : initialSystemOptions.ticketPriorities),
-        ticketStatuses: Array.isArray(data.options.ticketStatuses) && data.options.ticketStatuses.length > 0 ? data.options.ticketStatuses : (Array.isArray(data.ticket_statuses) ? data.ticket_statuses : initialSystemOptions.ticketStatuses),
-        vendors: Array.isArray(data.options.vendors) && data.options.vendors.length > 0 ? data.options.vendors : (Array.isArray(data.vendors) ? data.vendors : initialSystemOptions.vendors),
-        poStatuses: Array.isArray(data.options.poStatuses) && data.options.poStatuses.length > 0 ? data.options.poStatuses : (Array.isArray(data.po_statuses) ? data.po_statuses : initialSystemOptions.poStatuses),
-        simStatuses: Array.isArray(data.options.simStatuses) && data.options.simStatuses.length > 0 ? data.options.simStatuses : (Array.isArray(data.sim_statuses) ? data.sim_statuses : initialSystemOptions.simStatuses),
-        technicians: Array.isArray(data.options.technicians) && data.options.technicians.length > 0 ? data.options.technicians : (Array.isArray(data.technicians) ? data.technicians : initialSystemOptions.technicians),
-        slaStatuses: Array.isArray(data.options.slaStatuses) && data.options.slaStatuses.length > 0 ? data.options.slaStatuses : (Array.isArray(data.sla_statuses) ? data.sla_statuses : initialSystemOptions.slaStatuses),
-      };
-    }
+    const jsonOpts: Partial<SystemOptions> =
+      data.options && typeof data.options === 'object' ? data.options : {};
 
-    return {
-      deviceStatuses: Array.isArray(data.device_statuses) ? data.device_statuses : initialSystemOptions.deviceStatuses,
-      simOperators: Array.isArray(data.sim_operators) ? data.sim_operators : initialSystemOptions.simOperators,
-      accessTypes: Array.isArray(data.access_types) ? data.access_types : initialSystemOptions.accessTypes,
-      locationTypes: Array.isArray(data.location_types) ? data.location_types : initialSystemOptions.locationTypes,
-      issueTypes: Array.isArray(data.issue_types) ? data.issue_types : initialSystemOptions.issueTypes,
-      ticketPriorities: Array.isArray(data.ticket_priorities) ? data.ticket_priorities : initialSystemOptions.ticketPriorities,
-      ticketStatuses: Array.isArray(data.ticket_statuses) ? data.ticket_statuses : initialSystemOptions.ticketStatuses,
-      vendors: Array.isArray(data.vendors) ? data.vendors : initialSystemOptions.vendors,
-      poStatuses: Array.isArray(data.po_statuses) ? data.po_statuses : initialSystemOptions.poStatuses,
-      simStatuses: Array.isArray(data.sim_statuses) ? data.sim_statuses : initialSystemOptions.simStatuses,
-      technicians: Array.isArray(data.technicians) ? data.technicians : initialSystemOptions.technicians,
-      slaStatuses: Array.isArray(data.sla_statuses)
-        ? data.sla_statuses
-        : Array.isArray(data.options?.slaStatuses)
-        ? data.options.slaStatuses
-        : initialSystemOptions.slaStatuses,
+    const pickArr = (jsonVal: unknown, colVal: unknown, fallback: string[]) => {
+      if (Array.isArray(jsonVal) && jsonVal.length > 0) return jsonVal.map(String);
+      if (Array.isArray(colVal) && colVal.length > 0) return colVal.map(String);
+      return [...fallback];
     };
+
+    return mergeSystemOptions({
+      ...jsonOpts,
+      deviceStatuses: pickArr(jsonOpts.deviceStatuses, data.device_statuses, initialSystemOptions.deviceStatuses),
+      simOperators: pickArr(jsonOpts.simOperators, data.sim_operators, initialSystemOptions.simOperators),
+      accessTypes: pickArr(jsonOpts.accessTypes, data.access_types, initialSystemOptions.accessTypes),
+      locationTypes: pickArr(jsonOpts.locationTypes, data.location_types, initialSystemOptions.locationTypes),
+      issueTypes: pickArr(jsonOpts.issueTypes, data.issue_types, initialSystemOptions.issueTypes),
+      ticketPriorities: pickArr(jsonOpts.ticketPriorities, data.ticket_priorities, initialSystemOptions.ticketPriorities),
+      ticketStatuses: pickArr(jsonOpts.ticketStatuses, data.ticket_statuses, initialSystemOptions.ticketStatuses),
+      vendors: pickArr(jsonOpts.vendors, data.vendors, initialSystemOptions.vendors),
+      poStatuses: pickArr(jsonOpts.poStatuses, data.po_statuses, initialSystemOptions.poStatuses),
+      simStatuses: pickArr(jsonOpts.simStatuses, data.sim_statuses, initialSystemOptions.simStatuses),
+      technicians: pickArr(jsonOpts.technicians, data.technicians, initialSystemOptions.technicians),
+      slaStatuses: pickArr(jsonOpts.slaStatuses, data.sla_statuses, initialSystemOptions.slaStatuses || []),
+
+      deviceIssueTypes: pickArr(jsonOpts.deviceIssueTypes, data.device_issue_types, initialSystemOptions.deviceIssueTypes || []),
+      deviceResponsibilities: pickArr(jsonOpts.deviceResponsibilities, data.device_responsibilities, initialSystemOptions.deviceResponsibilities || []),
+      deviceIssueStatuses: pickArr(jsonOpts.deviceIssueStatuses, data.device_issue_statuses, initialSystemOptions.deviceIssueStatuses || []),
+
+      serviceLocationTypes: pickArr(jsonOpts.serviceLocationTypes, data.service_location_types, initialSystemOptions.serviceLocationTypes || []),
+      serviceSegments: pickArr(jsonOpts.serviceSegments, data.service_segments, initialSystemOptions.serviceSegments || []),
+      serviceIssueTypes: pickArr(jsonOpts.serviceIssueTypes, data.service_issue_types, initialSystemOptions.serviceIssueTypes || []),
+      servicePriorities: pickArr(jsonOpts.servicePriorities, data.service_priorities, initialSystemOptions.servicePriorities || []),
+      serviceTicketStatuses: pickArr(jsonOpts.serviceTicketStatuses, data.service_ticket_statuses, initialSystemOptions.serviceTicketStatuses || []),
+      serviceDeliveryOptions: pickArr(jsonOpts.serviceDeliveryOptions, data.service_delivery_options, initialSystemOptions.serviceDeliveryOptions || []),
+      servicePaymentMethods: pickArr(jsonOpts.servicePaymentMethods, data.service_payment_methods, initialSystemOptions.servicePaymentMethods || []),
+
+      issueTrackerStatuses: pickArr(jsonOpts.issueTrackerStatuses, data.issue_tracker_statuses, initialSystemOptions.issueTrackerStatuses || []),
+      issuePremisesNames: pickArr(jsonOpts.issuePremisesNames, data.issue_premises_names, initialSystemOptions.issuePremisesNames || []),
+      issuePriorityLevels: pickArr(jsonOpts.issuePriorityLevels, data.issue_priority_levels, initialSystemOptions.issuePriorityLevels || []),
+
+      billPaymentStatuses: pickArr(jsonOpts.billPaymentStatuses, data.bill_payment_statuses, initialSystemOptions.billPaymentStatuses || []),
+      billPaymentMethods: pickArr(jsonOpts.billPaymentMethods, data.bill_payment_methods, initialSystemOptions.billPaymentMethods || []),
+    });
   } catch (err) {
     console.warn('Supabase fetchSystemOptions catch error:', err);
     return null;
@@ -865,38 +871,73 @@ export async function fetchSupabaseSystemOptions(): Promise<SystemOptions | null
 
 export async function saveSupabaseSystemOptions(options: SystemOptions): Promise<boolean> {
   try {
-    const row = {
+    const normalized = mergeSystemOptions(options);
+    const fullRow = {
       id: 'default',
-      device_statuses: options.deviceStatuses,
-      sim_operators: options.simOperators,
-      access_types: options.accessTypes,
-      location_types: options.locationTypes,
-      issue_types: options.issueTypes,
-      ticket_priorities: options.ticketPriorities,
-      ticket_statuses: options.ticketStatuses,
-      vendors: options.vendors,
-      po_statuses: options.poStatuses,
-      sim_statuses: options.simStatuses,
-      technicians: options.technicians,
-      sla_statuses: options.slaStatuses || initialSystemOptions.slaStatuses,
-      options: options,
+      device_statuses: normalized.deviceStatuses,
+      sim_operators: normalized.simOperators,
+      access_types: normalized.accessTypes,
+      location_types: normalized.locationTypes,
+      issue_types: normalized.issueTypes,
+      ticket_priorities: normalized.ticketPriorities,
+      ticket_statuses: normalized.ticketStatuses,
+      vendors: normalized.vendors,
+      po_statuses: normalized.poStatuses,
+      sim_statuses: normalized.simStatuses,
+      technicians: normalized.technicians,
+      sla_statuses: normalized.slaStatuses,
+      device_issue_types: normalized.deviceIssueTypes,
+      device_responsibilities: normalized.deviceResponsibilities,
+      device_issue_statuses: normalized.deviceIssueStatuses,
+      service_location_types: normalized.serviceLocationTypes,
+      service_segments: normalized.serviceSegments,
+      service_issue_types: normalized.serviceIssueTypes,
+      service_priorities: normalized.servicePriorities,
+      service_ticket_statuses: normalized.serviceTicketStatuses,
+      service_delivery_options: normalized.serviceDeliveryOptions,
+      service_payment_methods: normalized.servicePaymentMethods,
+      issue_tracker_statuses: normalized.issueTrackerStatuses,
+      issue_premises_names: normalized.issuePremisesNames,
+      issue_priority_levels: normalized.issuePriorityLevels,
+      bill_payment_statuses: normalized.billPaymentStatuses,
+      bill_payment_methods: normalized.billPaymentMethods,
+      options: normalized,
       updated_at: new Date().toISOString(),
     };
-    
-    // First attempt full upsert
-    const { error } = await supabase.from('system_options').upsert([row], { onConflict: 'id' });
+
+    // First attempt full upsert with all dedicated columns
+    const { error } = await supabase.from('system_options').upsert([fullRow], { onConflict: 'id' });
     if (error) {
-      console.warn('Supabase saveSystemOptions initial attempt warning:', error.message);
-      // Fallback: try upserting with only basic/JSON structure if specific columns are absent in older schema
-      const fallbackRow = {
+      console.warn('Supabase saveSystemOptions full-column attempt warning:', error.message);
+      // Fallback: upsert with legacy columns + full JSONB options so saving still works before SQL migration runs
+      const legacyRow = {
         id: 'default',
-        options: options,
+        device_statuses: normalized.deviceStatuses,
+        sim_operators: normalized.simOperators,
+        access_types: normalized.accessTypes,
+        location_types: normalized.locationTypes,
+        issue_types: normalized.issueTypes,
+        ticket_priorities: normalized.ticketPriorities,
+        ticket_statuses: normalized.ticketStatuses,
+        vendors: normalized.vendors,
+        po_statuses: normalized.poStatuses,
+        sim_statuses: normalized.simStatuses,
+        technicians: normalized.technicians,
+        options: normalized,
         updated_at: new Date().toISOString(),
       };
-      const { error: fallbackErr } = await supabase.from('system_options').upsert([fallbackRow], { onConflict: 'id' });
-      if (fallbackErr) {
-        console.warn('Supabase saveSystemOptions fallback error:', fallbackErr.message);
-        return false;
+      const { error: legacyErr } = await supabase.from('system_options').upsert([legacyRow], { onConflict: 'id' });
+      if (legacyErr) {
+        const jsonOnlyRow = {
+          id: 'default',
+          options: normalized,
+          updated_at: new Date().toISOString(),
+        };
+        const { error: fallbackErr } = await supabase.from('system_options').upsert([jsonOnlyRow], { onConflict: 'id' });
+        if (fallbackErr) {
+          console.warn('Supabase saveSystemOptions fallback error:', fallbackErr.message);
+          return false;
+        }
       }
     }
     return true;
@@ -1033,31 +1074,27 @@ export async function fetchSupabaseAppSettings(): Promise<AppSettings | null> {
 
 export async function saveSupabaseAppSettings(settings: AppSettings): Promise<boolean> {
   try {
-    const fullRow = {
+    const fallbackRow = {
       id: 'global',
       app_name: settings.appName || defaultAppSettings.appName,
       app_logo: settings.appLogo || '',
       tagline: settings.tagline || defaultAppSettings.tagline,
-      hidden_modules: settings.hiddenModules || [],
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from('app_settings').upsert([fullRow]);
-    if (error) {
-      console.warn('Supabase saveAppSettings full attempt warning:', error.message);
-      // Fallback: in case column hidden_modules doesn't exist as array, try stringifying or basic upsert
-      const fallbackRow = {
-        id: 'global',
-        app_name: settings.appName || defaultAppSettings.appName,
-        app_logo: settings.appLogo || '',
-        tagline: settings.tagline || defaultAppSettings.tagline,
-        updated_at: new Date().toISOString(),
+    if (settings.hiddenModules !== undefined) {
+      const fullRow = {
+        ...fallbackRow,
+        hidden_modules: settings.hiddenModules,
       };
-      const { error: fallbackErr } = await supabase.from('app_settings').upsert([fallbackRow]);
-      if (fallbackErr) {
-        console.warn('Supabase saveAppSettings fallback error:', fallbackErr.message);
-        return false;
-      }
+      const { error } = await supabase.from('app_settings').upsert([fullRow]);
+      if (!error) return true;
+    }
+
+    const { error: fallbackErr } = await supabase.from('app_settings').upsert([fallbackRow]);
+    if (fallbackErr) {
+      console.warn('Supabase saveAppSettings fallback error:', fallbackErr.message);
+      return false;
     }
     return true;
   } catch (err) {
@@ -1395,9 +1432,106 @@ export async function bulkDeleteSupabaseIssues(issueIds: string[]): Promise<bool
 // -------------------------------------------------------------
 // DEVICE SUPPORT TICKETS (Device Issue Tracker & Report)
 // -------------------------------------------------------------
-function mapRowToDeviceSupportTicket(d: any, index: number = 0): DeviceSupportTicket {
+const DEVICE_TICKET_STATUS_STORE_ID = 'device_support_ticket_statuses';
+let deviceSupportTicketsHasStatusCol: boolean | null = null;
+
+export function normalizeDeviceSupportStatus(
+  raw?: string
+): string {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return 'Pending';
+  const s = trimmed.toLowerCase();
+  if (s === 'solved' || s === 'done' || s === 'resolved' || s === 'closed') {
+    return 'Solved';
+  }
+  if (s === 'on going' || s === 'ongoing' || s === 'in progress' || s === 'in-progress') {
+    return 'On Going';
+  }
+  if (s === 'pending') {
+    return 'Pending';
+  }
+  return trimmed;
+}
+
+async function fetchDeviceTicketStatusMap(): Promise<Record<string, string>> {
+  try {
+    const { data, error } = await supabase
+      .from('system_options')
+      .select('options')
+      .eq('id', DEVICE_TICKET_STATUS_STORE_ID)
+      .maybeSingle();
+
+    if (!error && data && data.options && typeof data.options === 'object') {
+      return data.options as Record<string, string>;
+    }
+  } catch (e) {
+    // ignore fallback fetch error
+  }
+  return {};
+}
+
+async function saveDeviceTicketStatusesToStore(entries: Array<{ id: string; status: string }>) {
+  if (entries.length === 0) return;
+  try {
+    const currentMap = await fetchDeviceTicketStatusMap();
+    const nextMap: Record<string, string> = { ...currentMap };
+    entries.forEach((entry) => {
+      if (entry.id) {
+        nextMap[entry.id] = normalizeDeviceSupportStatus(entry.status);
+      }
+    });
+    await supabase.from('system_options').upsert(
+      [
+        {
+          id: DEVICE_TICKET_STATUS_STORE_ID,
+          options: nextMap,
+          updated_at: new Date().toISOString(),
+        },
+      ],
+      { onConflict: 'id' }
+    );
+  } catch (e) {
+    console.warn('Supabase saveDeviceTicketStatusesToStore warning:', e);
+  }
+}
+
+async function removeDeviceTicketStatusesFromStore(ids: string[]) {
+  if (ids.length === 0) return;
+  try {
+    const currentMap = await fetchDeviceTicketStatusMap();
+    let changed = false;
+    const nextMap: Record<string, string> = { ...currentMap };
+    ids.forEach((id) => {
+      if (id in nextMap) {
+        delete nextMap[id];
+        changed = true;
+      }
+    });
+    if (!changed) return;
+    await supabase.from('system_options').upsert(
+      [
+        {
+          id: DEVICE_TICKET_STATUS_STORE_ID,
+          options: nextMap,
+          updated_at: new Date().toISOString(),
+        },
+      ],
+      { onConflict: 'id' }
+    );
+  } catch (e) {
+    // ignore cleanup errors
+  }
+}
+
+function mapRowToDeviceSupportTicket(
+  d: any,
+  index: number = 0,
+  statusMap: Record<string, string> = {}
+): DeviceSupportTicket {
+  const id = String(d.id || `DST-${Date.now()}-${index}`);
+  const rawStatus = d.status || statusMap[id] || 'Pending';
   return {
-    id: String(d.id || `DST-${Date.now()}-${index}`),
+    id,
     slNo: d.sl_no !== undefined ? Number(d.sl_no) : (d.slNo !== undefined ? Number(d.slNo) : index + 1),
     deviceId: d.device_id || d.deviceId || '',
     contactDate: d.contact_date || d.contactDate || '',
@@ -1405,6 +1539,7 @@ function mapRowToDeviceSupportTicket(d: any, index: number = 0): DeviceSupportTi
     deviceLocation: d.device_location || d.deviceLocation || '',
     issueType: d.issue_type || d.issueType || '',
     responsibility: d.responsibility || 'ITL',
+    status: normalizeDeviceSupportStatus(rawStatus),
     probableSolvingDate: d.probable_solving_date || d.probableSolvingDate || '',
     ticketStatus: d.ticket_status || d.ticketStatus || 'No',
     odooId: d.odoo_id || d.odooId || '',
@@ -1414,8 +1549,8 @@ function mapRowToDeviceSupportTicket(d: any, index: number = 0): DeviceSupportTi
   };
 }
 
-function mapDeviceSupportTicketToRow(ticket: DeviceSupportTicket) {
-  return {
+function mapDeviceSupportTicketToRow(ticket: DeviceSupportTicket, includeStatus: boolean) {
+  const base = {
     id: ticket.id,
     sl_no: ticket.slNo !== undefined ? Number(ticket.slNo) : 1,
     device_id: ticket.deviceId || '',
@@ -1431,14 +1566,26 @@ function mapDeviceSupportTicketToRow(ticket: DeviceSupportTicket) {
     created_at: ticket.createdAt || new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
+  if (includeStatus) {
+    return {
+      ...base,
+      status: normalizeDeviceSupportStatus(ticket.status),
+    };
+  }
+  return base;
 }
 
 export async function fetchSupabaseDeviceSupportTickets(): Promise<DeviceSupportTicket[] | null> {
   try {
-    const { data, error } = await supabase
-      .from('device_support_tickets')
-      .select('*')
-      .order('sl_no', { ascending: false });
+    const [ticketsRes, statusMap] = await Promise.all([
+      supabase
+        .from('device_support_tickets')
+        .select('*')
+        .order('sl_no', { ascending: false }),
+      fetchDeviceTicketStatusMap(),
+    ]);
+
+    const { data, error } = ticketsRes;
 
     if (error) {
       console.warn('Supabase fetchDeviceSupportTickets warning:', error.message);
@@ -1450,11 +1597,19 @@ export async function fetchSupabaseDeviceSupportTickets(): Promise<DeviceSupport
         return null;
       }
       if (!fallbackData) return [];
-      return fallbackData.map((d: any, idx: number) => mapRowToDeviceSupportTicket(d, idx));
+      if (fallbackData.length > 0 && 'status' in fallbackData[0]) {
+        deviceSupportTicketsHasStatusCol = true;
+      }
+      return fallbackData.map((d: any, idx: number) =>
+        mapRowToDeviceSupportTicket(d, idx, statusMap)
+      );
     }
 
     if (!data) return [];
-    return data.map((d: any, idx: number) => mapRowToDeviceSupportTicket(d, idx));
+    if (data.length > 0) {
+      deviceSupportTicketsHasStatusCol = 'status' in data[0];
+    }
+    return data.map((d: any, idx: number) => mapRowToDeviceSupportTicket(d, idx, statusMap));
   } catch (err) {
     console.warn('Supabase fetchDeviceSupportTickets catch error:', err);
     return null;
@@ -1463,13 +1618,38 @@ export async function fetchSupabaseDeviceSupportTickets(): Promise<DeviceSupport
 
 export async function insertSupabaseDeviceSupportTicket(ticket: DeviceSupportTicket): Promise<boolean> {
   try {
-    const row = mapDeviceSupportTicketToRow(ticket);
-    const { error } = await supabase
-      .from('device_support_tickets')
-      .upsert([row], { onConflict: 'id' });
+    const normalizedStatus = normalizeDeviceSupportStatus(ticket.status);
 
-    if (error) {
-      console.warn('Supabase insertDeviceSupportTicket error:', error.message);
+    if (deviceSupportTicketsHasStatusCol !== false) {
+      const rowWithStatus = mapDeviceSupportTicketToRow(ticket, true);
+      const { error } = await supabase
+        .from('device_support_tickets')
+        .upsert([rowWithStatus], { onConflict: 'id' });
+
+      if (!error) {
+        deviceSupportTicketsHasStatusCol = true;
+        await saveDeviceTicketStatusesToStore([{ id: ticket.id, status: normalizedStatus }]);
+        return true;
+      }
+
+      if (error.message && error.message.toLowerCase().includes('status')) {
+        deviceSupportTicketsHasStatusCol = false;
+      } else {
+        console.warn('Supabase insertDeviceSupportTicket error:', error.message);
+        return false;
+      }
+    }
+
+    const rowWithoutStatus = mapDeviceSupportTicketToRow(ticket, false);
+    const [{ error: fallbackErr }] = await Promise.all([
+      supabase
+        .from('device_support_tickets')
+        .upsert([rowWithoutStatus], { onConflict: 'id' }),
+      saveDeviceTicketStatusesToStore([{ id: ticket.id, status: normalizedStatus }]),
+    ]);
+
+    if (fallbackErr) {
+      console.warn('Supabase insertDeviceSupportTicket error:', fallbackErr.message);
       return false;
     }
     return true;
@@ -1481,13 +1661,41 @@ export async function insertSupabaseDeviceSupportTicket(ticket: DeviceSupportTic
 
 export async function bulkInsertSupabaseDeviceSupportTickets(tickets: DeviceSupportTicket[]): Promise<boolean> {
   try {
-    const rows = tickets.map((t) => mapDeviceSupportTicketToRow(t));
-    const { error } = await supabase
-      .from('device_support_tickets')
-      .upsert(rows, { onConflict: 'id' });
+    const statusEntries = tickets.map((t) => ({
+      id: t.id,
+      status: normalizeDeviceSupportStatus(t.status),
+    }));
 
-    if (error) {
-      console.warn('Supabase bulkInsertDeviceSupportTickets error:', error.message);
+    if (deviceSupportTicketsHasStatusCol !== false) {
+      const rowsWithStatus = tickets.map((t) => mapDeviceSupportTicketToRow(t, true));
+      const { error } = await supabase
+        .from('device_support_tickets')
+        .upsert(rowsWithStatus, { onConflict: 'id' });
+
+      if (!error) {
+        deviceSupportTicketsHasStatusCol = true;
+        await saveDeviceTicketStatusesToStore(statusEntries);
+        return true;
+      }
+
+      if (error.message && error.message.toLowerCase().includes('status')) {
+        deviceSupportTicketsHasStatusCol = false;
+      } else {
+        console.warn('Supabase bulkInsertDeviceSupportTickets error:', error.message);
+        return false;
+      }
+    }
+
+    const rowsWithoutStatus = tickets.map((t) => mapDeviceSupportTicketToRow(t, false));
+    const [{ error: fallbackErr }] = await Promise.all([
+      supabase
+        .from('device_support_tickets')
+        .upsert(rowsWithoutStatus, { onConflict: 'id' }),
+      saveDeviceTicketStatusesToStore(statusEntries),
+    ]);
+
+    if (fallbackErr) {
+      console.warn('Supabase bulkInsertDeviceSupportTickets error:', fallbackErr.message);
       return false;
     }
     return true;
@@ -1499,10 +1707,10 @@ export async function bulkInsertSupabaseDeviceSupportTickets(tickets: DeviceSupp
 
 export async function deleteSupabaseDeviceSupportTicket(id: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('device_support_tickets')
-      .delete()
-      .eq('id', id);
+    const [{ error }] = await Promise.all([
+      supabase.from('device_support_tickets').delete().eq('id', id),
+      removeDeviceTicketStatusesFromStore([id]),
+    ]);
 
     if (error) {
       console.warn('Supabase deleteDeviceSupportTicket error:', error.message);
@@ -1517,10 +1725,10 @@ export async function deleteSupabaseDeviceSupportTicket(id: string): Promise<boo
 
 export async function bulkDeleteSupabaseDeviceSupportTickets(ids: string[]): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('device_support_tickets')
-      .delete()
-      .in('id', ids);
+    const [{ error }] = await Promise.all([
+      supabase.from('device_support_tickets').delete().in('id', ids),
+      removeDeviceTicketStatusesFromStore(ids),
+    ]);
 
     if (error) {
       console.warn('Supabase bulkDeleteDeviceSupportTickets error:', error.message);

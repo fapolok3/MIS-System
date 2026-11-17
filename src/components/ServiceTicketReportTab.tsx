@@ -50,7 +50,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
-import { ServiceTicketItem } from '../types';
+import { ServiceTicketItem, SystemOptions } from '../types';
 import { useTheme } from '../context/ThemeContext';
 
 ChartJS.register(
@@ -71,6 +71,7 @@ interface ServiceTicketReportTabProps {
   onSaveTicket: (ticket: ServiceTicketItem) => void;
   onDeleteTicket: (id: string) => void;
   onBulkDeleteTickets?: (ids: string[]) => void;
+  systemOptions?: SystemOptions;
   onNavigateToTracker: () => void;
   onEditTicketInTracker: (ticket: ServiceTicketItem) => void;
 }
@@ -80,9 +81,14 @@ export const ServiceTicketReportTab: React.FC<ServiceTicketReportTabProps> = ({
   onSaveTicket,
   onDeleteTicket,
   onBulkDeleteTickets,
+  systemOptions,
   onNavigateToTracker,
   onEditTicketInTracker,
 }) => {
+  const statusOptions =
+    systemOptions?.serviceTicketStatuses && systemOptions.serviceTicketStatuses.length > 0
+      ? systemOptions.serviceTicketStatuses
+      : ['Open', 'Pending', 'Ongoing', 'Working', 'RMA', 'Repairing', 'Done'];
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
@@ -379,30 +385,33 @@ export const ServiceTicketReportTab: React.FC<ServiceTicketReportTabProps> = ({
 
   // Chart 3: Status Distribution
   const statusChartData = useMemo(() => {
-    const statuses = ['Open', 'Pending', 'Ongoing', 'Working', 'RMA', 'Repairing', 'Done'];
+    const statuses = statusOptions;
     const counts = statuses.map(
       (st) => tickets.filter((t) => (t.status || '').toLowerCase() === st.toLowerCase()).length
     );
+    const palette = [
+      '#94a3b8',
+      '#fbbf24',
+      '#3b82f6',
+      '#a855f7',
+      '#f97316',
+      '#ec4899',
+      '#10b981',
+      '#06b6d4',
+      '#84cc16',
+    ];
     return {
       labels: statuses,
       datasets: [
         {
           label: 'Tickets by Status',
           data: counts,
-          backgroundColor: [
-            '#94a3b8',
-            '#fbbf24',
-            '#3b82f6',
-            '#a855f7',
-            '#f97316',
-            '#ec4899',
-            '#10b981',
-          ],
+          backgroundColor: statuses.map((_, i) => palette[i % palette.length]),
           borderRadius: 6,
         },
       ],
     };
-  }, [tickets]);
+  }, [tickets, statusOptions]);
 
   // Export Full Excel
   const handleExportExcel = () => {
@@ -1242,13 +1251,11 @@ export const ServiceTicketReportTab: React.FC<ServiceTicketReportTabProps> = ({
                 className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
               >
                 <option value="ALL">All Statuses</option>
-                <option value="Open">Open</option>
-                <option value="Pending">Pending</option>
-                <option value="Ongoing">Ongoing</option>
-                <option value="Working">Working</option>
-                <option value="RMA">RMA</option>
-                <option value="Repairing">Repairing</option>
-                <option value="Done">Done</option>
+                {statusOptions.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
               </select>
             </div>
 

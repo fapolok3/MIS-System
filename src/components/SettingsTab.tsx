@@ -42,6 +42,9 @@ import {
   Check,
   Receipt,
   FileSpreadsheet,
+  Wrench,
+  CreditCard,
+  MapPin,
 } from 'lucide-react';
 import { CategoryGroup, SystemOptions, AppSettings } from '../types';
 import { ConfirmModal } from './Modals/ConfirmModal';
@@ -253,15 +256,41 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [logoInput, setLogoInput] = useState(appSettings.appLogo || '');
   const [urlInputMode, setUrlInputMode] = useState(false);
   const [isSavingBrand, setIsSavingBrand] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [dragActiveLogo, setDragActiveLogo] = useState(false);
+  const [logoPreviewError, setLogoPreviewError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isBrandDirtyRef = useRef(false);
+  const lastSyncedBrandRef = useRef({
+    appName: appSettings.appName || 'BBL DM System',
+    tagline: appSettings.tagline || 'Enterprise Management Suite',
+    appLogo: appSettings.appLogo || '',
+  });
 
   useEffect(() => {
-    if (appSettings) {
-      if (appSettings.appName !== undefined) setAppNameInput(appSettings.appName);
-      if (appSettings.tagline !== undefined) setTaglineInput(appSettings.tagline);
-      if (appSettings.appLogo !== undefined) setLogoInput(appSettings.appLogo);
+    if (!appSettings) return;
+    const nextAppName = appSettings.appName ?? 'BBL DM System';
+    const nextTagline = appSettings.tagline ?? 'Enterprise Management Suite';
+    const nextLogo = appSettings.appLogo ?? '';
+
+    const prev = lastSyncedBrandRef.current;
+    const remoteChanged =
+      prev.appName !== nextAppName ||
+      prev.tagline !== nextTagline ||
+      prev.appLogo !== nextLogo;
+
+    if (remoteChanged && !isBrandDirtyRef.current && !isUploadingLogo && !isSavingBrand) {
+      setAppNameInput(nextAppName);
+      setTaglineInput(nextTagline);
+      setLogoInput(nextLogo);
+      setLogoPreviewError(false);
+      lastSyncedBrandRef.current = {
+        appName: nextAppName,
+        tagline: nextTagline,
+        appLogo: nextLogo,
+      };
     }
-  }, [appSettings]);
+  }, [appSettings, isUploadingLogo, isSavingBrand]);
 
   // Category Group Form
   const [newGroupTitle, setNewGroupTitle] = useState('');
@@ -274,25 +303,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [newCategoryName, setNewCategoryName] = useState('');
 
   // Dropdown options new item inputs
-  const [inputs, setInputs] = useState<Record<keyof SystemOptions, string>>({
-    deviceStatuses: '',
-    simOperators: '',
-    accessTypes: '',
-    locationTypes: '',
-    issueTypes: '',
-    ticketPriorities: '',
-    ticketStatuses: '',
-    vendors: '',
-    poStatuses: '',
-    simStatuses: '',
-    technicians: '',
-    slaStatuses: '',
-  });
+  const [inputs, setInputs] = useState<Partial<Record<keyof SystemOptions, string>>>({});
 
-  // Filter tab for System Dropdown Options
-  const [optionFilterTab, setOptionFilterTab] = useState<
-    'ALL' | 'ISSUE_TRACKER' | 'SERVICE' | 'DEVICES' | 'PO'
-  >('ALL');
+  // Filter tab for System Dropdown Options (exact Sidebar module names)
+  type ModuleFilterTab =
+    | 'ALL'
+    | 'DEVICE_ISSUE_TRACKER'
+    | 'SERVICE_TICKET_TRACKER'
+    | 'BILL_TRACKER'
+    | 'ISSUE_TRACKER'
+    | 'PO'
+    | 'SERVICE'
+    | 'SIM'
+    | 'DEVICE_MIS';
+
+  const [optionFilterTab, setOptionFilterTab] = useState<ModuleFilterTab>('ALL');
 
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -323,72 +348,19 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     });
   };
 
-  // Compress & Resize image to keep payload lightweight for Supabase & LocalStorage
-  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-      showToast('Please select a valid image file (PNG, JPG, SVG, WebP)');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const imgUrl = event.target?.result as string;
-      if (!imgUrl) return;
-
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 400;
-        const MAX_HEIGHT = 400;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height = Math.round((height * MAX_WIDTH) / width);
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width = Math.round((width * MAX_HEIGHT) / height);
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/png', 0.9);
-          setLogoInput(compressedDataUrl);
-          showToast('Logo image loaded successfully! Click "Save Brand & Logo Settings" to apply.');
-        } else {
-          setLogoInput(imgUrl);
-        }
-      };
-      img.onerror = () => {
-        setLogoInput(imgUrl);
-      };
-      img.src = imgUrl;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Save Brand & Logo settings
-  const handleSaveBrandSettings = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  // Shared helper to persist brand settings locally & to Supabase
+  const persistBrandSettings = async (
+    updated: AppSettings,
+    successMsg?: string,
+    localFallbackMsg?: string
+  ) => {
     setIsSavingBrand(true);
-
-    const updated: AppSettings = {
-      appName: appNameInput.trim() || 'BBL DM System',
-      appLogo: logoInput.trim(),
-      tagline: taglineInput.trim() || 'Enterprise Management Suite',
+    lastSyncedBrandRef.current = {
+      appName: updated.appName,
+      tagline: updated.tagline || 'Enterprise Management Suite',
+      appLogo: updated.appLogo || '',
     };
+    isBrandDirtyRef.current = false;
 
     if (setAppSettings) {
       setAppSettings(updated);
@@ -404,10 +376,203 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     setIsSavingBrand(false);
 
     if (saved) {
-      showToast('Brand settings & Logo saved to Supabase successfully!');
+      showToast(successMsg || 'Brand settings & Logo saved to Supabase successfully!');
     } else {
-      showToast('Brand settings saved locally! Ensure the app_settings table exists in Supabase.');
+      showToast(
+        localFallbackMsg ||
+          'Logo applied locally! Could not sync to Supabase (check app_settings table).'
+      );
     }
+  };
+
+  // Process & compress image file from picker or drag-and-drop, then apply immediately
+  const processLogoFile = (file: File) => {
+    const isImageMime = file.type.startsWith('image/');
+    const isImageExt = /\.(png|jpe?g|svg|webp|gif|ico)$/i.test(file.name);
+    if (!isImageMime && !isImageExt) {
+      showToast('Please select a valid image file (PNG, JPG, SVG, WebP, GIF, ICO).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Logo file is too large (max 5 MB). Please choose a smaller image.');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    setLogoPreviewError(false);
+
+    const reader = new FileReader();
+    reader.onerror = () => {
+      setIsUploadingLogo(false);
+      showToast('Failed to read the selected logo file. Please try again.');
+    };
+
+    reader.onload = (event) => {
+      const imgUrl = event.target?.result as string;
+      if (!imgUrl || !imgUrl.startsWith('data:')) {
+        setIsUploadingLogo(false);
+        showToast('Invalid image data. Please try another file.');
+        return;
+      }
+
+      const applyFinalLogo = async (finalDataUrl: string) => {
+        if (!finalDataUrl || finalDataUrl === 'data:,' || !finalDataUrl.startsWith('data:image/')) {
+          setIsUploadingLogo(false);
+          showToast('Could not process logo image. Please try a PNG or JPG file.');
+          return;
+        }
+
+        setLogoInput(finalDataUrl);
+        setLogoPreviewError(false);
+        setIsUploadingLogo(false);
+
+        const updated: AppSettings = {
+          appName: appNameInput.trim() || 'BBL DM System',
+          appLogo: finalDataUrl,
+          tagline: taglineInput.trim() || 'Enterprise Management Suite',
+          hiddenModules: appSettings.hiddenModules,
+        };
+
+        await persistBrandSettings(
+          updated,
+          'Logo uploaded and applied successfully!',
+          'Logo uploaded and applied locally!'
+        );
+      };
+
+      const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name);
+      const isIcoOrGif =
+        file.type === 'image/x-icon' ||
+        file.type === 'image/vnd.microsoft.icon' ||
+        file.type === 'image/gif' ||
+        /\.(ico|gif)$/i.test(file.name);
+
+      // Keep SVG / small ICO / small GIF directly to preserve vector sharpness & animation
+      if ((isSvg || isIcoOrGif) && imgUrl.length <= 250_000) {
+        void applyFinalLogo(imgUrl);
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        const naturalW = img.naturalWidth || img.width;
+        const naturalH = img.naturalHeight || img.height;
+
+        if (!naturalW || !naturalH) {
+          void applyFinalLogo(imgUrl);
+          return;
+        }
+
+        const encodeResized = (maxDim: number, mime: string, quality?: number): string | null => {
+          let width = naturalW;
+          let height = naturalH;
+
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.max(1, Math.round((height * maxDim) / width));
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.max(1, Math.round((width * maxDim) / height));
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return null;
+
+          ctx.clearRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          const out = canvas.toDataURL(mime, quality);
+          return out && out !== 'data:,' ? out : null;
+        };
+
+        let output = encodeResized(400, 'image/png');
+        if (!output || output.length > 350_000) {
+          const webpOut = encodeResized(400, 'image/webp', 0.88);
+          if (webpOut && webpOut.startsWith('data:image/webp') && webpOut.length <= 350_000) {
+            output = webpOut;
+          } else {
+            const smallerPng = encodeResized(256, 'image/png');
+            const smallerWebp = encodeResized(256, 'image/webp', 0.85);
+            if (smallerWebp && smallerWebp.startsWith('data:image/webp')) {
+              output = smallerWebp;
+            } else if (smallerPng) {
+              output = smallerPng;
+            }
+          }
+        }
+
+        void applyFinalLogo(output || imgUrl);
+      };
+
+      img.onerror = () => {
+        // Fallback to raw data URL if browser supports it directly
+        void applyFinalLogo(imgUrl);
+      };
+
+      img.src = imgUrl;
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset input value so the same file can be re-selected if needed
+    e.target.value = '';
+    if (!file) return;
+    processLogoFile(file);
+  };
+
+  const handleLogoDragEnter = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActiveLogo(true);
+  };
+
+  const handleLogoDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!dragActiveLogo) setDragActiveLogo(true);
+  };
+
+  const handleLogoDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActiveLogo(false);
+  };
+
+  const handleLogoDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActiveLogo(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) {
+      processLogoFile(file);
+    }
+  };
+
+  // Save Brand & Logo settings
+  const handleSaveBrandSettings = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const updated: AppSettings = {
+      appName: appNameInput.trim() || 'BBL DM System',
+      appLogo: logoInput.trim(),
+      tagline: taglineInput.trim() || 'Enterprise Management Suite',
+      hiddenModules: appSettings.hiddenModules,
+    };
+
+    await persistBrandSettings(
+      updated,
+      'Brand settings & Logo saved to Supabase successfully!',
+      'Brand settings saved locally! Ensure the app_settings table exists in Supabase.'
+    );
   };
 
   // Remove Logo
@@ -417,20 +582,19 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       'Are you sure you want to remove the custom logo? The default system icon will be displayed.',
       () => {
         setLogoInput('');
+        setLogoPreviewError(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
         const updated: AppSettings = {
           appName: appNameInput.trim() || 'BBL DM System',
           appLogo: '',
           tagline: taglineInput.trim() || 'Enterprise Management Suite',
+          hiddenModules: appSettings.hiddenModules,
         };
-        if (setAppSettings) setAppSettings(updated);
-        try {
-          localStorage.setItem('appSettings', JSON.stringify(updated));
-        } catch (e) {
-          console.warn(e);
-        }
-        saveSupabaseAppSettings(updated);
-        showToast('Custom logo removed. Default icon restored.');
+        void persistBrandSettings(
+          updated,
+          'Custom logo removed. Default icon restored.',
+          'Custom logo removed locally.'
+        );
       }
     );
   };
@@ -444,16 +608,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         setAppNameInput('BBL DM System');
         setTaglineInput('Enterprise Management Suite');
         setLogoInput('');
+        setLogoPreviewError(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
-        const updated = { ...defaultAppSettings };
-        if (setAppSettings) setAppSettings(updated);
-        try {
-          localStorage.setItem('appSettings', JSON.stringify(updated));
-        } catch (e) {
-          console.warn(e);
-        }
-        saveSupabaseAppSettings(updated);
-        showToast('Brand settings reset to defaults.');
+        const updated: AppSettings = {
+          ...defaultAppSettings,
+          hiddenModules: appSettings.hiddenModules,
+        };
+        void persistBrandSettings(
+          updated,
+          'Brand settings reset to defaults.',
+          'Brand settings reset locally.'
+        );
       }
     );
   };
@@ -623,116 +788,397 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     );
   };
 
-  const optionSections: {
+  interface OptionSectionConfig {
     key: keyof SystemOptions;
+    moduleId: Exclude<ModuleFilterTab, 'ALL'>;
+    moduleLabel: string;
     title: string;
     description: string;
     icon: React.ReactNode;
     badgeColor: string;
-    groups: ('ISSUE_TRACKER' | 'SERVICE' | 'DEVICES' | 'PO')[];
     feedTag: string;
+  }
+
+  const moduleTabs: {
+    id: ModuleFilterTab;
+    label: string;
+    activeClass: string;
+    idleClass: string;
+    icon: React.ReactNode;
+    note?: string;
   }[] = [
-    // SERVICE TICKET & ISSUE TRACKER DROPDOWNS
     {
-      key: 'issueTypes',
+      id: 'ALL',
+      label: 'All Modules',
+      activeClass: 'bg-indigo-600 text-white font-bold shadow-xs',
+      idleClass:
+        'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800',
+      icon: <Filter className="w-3.5 h-3.5" />,
+    },
+    {
+      id: 'DEVICE_ISSUE_TRACKER',
+      label: 'Device Issue Tracker',
+      activeClass: 'bg-indigo-600 text-white font-bold shadow-xs ring-2 ring-indigo-400/40',
+      idleClass:
+        'bg-indigo-50 dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-slate-800 border border-indigo-200 dark:border-indigo-900/60',
+      icon: <Cpu className="w-3.5 h-3.5" />,
+      note: 'Options below match exact field names in Device Issue Tracker & Device Issue Report (filter + Edit modal).',
+    },
+    {
+      id: 'SERVICE_TICKET_TRACKER',
+      label: 'Service Ticket Tracker',
+      activeClass: 'bg-cyan-600 text-white font-bold shadow-xs ring-2 ring-cyan-400/40',
+      idleClass:
+        'bg-cyan-50 dark:bg-slate-900 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-slate-800 border border-cyan-200 dark:border-cyan-900/60',
+      icon: <Wrench className="w-3.5 h-3.5" />,
+      note: 'Options below match exact field names in Service Ticket Tracker & Service Ticket Report (Branch Name uses Device MIS Tree).',
+    },
+    {
+      id: 'BILL_TRACKER',
+      label: 'Bill Tracker',
+      activeClass: 'bg-violet-600 text-white font-bold shadow-xs ring-2 ring-violet-400/40',
+      idleClass:
+        'bg-violet-50 dark:bg-slate-900 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-slate-800 border border-violet-200 dark:border-violet-900/60',
+      icon: <Receipt className="w-3.5 h-3.5" />,
+      note: 'Payment Status and Payment Method flow into Bill Tracker & Bill Report. (Client Name, Client Location, and Bill Type / Category also have inline + Add / Del controls inside Bill Tracker.)',
+    },
+    {
+      id: 'ISSUE_TRACKER',
+      label: 'Issue Tracker',
+      activeClass: 'bg-rose-600 text-white font-bold shadow-xs ring-2 ring-rose-400/40',
+      idleClass:
+        'bg-rose-50 dark:bg-slate-900 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-slate-800 border border-rose-200 dark:border-rose-900/60',
+      icon: <AlertCircle className="w-3.5 h-3.5" />,
+      note: 'Options below match exact field names in Issue Tracker & Issue Report. (Problem Category is managed in Category Tree Manager above.)',
+    },
+    {
+      id: 'PO',
+      label: 'Purchase Orders (PO)',
+      activeClass: 'bg-teal-600 text-white font-bold shadow-xs ring-2 ring-teal-400/40',
+      idleClass:
+        'bg-teal-50 dark:bg-slate-900 text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-slate-800 border border-teal-200 dark:border-teal-900/60',
+      icon: <FileText className="w-3.5 h-3.5" />,
+      note: 'Options below match exact field names in Purchase Orders (PO) Add / Edit modals. (Category uses Device MIS Tree.)',
+    },
+    {
+      id: 'SERVICE',
+      label: 'Service Tracker',
+      activeClass: 'bg-sky-600 text-white font-bold shadow-xs ring-2 ring-sky-400/40',
+      idleClass:
+        'bg-sky-50 dark:bg-slate-900 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-slate-800 border border-sky-200 dark:border-sky-900/60',
+      icon: <Headphones className="w-3.5 h-3.5" />,
+      note: 'Options below match exact field names in Service Tracker (New Ticket / Edit Ticket modals).',
+    },
+    {
+      id: 'SIM',
+      label: 'SIM Management',
+      activeClass: 'bg-blue-600 text-white font-bold shadow-xs ring-2 ring-blue-400/40',
+      idleClass:
+        'bg-blue-50 dark:bg-slate-900 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-slate-800 border border-blue-200 dark:border-blue-900/60',
+      icon: <Smartphone className="w-3.5 h-3.5" />,
+      note: 'Options below match exact field names in SIM Management Add / Edit modals.',
+    },
+    {
+      id: 'DEVICE_MIS',
+      label: 'Device MIS Tree',
+      activeClass: 'bg-emerald-600 text-white font-bold shadow-xs ring-2 ring-emerald-400/40',
+      idleClass:
+        'bg-emerald-50 dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-slate-800 border border-emerald-200 dark:border-emerald-900/60',
+      icon: <Layers className="w-3.5 h-3.5" />,
+      note: 'Options below match exact field names in Device MIS Tree Add / Edit Device modals.',
+    },
+  ];
+
+  const optionSections: OptionSectionConfig[] = [
+    // 1. Device Issue Tracker
+    {
+      key: 'deviceIssueTypes',
+      moduleId: 'DEVICE_ISSUE_TRACKER',
+      moduleLabel: 'Device Issue Tracker',
+      title: 'Device Issues Type',
+      description: 'Field: "Device Issues Type" in Device Issue Tracker & Edit modal',
+      icon: <AlertTriangle className="w-4 h-4 text-amber-500" />,
+      badgeColor:
+        'bg-amber-50 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+      feedTag: 'Device Issue Tracker',
+    },
+    {
+      key: 'deviceResponsibilities',
+      moduleId: 'DEVICE_ISSUE_TRACKER',
+      moduleLabel: 'Device Issue Tracker',
+      title: 'Responsibility',
+      description: 'Field: "Responsibility" in Device Issue Tracker, Filter & Edit modal',
+      icon: <Users className="w-4 h-4 text-indigo-500" />,
+      badgeColor:
+        'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+      feedTag: 'Device Issue Tracker',
+    },
+    {
+      key: 'deviceIssueStatuses',
+      moduleId: 'DEVICE_ISSUE_TRACKER',
+      moduleLabel: 'Device Issue Tracker',
+      title: 'Status',
+      description: 'Field: "Status" in Device Issue Tracker, Filter & Edit modal',
+      icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
+      badgeColor:
+        'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+      feedTag: 'Device Issue Tracker',
+    },
+
+    // 2. Service Ticket Tracker
+    {
+      key: 'serviceLocationTypes',
+      moduleId: 'SERVICE_TICKET_TRACKER',
+      moduleLabel: 'Service Ticket Tracker',
+      title: 'Location Type',
+      description: 'Field: "Location Type" in Service Ticket Tracker form',
+      icon: <MapPin className="w-4 h-4 text-cyan-500" />,
+      badgeColor:
+        'bg-cyan-50 dark:bg-cyan-950/80 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
+      feedTag: 'Service Ticket Tracker',
+    },
+    {
+      key: 'serviceSegments',
+      moduleId: 'SERVICE_TICKET_TRACKER',
+      moduleLabel: 'Service Ticket Tracker',
+      title: 'Segment',
+      description: 'Field: "Segment" in Service Ticket Tracker form',
+      icon: <Layers className="w-4 h-4 text-sky-500" />,
+      badgeColor:
+        'bg-sky-50 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800',
+      feedTag: 'Service Ticket Tracker',
+    },
+    {
+      key: 'serviceIssueTypes',
+      moduleId: 'SERVICE_TICKET_TRACKER',
+      moduleLabel: 'Service Ticket Tracker',
       title: 'Issue Types',
-      description: 'Appears in Service Ticket & SLA Tracker, Issue Tracker & Reports',
-      icon: <AlertTriangle className="w-4 h-4 text-amber-400" />,
-      badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-800',
-      groups: ['ISSUE_TRACKER', 'SERVICE'],
-      feedTag: 'Feeds Service Ticket & Issue Tracker',
+      description: 'Field: "Issue Types" checklist in Service Ticket Tracker',
+      icon: <AlertTriangle className="w-4 h-4 text-amber-500" />,
+      badgeColor:
+        'bg-amber-50 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+      feedTag: 'Service Ticket Tracker',
     },
     {
-      key: 'ticketPriorities',
+      key: 'servicePriorities',
+      moduleId: 'SERVICE_TICKET_TRACKER',
+      moduleLabel: 'Service Ticket Tracker',
       title: 'Issue Priority',
-      description: 'Appears in Service Ticket & SLA Tracker priorities & Issue Tracker',
-      icon: <ShieldAlert className="w-4 h-4 text-rose-400" />,
-      badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-800',
-      groups: ['ISSUE_TRACKER', 'SERVICE'],
-      feedTag: 'Feeds Service Ticket & Issue Priorities',
+      description: 'Field: "Issue Priority" in Service Ticket Tracker form',
+      icon: <ShieldAlert className="w-4 h-4 text-rose-500" />,
+      badgeColor:
+        'bg-rose-50 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+      feedTag: 'Service Ticket Tracker',
     },
     {
-      key: 'ticketStatuses',
-      title: 'Current Status',
-      description: 'Appears in Service Ticket & SLA Tracker Current Status, and Issue Tracker status',
-      icon: <CheckCircle2 className="w-4 h-4 text-blue-400" />,
-      badgeColor: 'bg-blue-950/80 text-blue-300 border-blue-800',
-      groups: ['ISSUE_TRACKER', 'SERVICE'],
-      feedTag: 'Feeds Service Ticket & Issue Status',
+      key: 'serviceTicketStatuses',
+      moduleId: 'SERVICE_TICKET_TRACKER',
+      moduleLabel: 'Service Ticket Tracker',
+      title: 'Current Ticket Status',
+      description: 'Field: "Current Ticket Status" in Service Ticket Tracker & Report',
+      icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
+      badgeColor:
+        'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+      feedTag: 'Service Ticket Tracker',
     },
     {
-      key: 'technicians',
-      title: 'Assign Person / Technicians',
-      description: 'Appears in Issue Tracker and Issue Reports assignee dropdowns',
-      icon: <Users className="w-4 h-4 text-orange-400" />,
-      badgeColor: 'bg-orange-950/80 text-orange-300 border-orange-800',
-      groups: ['ISSUE_TRACKER'],
-      feedTag: 'Feeds Issue Tracker Assignee',
+      key: 'serviceDeliveryOptions',
+      moduleId: 'SERVICE_TICKET_TRACKER',
+      moduleLabel: 'Service Ticket Tracker',
+      title: 'Delivery Option',
+      description: 'Field: "Delivery Option" in Service Ticket Tracker form',
+      icon: <Box className="w-4 h-4 text-purple-500" />,
+      badgeColor:
+        'bg-purple-50 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+      feedTag: 'Service Ticket Tracker',
     },
     {
-      key: 'locationTypes',
-      title: 'Location & Branch Types',
-      description: 'Appears in Branch MIS & Location categories',
-      icon: <Building className="w-4 h-4 text-purple-400" />,
-      badgeColor: 'bg-purple-950/80 text-purple-300 border-purple-800',
-      groups: ['ISSUE_TRACKER'],
-      feedTag: 'Feeds Location Categories',
+      key: 'servicePaymentMethods',
+      moduleId: 'SERVICE_TICKET_TRACKER',
+      moduleLabel: 'Service Ticket Tracker',
+      title: 'Payment Method',
+      description: 'Field: "Payment Method" in Service Ticket Tracker form',
+      icon: <CreditCard className="w-4 h-4 text-teal-500" />,
+      badgeColor:
+        'bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800',
+      feedTag: 'Service Ticket Tracker',
     },
-    // DEVICES & SIM DROPDOWNS
+
+    // 3. Bill Tracker
     {
-      key: 'deviceStatuses',
-      title: 'Device Status Options',
-      description: 'Appears in Device add/edit status dropdowns',
-      icon: <Cpu className="w-4 h-4 text-emerald-400" />,
-      badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-800',
-      groups: ['DEVICES'],
-      feedTag: 'Feeds Device Inventory',
-    },
-    {
-      key: 'accessTypes',
-      title: 'Device Access Types',
-      description: 'Appears in Device access type configuration',
-      icon: <Layers className="w-4 h-4 text-indigo-400" />,
-      badgeColor: 'bg-indigo-950/80 text-indigo-300 border-indigo-800',
-      groups: ['DEVICES'],
-      feedTag: 'Feeds Device Access Types',
+      key: 'billPaymentStatuses',
+      moduleId: 'BILL_TRACKER',
+      moduleLabel: 'Bill Tracker',
+      title: 'Payment Status',
+      description: 'Field: "Payment Status" in Bill Tracker & Bill Report filter',
+      icon: <CheckCircle2 className="w-4 h-4 text-violet-500" />,
+      badgeColor:
+        'bg-violet-50 dark:bg-violet-950/80 text-violet-800 dark:text-violet-300 border-violet-200 dark:border-violet-800',
+      feedTag: 'Bill Tracker',
     },
     {
-      key: 'simOperators',
-      title: 'SIM Operators',
-      description: 'Appears in Device and SIM Management operator dropdowns',
-      icon: <Radio className="w-4 h-4 text-cyan-400" />,
-      badgeColor: 'bg-cyan-950/80 text-cyan-300 border-cyan-800',
-      groups: ['DEVICES'],
-      feedTag: 'Feeds SIM Operators',
+      key: 'billPaymentMethods',
+      moduleId: 'BILL_TRACKER',
+      moduleLabel: 'Bill Tracker',
+      title: 'Payment Method',
+      description: 'Field: "Payment Method" in Bill Tracker & Bill Report filter',
+      icon: <CreditCard className="w-4 h-4 text-indigo-500" />,
+      badgeColor:
+        'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+      feedTag: 'Bill Tracker',
+    },
+
+    // 4. Issue Tracker
+    {
+      key: 'issueTrackerStatuses',
+      moduleId: 'ISSUE_TRACKER',
+      moduleLabel: 'Issue Tracker',
+      title: 'Status',
+      description: 'Field: "Status" in Issue Tracker, Issue Report Filter & Edit modal',
+      icon: <CheckCircle2 className="w-4 h-4 text-rose-500" />,
+      badgeColor:
+        'bg-rose-50 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+      feedTag: 'Issue Tracker',
     },
     {
-      key: 'simStatuses',
-      title: 'SIM Card Statuses',
-      description: 'Appears in SIM Inventory status dropdowns',
-      icon: <Radio className="w-4 h-4 text-sky-400" />,
-      badgeColor: 'bg-sky-950/80 text-sky-300 border-sky-800',
-      groups: ['DEVICES'],
-      feedTag: 'Feeds SIM Card Status',
+      key: 'issuePremisesNames',
+      moduleId: 'ISSUE_TRACKER',
+      moduleLabel: 'Issue Tracker',
+      title: 'Premesis Name',
+      description: 'Field: "Premesis Name" in Issue Tracker & Edit modal',
+      icon: <Building className="w-4 h-4 text-purple-500" />,
+      badgeColor:
+        'bg-purple-50 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+      feedTag: 'Issue Tracker',
     },
-    // PO & VENDOR DROPDOWNS
+    {
+      key: 'issuePriorityLevels',
+      moduleId: 'ISSUE_TRACKER',
+      moduleLabel: 'Issue Tracker',
+      title: 'Priority Level',
+      description: 'Field: "Priority Level" in Issue Tracker, Filter & Edit modal',
+      icon: <ShieldAlert className="w-4 h-4 text-amber-500" />,
+      badgeColor:
+        'bg-amber-50 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+      feedTag: 'Issue Tracker',
+    },
+
+    // 5. Purchase Orders (PO)
     {
       key: 'vendors',
-      title: 'Vendors & Suppliers',
-      description: 'Appears in Purchase Order vendor selection',
-      icon: <ShoppingBag className="w-4 h-4 text-teal-400" />,
-      badgeColor: 'bg-teal-950/80 text-teal-300 border-teal-800',
-      groups: ['PO'],
-      feedTag: 'Feeds PO Vendors',
+      moduleId: 'PO',
+      moduleLabel: 'Purchase Orders (PO)',
+      title: 'Vendor Name',
+      description: 'Field: "Vendor Name" in Purchase Orders (PO) Add / Edit modal',
+      icon: <ShoppingBag className="w-4 h-4 text-teal-500" />,
+      badgeColor:
+        'bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800',
+      feedTag: 'Purchase Orders (PO)',
     },
     {
       key: 'poStatuses',
-      title: 'Purchase Order Statuses',
-      description: 'Appears in Purchase Order status dropdowns',
-      icon: <ListPlus className="w-4 h-4 text-emerald-400" />,
-      badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-800',
-      groups: ['PO'],
-      feedTag: 'Feeds PO Statuses',
+      moduleId: 'PO',
+      moduleLabel: 'Purchase Orders (PO)',
+      title: 'Status',
+      description: 'Field: "Status" in Purchase Orders (PO) Add / Edit modal',
+      icon: <ListPlus className="w-4 h-4 text-emerald-500" />,
+      badgeColor:
+        'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+      feedTag: 'Purchase Orders (PO)',
+    },
+
+    // 6. Service Tracker
+    {
+      key: 'issueTypes',
+      moduleId: 'SERVICE',
+      moduleLabel: 'Service Tracker',
+      title: 'Issue Type',
+      description: 'Field: "Issue Type" in Service Tracker Add / Edit modal',
+      icon: <AlertTriangle className="w-4 h-4 text-amber-500" />,
+      badgeColor:
+        'bg-amber-50 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+      feedTag: 'Service Tracker',
+    },
+    {
+      key: 'ticketPriorities',
+      moduleId: 'SERVICE',
+      moduleLabel: 'Service Tracker',
+      title: 'Issue Priority',
+      description: 'Field: "Issue Priority" in Service Tracker Add / Edit modal',
+      icon: <ShieldAlert className="w-4 h-4 text-rose-500" />,
+      badgeColor:
+        'bg-rose-50 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+      feedTag: 'Service Tracker',
+    },
+    {
+      key: 'ticketStatuses',
+      moduleId: 'SERVICE',
+      moduleLabel: 'Service Tracker',
+      title: 'Current Status',
+      description: 'Field: "Current Status" in Service Tracker Add / Edit modal',
+      icon: <CheckCircle2 className="w-4 h-4 text-sky-500" />,
+      badgeColor:
+        'bg-sky-50 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800',
+      feedTag: 'Service Tracker',
+    },
+
+    // 7. SIM Management
+    {
+      key: 'simOperators',
+      moduleId: 'SIM',
+      moduleLabel: 'SIM Management',
+      title: 'Operator',
+      description: 'Field: "Operator" in SIM Management Add / Edit modal',
+      icon: <Radio className="w-4 h-4 text-blue-500" />,
+      badgeColor:
+        'bg-blue-50 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+      feedTag: 'SIM Management',
+    },
+    {
+      key: 'simStatuses',
+      moduleId: 'SIM',
+      moduleLabel: 'SIM Management',
+      title: 'Status',
+      description: 'Field: "Status" in SIM Management Add / Edit modal',
+      icon: <Smartphone className="w-4 h-4 text-sky-500" />,
+      badgeColor:
+        'bg-sky-50 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800',
+      feedTag: 'SIM Management',
+    },
+
+    // 8. Device MIS Tree
+    {
+      key: 'deviceStatuses',
+      moduleId: 'DEVICE_MIS',
+      moduleLabel: 'Device MIS Tree',
+      title: 'Status',
+      description: 'Field: "Status" in Device MIS Tree Add / Edit Device modal',
+      icon: <Cpu className="w-4 h-4 text-emerald-500" />,
+      badgeColor:
+        'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+      feedTag: 'Device MIS Tree',
+    },
+    {
+      key: 'simOperators',
+      moduleId: 'DEVICE_MIS',
+      moduleLabel: 'Device MIS Tree',
+      title: 'Operator',
+      description: 'Field: "Operator" in Device MIS Tree Add / Edit Device modal',
+      icon: <Radio className="w-4 h-4 text-cyan-500" />,
+      badgeColor:
+        'bg-cyan-50 dark:bg-cyan-950/80 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
+      feedTag: 'Device MIS Tree',
+    },
+    {
+      key: 'accessTypes',
+      moduleId: 'DEVICE_MIS',
+      moduleLabel: 'Device MIS Tree',
+      title: 'Access Type',
+      description: 'Field: "Access Type" in Device MIS Tree Add / Edit Device modal',
+      icon: <Layers className="w-4 h-4 text-indigo-500" />,
+      badgeColor:
+        'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+      feedTag: 'Device MIS Tree',
     },
   ];
 
@@ -788,7 +1234,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 <input
                   type="text"
                   value={appNameInput}
-                  onChange={(e) => setAppNameInput(e.target.value)}
+                  onChange={(e) => {
+                    isBrandDirtyRef.current = true;
+                    setAppNameInput(e.target.value);
+                  }}
                   placeholder="e.g. BBL DM System"
                   required
                   className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-indigo-500 transition"
@@ -805,7 +1254,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 <input
                   type="text"
                   value={taglineInput}
-                  onChange={(e) => setTaglineInput(e.target.value)}
+                  onChange={(e) => {
+                    isBrandDirtyRef.current = true;
+                    setTaglineInput(e.target.value);
+                  }}
                   placeholder="e.g. Enterprise Management Suite"
                   className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition"
                 />
@@ -848,39 +1300,95 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept="image/png, image/jpeg, image/svg+xml, image/webp"
+                      accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp,image/gif,image/x-icon,.png,.jpg,.jpeg,.svg,.webp,.gif,.ico"
                       onChange={handleLogoFileUpload}
                       className="hidden"
                       id="logo-file-input"
                     />
                     <label
                       htmlFor="logo-file-input"
-                      className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-500 rounded-lg p-4 flex flex-col items-center justify-center gap-2 cursor-pointer bg-white dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-950 transition text-center"
+                      onDragEnter={handleLogoDragEnter}
+                      onDragOver={handleLogoDragOver}
+                      onDragLeave={handleLogoDragLeave}
+                      onDrop={handleLogoDrop}
+                      className={`border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition text-center ${
+                        dragActiveLogo
+                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40'
+                          : 'border-slate-300 dark:border-slate-700 hover:border-indigo-500 bg-white dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-950'
+                      }`}
                     >
-                      <Upload className="w-6 h-6 text-indigo-500 dark:text-indigo-400" />
+                      <Upload
+                        className={`w-6 h-6 ${
+                          isUploadingLogo
+                            ? 'text-amber-500 animate-pulse'
+                            : 'text-indigo-500 dark:text-indigo-400'
+                        }`}
+                      />
                       <div>
                         <span className="text-indigo-600 dark:text-indigo-400 font-semibold">
-                          Click to upload logo
+                          {isUploadingLogo
+                            ? 'Processing logo...'
+                            : dragActiveLogo
+                              ? 'Drop logo image here'
+                              : 'Click to upload logo'}
                         </span>{' '}
-                        <span className="text-slate-500 dark:text-slate-400">or drag and drop</span>
+                        {!isUploadingLogo && !dragActiveLogo && (
+                          <span className="text-slate-500 dark:text-slate-400">or drag and drop</span>
+                        )}
                       </div>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                        PNG, JPG, SVG, WebP (Square or Horizontal recommended)
+                        PNG, JPG, SVG, WebP, GIF, ICO (Max 5MB — auto-applies & syncs on upload)
                       </span>
                     </label>
                   </div>
                 ) : (
                   <div className="space-y-1">
                     <input
-                      type="url"
+                      type="text"
                       value={logoInput}
-                      onChange={(e) => setLogoInput(e.target.value)}
+                      onChange={(e) => {
+                        isBrandDirtyRef.current = true;
+                        setLogoPreviewError(false);
+                        setLogoInput(e.target.value);
+                      }}
                       placeholder="https://example.com/logo.png"
                       className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition"
                     />
                     <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                      Enter a direct image link or Supabase Storage public URL.
+                      Enter a direct image link or Supabase Storage public URL, then click Save.
                     </p>
+                  </div>
+                )}
+
+                {logoInput && (
+                  <div className="mt-2.5 p-2.5 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <img
+                        src={logoInput}
+                        alt="Uploaded Logo Preview"
+                        onError={() => setLogoPreviewError(true)}
+                        onLoad={() => setLogoPreviewError(false)}
+                        className="w-10 h-10 rounded-lg object-contain bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-1 shrink-0"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 truncate">
+                          {logoPreviewError ? 'Unable to load preview image' : 'Active System Logo Ready'}
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                          {logoInput.startsWith('data:')
+                            ? 'Embedded custom image uploaded'
+                            : logoInput}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="text-[11px] px-2.5 py-1 rounded bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition cursor-pointer shrink-0 font-medium"
+                    >
+                      Remove
+                    </button>
                   </div>
                 )}
               </div>
@@ -889,7 +1397,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="submit"
-                  disabled={isSavingBrand}
+                  disabled={isSavingBrand || isUploadingLogo}
                   className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold rounded-lg cursor-pointer flex items-center gap-2 transition shadow-md"
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -1225,206 +1733,176 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </span>
         </div>
 
-        {/* Quick Filter Tabs */}
+        {/* Quick Filter Tabs matching exact Sidebar module names */}
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800/80 pb-3 text-xs font-semibold">
-          <button
-            type="button"
-            onClick={() => setOptionFilterTab('ALL')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
-              optionFilterTab === 'ALL'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-            }`}
-          >
-            <Filter className="w-3.5 h-3.5" />
-            <span>All Dropdowns ({optionSections.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setOptionFilterTab('SERVICE')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
-              optionFilterTab === 'SERVICE'
-                ? 'bg-cyan-600 text-white font-bold shadow-xs ring-2 ring-cyan-400/40'
-                : 'bg-cyan-50 dark:bg-slate-900 text-cyan-700 dark:text-cyan-300 hover:text-cyan-900 dark:hover:text-white hover:bg-cyan-100 dark:hover:bg-slate-800 border border-cyan-200 dark:border-cyan-900/60'
-            }`}
-          >
-            <Headphones className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
-            <span>Service Ticket & SLA ({optionSections.filter((s) => s.groups.includes('SERVICE')).length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setOptionFilterTab('ISSUE_TRACKER')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
-              optionFilterTab === 'ISSUE_TRACKER'
-                ? 'bg-rose-600 text-white font-bold shadow-xs ring-2 ring-rose-400/40'
-                : 'bg-rose-50 dark:bg-slate-900 text-rose-700 dark:text-rose-300 hover:text-rose-900 dark:hover:text-white hover:bg-rose-100 dark:hover:bg-slate-800 border border-rose-200 dark:border-rose-900/60'
-            }`}
-          >
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-            <span>Issue Tracker ({optionSections.filter((s) => s.groups.includes('ISSUE_TRACKER')).length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setOptionFilterTab('DEVICES')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
-              optionFilterTab === 'DEVICES'
-                ? 'bg-emerald-600 text-white font-bold shadow-xs'
-                : 'bg-emerald-50 dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-white hover:bg-emerald-100 dark:hover:bg-slate-800 border border-emerald-200 dark:border-emerald-900/60'
-            }`}
-          >
-            <Cpu className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-            <span>Devices & SIM ({optionSections.filter((s) => s.groups.includes('DEVICES')).length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setOptionFilterTab('PO')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
-              optionFilterTab === 'PO'
-                ? 'bg-teal-600 text-white font-bold shadow-xs'
-                : 'bg-teal-50 dark:bg-slate-900 text-teal-700 dark:text-teal-300 hover:text-teal-900 dark:hover:text-white hover:bg-teal-100 dark:hover:bg-slate-800 border border-teal-200 dark:border-teal-900/60'
-            }`}
-          >
-            <ShoppingBag className="w-3.5 h-3.5 text-teal-500 dark:text-teal-400" />
-            <span>Procurement & PO ({optionSections.filter((s) => s.groups.includes('PO')).length})</span>
-          </button>
+          {moduleTabs.map((tab) => {
+            const count =
+              tab.id === 'ALL'
+                ? optionSections.length
+                : optionSections.filter((s) => s.moduleId === tab.id).length;
+            const isActive = optionFilterTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setOptionFilterTab(tab.id)}
+                className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition cursor-pointer ${
+                  isActive ? tab.activeClass : tab.idleClass
+                }`}
+              >
+                {tab.icon}
+                <span>
+                  {tab.label} ({count})
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Service Ticket & SLA Highlight Notice */}
-        {optionFilterTab === 'SERVICE' && (
-          <div className="bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800/60 rounded-xl p-4 flex items-start gap-3 text-xs">
-            <Headphones className="w-5 h-5 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h4 className="font-bold text-cyan-800 dark:text-cyan-200">
-                Service Ticket & SLA Tracker Dropdown Synchronization
-              </h4>
-              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                The 3 dropdown options configured below (<strong>Issue Types</strong>, <strong>Issue Priority</strong>, and <strong>Current Status</strong>) directly update the dynamic dropdown options across the <strong>Service Ticket & SLA Tracker</strong> module.
-              </p>
+        {/* Active Module Context Banner */}
+        {optionFilterTab !== 'ALL' && (() => {
+          const activeTabMeta = moduleTabs.find((t) => t.id === optionFilterTab);
+          if (!activeTabMeta?.note) return null;
+          return (
+            <div className="bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-4 flex items-start gap-3 text-xs">
+              <div className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 shrink-0">
+                {activeTabMeta.icon}
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-indigo-900 dark:text-indigo-200">
+                  {activeTabMeta.label} — Exact Field Dropdowns
+                </h4>
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {activeTabMeta.note}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
-        {/* Issue Tracker Highlight Notice */}
-        {(optionFilterTab === 'ALL' || optionFilterTab === 'ISSUE_TRACKER') && (
-          <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60 rounded-xl p-4 flex items-start gap-3 text-xs">
-            <AlertCircle className="w-5 h-5 text-rose-500 dark:text-rose-400 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h4 className="font-bold text-rose-800 dark:text-rose-200">
-                Issue Tracker Dropdown Synchronization
-              </h4>
-              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                Options created or deleted below (<strong>Issue Types</strong>, <strong>Priority Levels</strong>, <strong>Issue Statuses</strong>, and <strong>Assign Person / Technicians</strong>) directly update the dropdown menus in the <strong>Issue Tracker</strong> and <strong>Issue Reports</strong> tabs. Category options are managed hierarchically in the Category Tree Manager above.
-              </p>
-            </div>
-          </div>
-        )}
+        {/* Options Cards (Grouped by Module when All Modules is active, or filtered for selected module) */}
+        {(optionFilterTab === 'ALL'
+          ? moduleTabs.filter((t): t is typeof moduleTabs[number] & { id: Exclude<ModuleFilterTab, 'ALL'> } => t.id !== 'ALL')
+          : moduleTabs.filter((t): t is typeof moduleTabs[number] & { id: Exclude<ModuleFilterTab, 'ALL'> } => t.id === optionFilterTab)
+        ).map((modGroup) => {
+          const modSections = optionSections.filter((s) => s.moduleId === modGroup.id);
+          if (modSections.length === 0) return null;
 
-        {/* Options Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {optionSections
-            .filter((section) => optionFilterTab === 'ALL' || section.groups.includes(optionFilterTab))
-            .map((section) => {
-              const list = systemOptions[section.key] || [];
+          return (
+            <div key={`mod-group-${modGroup.id}`} className="space-y-3">
+              {optionFilterTab === 'ALL' && (
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2 pt-2">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-800">
+                      {modGroup.icon}
+                    </span>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100">
+                      {modGroup.label}
+                    </h4>
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                    {modSections.length} dropdown {modSections.length === 1 ? 'field' : 'fields'}
+                  </span>
+                </div>
+              )}
 
-              return (
-                <div
-                  key={section.key}
-                  className={`bg-slate-50 dark:bg-slate-900 border rounded-xl p-4 flex flex-col justify-between space-y-4 transition ${
-                    section.groups.includes('SERVICE') && optionFilterTab === 'SERVICE'
-                      ? 'border-cyan-300 dark:border-cyan-900/60 hover:border-cyan-400 dark:hover:border-cyan-700/80'
-                      : section.groups.includes('ISSUE_TRACKER') && optionFilterTab === 'ISSUE_TRACKER'
-                      ? 'border-rose-300 dark:border-rose-900/50 hover:border-rose-400 dark:hover:border-rose-700/80'
-                      : 'border-slate-200 dark:border-slate-800/90 hover:border-slate-300 dark:hover:border-slate-700'
-                  }`}
-                >
-                  <div className="space-y-2.5">
-                    <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5 gap-2">
-                      <div className="flex items-center space-x-2">
-                        {section.icon}
-                        <div>
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                            {section.title}
-                          </h4>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                            {section.description}
-                          </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {modSections.map((section) => {
+                  const list = systemOptions[section.key] || [];
+                  const cardKey = `${section.moduleId}-${section.key}`;
+
+                  return (
+                    <div
+                      key={cardKey}
+                      className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800/90 hover:border-indigo-300 dark:hover:border-indigo-700/80 rounded-xl p-4 flex flex-col justify-between space-y-4 transition"
+                    >
+                      <div className="space-y-2.5">
+                        <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5 gap-2">
+                          <div className="flex items-center space-x-2">
+                            {section.icon}
+                            <div>
+                              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                                {section.title}
+                              </h4>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                {section.description}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-white dark:bg-slate-950 text-indigo-700 dark:text-indigo-300 border border-slate-200 dark:border-slate-800 shrink-0">
+                            {section.feedTag}
+                          </span>
+                        </div>
+
+                        {/* Badges List */}
+                        <div className="flex flex-wrap gap-1.5 min-h-[60px] max-h-[120px] overflow-y-auto p-1.5 bg-white dark:bg-slate-950/70 rounded-lg border border-slate-200 dark:border-slate-800/60">
+                          {list.length === 0 ? (
+                            <span className="text-[11px] text-slate-400 p-1">
+                              No options available.
+                            </span>
+                          ) : (
+                            list.map((item, iIdx) => (
+                              <span
+                                key={`sys-opt-${cardKey}-${item}-${iIdx}`}
+                                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${section.badgeColor}`}
+                              >
+                                {item}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleRemoveOption(section.key, item);
+                                  }}
+                                  className="p-0.5 hover:bg-rose-100 dark:hover:bg-rose-900/80 text-slate-500 dark:text-slate-300 hover:text-rose-700 dark:hover:text-rose-200 rounded transition cursor-pointer flex items-center justify-center ml-0.5"
+                                  title={`Remove "${item}"`}
+                                >
+                                  <Trash2 className="w-2.5 h-2.5" />
+                                </button>
+                              </span>
+                            ))
+                          )}
                         </div>
                       </div>
-                      <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded bg-white dark:bg-slate-950 text-indigo-700 dark:text-indigo-300 border border-slate-200 dark:border-slate-800 shrink-0">
-                        {section.feedTag}
-                      </span>
-                    </div>
 
-                    {/* Badges List */}
-                    <div className="flex flex-wrap gap-1.5 min-h-[60px] max-h-[120px] overflow-y-auto p-1.5 bg-white dark:bg-slate-950/70 rounded-lg border border-slate-200 dark:border-slate-800/60">
-                      {list.length === 0 ? (
-                        <span className="text-[11px] text-slate-400 p-1">
-                          No options available.
-                        </span>
-                      ) : (
-                        list.map((item, iIdx) => (
-                          <span
-                            key={`sys-opt-${section.key}-${item}-${iIdx}`}
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border ${section.badgeColor}`}
-                          >
-                            {item}
-                            <button
-                              type="button"
-                              onClick={(e) => {
+                      {/* Add Option Form */}
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <div className="flex gap-1.5">
+                          <input
+                            type="text"
+                            value={inputs[section.key] || ''}
+                            onChange={(e) =>
+                              setInputs((prev) => ({
+                                ...prev,
+                                [section.key]: e.target.value,
+                              }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
                                 e.preventDefault();
-                                e.stopPropagation();
-                                handleRemoveOption(section.key, item);
-                              }}
-                              className="p-0.5 hover:bg-rose-100 dark:hover:bg-rose-900/80 text-slate-500 dark:text-slate-300 hover:text-rose-700 dark:hover:text-rose-200 rounded transition cursor-pointer flex items-center justify-center ml-0.5"
-                              title={`Remove "${item}"`}
-                            >
-                              <Trash2 className="w-2.5 h-2.5" />
-                            </button>
-                          </span>
-                        ))
-                      )}
+                                handleAddOption(section.key);
+                              }
+                            }}
+                            placeholder={`Add new ${section.title.toLowerCase()}...`}
+                            className="flex-1 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700/80 rounded px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleAddOption(section.key)}
+                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded text-xs cursor-pointer flex items-center justify-center transition"
+                            title="Add option"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Add Option Form */}
-                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
-                    <div className="flex gap-1.5">
-                      <input
-                        type="text"
-                        value={inputs[section.key] || ''}
-                        onChange={(e) =>
-                          setInputs((prev) => ({
-                            ...prev,
-                            [section.key]: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddOption(section.key);
-                          }
-                        }}
-                        placeholder={`Add new ${section.title.toLowerCase()}...`}
-                        className="flex-1 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700/80 rounded px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleAddOption(section.key)}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded text-xs cursor-pointer flex items-center justify-center transition"
-                        title="Add option"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* ============================================================== */}

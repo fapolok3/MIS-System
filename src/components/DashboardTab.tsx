@@ -184,23 +184,36 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
     };
   }, [bills]);
 
-  // Total Issues, Issues Solved, Pending Issues (strictly from Device Issue Report)
-  const { combinedTotalIssues, combinedSolvedIssues, combinedPendingIssues } = useMemo(() => {
+  // Total Issues, Issues Solved, Pending Issues (strictly from Device Issue Status: Pending / On Going / Solved)
+  const {
+    combinedTotalIssues,
+    combinedSolvedIssues,
+    combinedPendingIssues,
+    pendingOnlyCount,
+    ongoingOnlyCount,
+  } = useMemo(() => {
     const total = deviceSupportTickets.length;
-    let dstSolved = 0;
+    let solved = 0;
+    let ongoing = 0;
+    let pending = 0;
+
     deviceSupportTickets.forEach((dst) => {
-      const st = (dst.ticketStatus || '').toLowerCase().trim();
-      if (st === 'yes' || st === 'solved' || st === 'resolved' || st === 'done' || st === 'closed') {
-        dstSolved += 1;
+      const st = (dst.status || 'Pending').toLowerCase().trim();
+      if (st === 'solved' || st === 'done' || st === 'resolved' || st === 'closed') {
+        solved += 1;
+      } else if (st === 'on going' || st === 'ongoing' || st === 'in progress' || st === 'in-progress') {
+        ongoing += 1;
+      } else {
+        pending += 1;
       }
     });
 
-    const pending = Math.max(0, total - dstSolved);
-
     return {
       combinedTotalIssues: total,
-      combinedSolvedIssues: dstSolved,
-      combinedPendingIssues: pending,
+      combinedSolvedIssues: solved,
+      combinedPendingIssues: pending + ongoing,
+      pendingOnlyCount: pending,
+      ongoingOnlyCount: ongoing,
     };
   }, [deviceSupportTickets]);
 
@@ -451,7 +464,9 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             {combinedPendingIssues}
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-amber-100 dark:border-amber-900/40 text-[11px] text-slate-500 dark:text-slate-400">
-            <span>Active & in-progress</span>
+            <span>
+              {pendingOnlyCount} Pending • {ongoingOnlyCount} On Going
+            </span>
             <span className="font-semibold text-amber-600 dark:text-amber-400">
               {combinedTotalIssues > 0 ? `${Math.round((combinedPendingIssues / combinedTotalIssues) * 100)}%` : '0%'}
             </span>
